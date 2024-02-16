@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  oracle:
+    container_name: oracle-feeder
+    build:
+      context: .
+      dockerfile: ./apps/oracle/Dockerfile
+    restart: always
+    env_file:
+      - ./apps/oracle/.env
+  random:
+    container_name: random-oracle-feeder
+    build:
+      context: .
+      dockerfile: ./apps/random/Dockerfile
+    restart: always
+    env_file:
+      - ./apps/random/.env
