@@ -1,8 +1,9 @@
 import { interval, map, merge } from 'rxjs';
 import { createAsyncQueue, intoAsyncIterable } from '@repo/common';
 import { Asset, getAssetPrices } from './api';
-import config from './config';
-import { extendOracleTtl, restoreOracle, updateOracle } from './oracle';
+import config, { ChainName } from './config';
+import { extendOracleTtl, restoreOracle, updateOracle as updateSorobanOracle } from './oracles/soroban';
+import { updateOracle as updateKadenaOracle } from './oracles/kadena';
 
 function checkDeviation(oldPrice: number, newPrice: number) {
   const deviation = config.deviationPermille / 1000;
@@ -40,10 +41,17 @@ async function update(published: Map<string, number>, prices: Map<string, number
     for (const [i, [key, value]] of filtered.entries()) {
       updated.set(key, value);
       keys[i] = key + '/USD';
-      values[i] = Math.floor(value * 100_000_000);
+      values[i] = value;
     }
 
-    await updateOracle(keys, values);
+    switch (config.chainName) {
+      case ChainName.KADENA:
+        await updateKadenaOracle(keys, values);
+        break;
+      case ChainName.SOROBAN:
+        await updateSorobanOracle(keys, values);
+        break;
+    }
     console.log(Object.fromEntries(updated));
   } else {
     console.log('No update necessary');
@@ -53,11 +61,13 @@ async function update(published: Map<string, number>, prices: Map<string, number
 }
 
 async function main() {
-  await restoreOracle();
-  await extendOracleTtl();
-
   const queue = createAsyncQueue({ onError: (e) => console.error(e) });
-  setInterval(() => queue(extendOracleTtl), config.soroban.lifetimeInterval);
+  
+  if (config.chainName === ChainName.SOROBAN) { // soroban specific
+    await restoreOracle();
+    await extendOracleTtl();
+    setInterval(() => queue(extendOracleTtl), config.soroban.lifetimeInterval);
+  }
 
   let published = new Map<string, number>();
 

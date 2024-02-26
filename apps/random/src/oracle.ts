@@ -12,14 +12,24 @@ import {
   DEFAULT_TX_OPTIONS,
   extendInstanceTtl,
   restoreInstance,
-  submitTx,
+  submitSorobanTx as submitTx,
 } from '@repo/common';
 import type { DrandResponse } from './api';
-import config from './config';
+import config, { ChainName } from './config';
 
-const server = new SorobanRpc.Server(config.soroban.rpcUrl, { allowHttp: true });
-const keypair = Keypair.fromSecret(config.soroban.secretKey);
-const contract = new Contract(config.soroban.contractId);
+let server: SorobanRpc.Server;
+let keypair: Keypair;
+let contract: Contract;
+
+if (config.chainName === ChainName.SOROBAN) {
+  init();
+}
+
+export function init() {
+  server = new SorobanRpc.Server(config.soroban.rpcUrl, { allowHttp: true });
+  keypair = Keypair.fromSecret(config.soroban.secretKey);
+  contract = new Contract(config.soroban.contractId);
+}
 
 export function restoreOracle() {
   return restoreInstance(server, keypair, contract);

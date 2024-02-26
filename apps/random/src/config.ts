@@ -2,6 +2,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+export enum ChainName {
+  SOROBAN = 'soroban',
+}
+
 export default {
   soroban: {
     rpcUrl: process.env.BLOCKCHAIN_NODE || 'https://soroban-testnet.stellar.org:443',
@@ -9,6 +13,7 @@ export default {
     contractId: process.env.DEPLOYED_CONTRACT || '',
     lifetimeInterval: 30 * 60 * 1000, // 30m
   },
+  chainName: process.env.CHAIN_NAME as ChainName || ChainName.SOROBAN,
   intervals: {
     frequency: parseInt(process.env.FREQUENCY_SECONDS || '120', 10) * 1000,
   },

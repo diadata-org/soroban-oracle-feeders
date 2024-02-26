@@ -10,13 +10,23 @@ import {
   DEFAULT_TX_OPTIONS,
   extendInstanceTtl,
   restoreInstance,
-  submitTx,
+  submitSorobanTx,
 } from '@repo/common';
-import config from './config';
+import config, { ChainName } from '../config';
 
-const server = new SorobanRpc.Server(config.soroban.rpcUrl, { allowHttp: true });
-const keypair = Keypair.fromSecret(config.soroban.secretKey);
-const contract = new Contract(config.soroban.contractId);
+let server: SorobanRpc.Server;
+let keypair: Keypair;
+let contract: Contract;
+
+if (config.chainName === ChainName.SOROBAN) {
+  init();
+}
+
+export function init() {
+  server = new SorobanRpc.Server(config.soroban.rpcUrl, { allowHttp: true });
+  keypair = Keypair.fromSecret(config.soroban.secretKey);
+  contract = new Contract(config.soroban.contractId);
+}
 
 export function restoreOracle() {
   return restoreInstance(server, keypair, contract);
@@ -32,7 +42,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const account = await server.getAccount(keypair.publicKey());
 
   const timestamp = Math.floor(Date.now() / 1000);
-  const values = prices.map((p) => [timestamp, p] as const);
+  const values = prices.map((p) => [timestamp,  Math.floor(p * 100_000_000)] as const);
 
   const operation = contract.call(
     'set_multiple_values',
@@ -47,5 +57,5 @@ export async function updateOracle(keys: string[], prices: number[]) {
 
   tx = await server.prepareTransaction(tx);
   tx.sign(keypair);
-  await submitTx(server, tx);
+  await submitSorobanTx(server, tx);
 }
