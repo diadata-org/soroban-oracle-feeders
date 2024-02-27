@@ -52,9 +52,9 @@ export enum ChainName {
 
 export default {
   soroban: {
-    rpcUrl: process.env.BLOCKCHAIN_NODE || 'https://soroban-testnet.stellar.org:443',
-    secretKey: process.env.PRIVATE_KEY || '',
-    contractId: process.env.DEPLOYED_CONTRACT || '',
+    rpcUrl: process.env.SOROBAN_BLOCKCHAIN_NODE || 'https://soroban-testnet.stellar.org:443',
+    secretKey: process.env.SOROBAN_PRIVATE_KEY || '',
+    contractId: process.env.SOROBAN_DEPLOYED_CONTRACT || '',
     lifetimeInterval: 30 * 60 * 1000, // 30m
   },
   kadena: {
