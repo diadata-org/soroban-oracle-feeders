@@ -11,8 +11,10 @@
     "start": "node ."
   },
   "dependencies": {
+    "@kadena/client": "^1.8.1",
+    "@kadena/types": "^0.6.0",
     "@repo/common": "*",
-    "@stellar/stellar-sdk": "^11.2.0",
+    "@stellar/stellar-sdk": "^11.2.2",
     "dotenv": "^16.3.1",
     "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",

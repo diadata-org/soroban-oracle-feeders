@@ -6,7 +6,11 @@ This app fetches random values from [drand](https://drand.love) API and saves th
 
 Sample environment configuration can be found in `.env.example`
 
+In order to select the chain for this oracle data feeder, use the `CHAIN_NAME` environment variable. Available chain for Random oracle is `"soroban"`.
+
 ```properties
+CHAIN_NAME=""
+
 BLOCKCHAIN_NODE="https://soroban-testnet.stellar.org:443"
 PRIVATE_KEY=""
 DEPLOYED_CONTRACT=""

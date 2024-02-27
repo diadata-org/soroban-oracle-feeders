@@ -16,7 +16,7 @@ import { sleep } from './utils';
 export const DAY_IN_LEDGERS = 17280;
 export const DEFAULT_TX_OPTIONS = { fee: BASE_FEE, networkPassphrase: Networks.TESTNET };
 
-export async function submitTx(server: SorobanRpc.Server, tx: Transaction | FeeBumpTransaction) {
+export async function submitSorobanTx(server: SorobanRpc.Server, tx: Transaction | FeeBumpTransaction) {
   const sendResponse = await server.sendTransaction(tx);
   if (sendResponse.status !== 'PENDING') {
     throw new Error(`Transaction failed: ${sendResponse.errorResult}`);
@@ -82,7 +82,7 @@ export async function extendInstanceTtl({
 
     tx = await server.prepareTransaction(tx);
     tx.sign(source);
-    await submitTx(server, tx);
+    await submitSorobanTx(server, tx);
     console.log(`Instance at ${contract.contractId()} has been bumped by ${extendTo} ledgers`);
   }
 }
@@ -115,7 +115,7 @@ export async function restoreInstance(
 
     tx = await server.prepareTransaction(tx);
     tx.sign(source);
-    await submitTx(server, tx);
+    await submitSorobanTx(server, tx);
     console.log(`Contract instance at ${contract.contractId()} has been restored`);
   }
 }

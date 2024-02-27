@@ -45,13 +45,29 @@ const conditionalPairs = process.env.CONDITIONAL_ASSETS?.split(';').map((str) =>
   return [asset0, asset1] as const;
 });
 
+export enum ChainName {
+  KADENA = 'kadena',
+  SOROBAN = 'soroban',
+}
+
 export default {
   soroban: {
-    rpcUrl: process.env.BLOCKCHAIN_NODE || 'https://soroban-testnet.stellar.org:443',
-    secretKey: process.env.PRIVATE_KEY || '',
-    contractId: process.env.DEPLOYED_CONTRACT || '',
+    rpcUrl: process.env.SOROBAN_BLOCKCHAIN_NODE || 'https://soroban-testnet.stellar.org:443',
+    secretKey: process.env.SOROBAN_PRIVATE_KEY || '',
+    contractId: process.env.SOROBAN_DEPLOYED_CONTRACT || '',
     lifetimeInterval: 30 * 60 * 1000, // 30m
   },
+  kadena: {
+    rpcUrl: process.env.KADENA_RPC_URL || 'https://api.testnet.chainweb.com',
+    secretKey: process.env.KADENA_PRIVATE_KEY || '',
+    publicKey: process.env.KADENA_PUBLIC_KEY || '',
+    contract: process.env.KADENA_CONTRACT || 'free.dia-oracle',
+    networkId: process.env.KADENA_NETWORK_ID || 'testnet04',
+    chainId: process.env.KADENA_CHAIN_ID || '0',
+  },
+
+  chainName: process.env.CHAIN_NAME as ChainName || ChainName.SOROBAN,
+
   intervals: {
     frequency: parseInt(process.env.FREQUENCY_SECONDS || '120', 10) * 1000,
     mandatoryFrequency: parseInt(process.env.MANDATORY_FREQUENCY_SECONDS || '0', 10) * 1000,
