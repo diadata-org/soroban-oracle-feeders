@@ -6,14 +6,15 @@ import { fetchRandomValue } from './api';
 
 async function main() {
   const queue = createAsyncQueue({ onError: (e) => console.error(e) });
+  let lastRound: number;
 
   if (config.chainName === ChainName.SOROBAN) {
     await restoreOracle();
     await extendOracleTtl();
     setInterval(() => queue(extendOracleTtl), config.soroban.lifetimeInterval);
+    lastRound = await getLastRound();
   }
 
-  let lastRound = await getLastRound();
   const ticker = interval(config.intervals.frequency);
 
   for await (const _ of intoAsyncIterable(ticker)) {

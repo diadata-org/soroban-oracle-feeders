@@ -11,6 +11,8 @@
     "start": "node ."
   },
   "dependencies": {
+    "@kadena/client": "^1.8.1",
+    "@kadena/types": "^0.6.0",
     "@repo/common": "*",
     "@stellar/stellar-sdk": "^11.2.0",
     "axios": "^1.6.2",
