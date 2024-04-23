@@ -1,0 +1,38 @@
+{
+  "version": "v2.12.0",
+  "name": "DIAOracleValueTest",
+  "bytecode": "000110010003030006160116020e0c16000102",
+  "codeHash": "134666d61c55517b285ea1ef18ae92725219960ed9f4a884247804f5237f7a9e",
+  "fieldsSig": {
+    "names": [],
+    "types": [],
+    "isMutable": []
+  },
+  "eventsSig": [],
+  "functions": [
+    {
+      "name": "update_value",
+      "usePreapprovedAssets": false,
+      "useAssetsInContract": false,
+      "isPublic": true,
+      "paramNames": [
+        "instance",
+        "value",
+        "timestamp"
+      ],
+      "paramTypes": [
+        "DIAOracleValue",
+        "U256",
+        "U256"
+      ],
+      "paramIsMutable": [
+        false,
+        false,
+        false
+      ],
+      "returnTypes": []
+    }
+  ],
+  "constants": [],
+  "enums": []
+}

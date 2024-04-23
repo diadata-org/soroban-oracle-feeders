@@ -1,0 +1,79 @@
+{
+  "version": "v2.12.0",
+  "name": "DIAOracleValue",
+  "bytecode": "030309124026010000000102a00002010000000102a00102010002020009b3ce00410c7b1600a1001601a101",
+  "codeHash": "49b08abbeec80d6cc22c0320602da0558b8e9effba33c4bbc7cb82a73934f4bf",
+  "fieldsSig": {
+    "names": [
+      "oracle",
+      "value",
+      "timestamp"
+    ],
+    "types": [
+      "DIAOracle",
+      "U256",
+      "U256"
+    ],
+    "isMutable": [
+      false,
+      true,
+      true
+    ]
+  },
+  "eventsSig": [],
+  "functions": [
+    {
+      "name": "getValue",
+      "usePreapprovedAssets": false,
+      "useAssetsInContract": false,
+      "isPublic": true,
+      "paramNames": [],
+      "paramTypes": [],
+      "paramIsMutable": [],
+      "returnTypes": [
+        "U256"
+      ]
+    },
+    {
+      "name": "getTimestamp",
+      "usePreapprovedAssets": false,
+      "useAssetsInContract": false,
+      "isPublic": true,
+      "paramNames": [],
+      "paramTypes": [],
+      "paramIsMutable": [],
+      "returnTypes": [
+        "U256"
+      ]
+    },
+    {
+      "name": "update",
+      "usePreapprovedAssets": false,
+      "useAssetsInContract": false,
+      "isPublic": true,
+      "paramNames": [
+        "newValue",
+        "newTimestamp"
+      ],
+      "paramTypes": [
+        "U256",
+        "U256"
+      ],
+      "paramIsMutable": [
+        false,
+        false
+      ],
+      "returnTypes": []
+    }
+  ],
+  "constants": [
+    {
+      "name": "InvalidCaller",
+      "value": {
+        "type": "U256",
+        "value": "0"
+      }
+    }
+  ],
+  "enums": []
+}

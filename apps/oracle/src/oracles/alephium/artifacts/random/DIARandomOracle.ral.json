@@ -1,0 +1,197 @@
+{
+  "version": "v2.12.0",
+  "name": "DIARandomOracle",
+  "bytecode": "04080912402340304042404b406e40b1010000000102a00002010000000102a00102010001010007b400041600a1000516005e010001010004b400041600a10100000101000ab4b2450c7b1600a000450c7b010000000102a0020201000103031216004017011601cb17021602c54b04140014001400020c0f160201000201030407004024b40004a0021600310d7b1600a102160040170416011602160313036413006417061705a000a001a21604ce0016051606c11806160016011602160361",
+  "codeHash": "aa03cc1c493574b8791003ae68adc838432002955dce2252d428c2de3981cbc7",
+  "fieldsSig": {
+    "names": [
+      "randomValueTemplateId",
+      "admin",
+      "subContractDeposit",
+      "lastRound"
+    ],
+    "types": [
+      "ByteVec",
+      "Address",
+      "U256",
+      "U256"
+    ],
+    "isMutable": [
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "eventsSig": [
+    {
+      "name": "AdminChanged",
+      "fieldNames": [
+        "newAdmin"
+      ],
+      "fieldTypes": [
+        "Address"
+      ]
+    },
+    {
+      "name": "OracleUpdate",
+      "fieldNames": [
+        "round",
+        "randomness",
+        "signature",
+        "previousSignature"
+      ],
+      "fieldTypes": [
+        "U256",
+        "ByteVec",
+        "ByteVec",
+        "ByteVec"
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "getAdmin",
+      "usePreapprovedAssets": false,
+      "useAssetsInContract": false,
+      "isPublic": true,
+      "paramNames": [],
+      "paramTypes": [],
+      "paramIsMutable": [],
+      "returnTypes": [
+        "Address"
+      ]
+    },
+    {
+      "name": "getSubContractDeposit",
+      "usePreapprovedAssets": false,
+      "useAssetsInContract": false,
+      "isPublic": true,
+      "paramNames": [],
+      "paramTypes": [],
+      "paramIsMutable": [],
+      "returnTypes": [
+        "U256"
+      ]
+    },
+    {
+      "name": "changeAdmin",
+      "usePreapprovedAssets": false,
+      "useAssetsInContract": false,
+      "isPublic": true,
+      "paramNames": [
+        "newAdmin"
+      ],
+      "paramTypes": [
+        "Address"
+      ],
+      "paramIsMutable": [
+        false
+      ],
+      "returnTypes": []
+    },
+    {
+      "name": "setSubContractDeposit",
+      "usePreapprovedAssets": false,
+      "useAssetsInContract": false,
+      "isPublic": true,
+      "paramNames": [
+        "value"
+      ],
+      "paramTypes": [
+        "U256"
+      ],
+      "paramIsMutable": [
+        false
+      ],
+      "returnTypes": []
+    },
+    {
+      "name": "checkAdmin",
+      "usePreapprovedAssets": false,
+      "useAssetsInContract": false,
+      "isPublic": false,
+      "paramNames": [
+        "caller"
+      ],
+      "paramTypes": [
+        "Address"
+      ],
+      "paramIsMutable": [
+        false
+      ],
+      "returnTypes": []
+    },
+    {
+      "name": "getLastRound",
+      "usePreapprovedAssets": false,
+      "useAssetsInContract": false,
+      "isPublic": true,
+      "paramNames": [],
+      "paramTypes": [],
+      "paramIsMutable": [],
+      "returnTypes": [
+        "U256"
+      ]
+    },
+    {
+      "name": "getRandomValue",
+      "usePreapprovedAssets": false,
+      "useAssetsInContract": false,
+      "isPublic": true,
+      "paramNames": [
+        "round"
+      ],
+      "paramTypes": [
+        "U256"
+      ],
+      "paramIsMutable": [
+        false
+      ],
+      "returnTypes": [
+        "Random"
+      ]
+    },
+    {
+      "name": "setRandomValue",
+      "usePreapprovedAssets": true,
+      "useAssetsInContract": false,
+      "isPublic": true,
+      "paramNames": [
+        "round",
+        "value"
+      ],
+      "paramTypes": [
+        "U256",
+        "Random"
+      ],
+      "paramIsMutable": [
+        false,
+        false
+      ],
+      "returnTypes": []
+    }
+  ],
+  "constants": [],
+  "enums": [
+    {
+      "name": "ErrorCodes",
+      "fields": [
+        {
+          "name": "AdminAllowedOnly",
+          "value": {
+            "type": "U256",
+            "value": "0"
+          }
+        },
+        {
+          "name": "InvalidRound",
+          "value": {
+            "type": "U256",
+            "value": "1"
+          }
+        }
+      ]
+    }
+  ]
+}

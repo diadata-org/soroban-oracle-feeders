@@ -1,0 +1,34 @@
+{
+  "version": "v2.12.0",
+  "name": "DIARandomValue",
+  "bytecode": "03010d010000000304ce00ce01ce0202",
+  "codeHash": "10ed3ba9f641e7909ae248a8f8d34c147e93cf47272259ada0856c34c0625ac5",
+  "fieldsSig": {
+    "names": [
+      "value"
+    ],
+    "types": [
+      "Random"
+    ],
+    "isMutable": [
+      false
+    ]
+  },
+  "eventsSig": [],
+  "functions": [
+    {
+      "name": "getValue",
+      "usePreapprovedAssets": false,
+      "useAssetsInContract": false,
+      "isPublic": true,
+      "paramNames": [],
+      "paramTypes": [],
+      "paramIsMutable": [],
+      "returnTypes": [
+        "Random"
+      ]
+    }
+  ],
+  "constants": [],
+  "enums": []
+}

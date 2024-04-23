@@ -1,0 +1,37 @@
+{
+  "version": "v2.12.0",
+  "name": "SetValue",
+  "bytecodeTemplate": "0101030001000f0c0d{3}01011700b41600a2{0}{1}{2}0f0c{3}0106",
+  "fieldsSig": {
+    "names": [
+      "key",
+      "value",
+      "timestamp",
+      "oracle"
+    ],
+    "types": [
+      "ByteVec",
+      "U256",
+      "U256",
+      "DIAOracle"
+    ],
+    "isMutable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "functions": [
+    {
+      "name": "main",
+      "usePreapprovedAssets": true,
+      "useAssetsInContract": false,
+      "isPublic": true,
+      "paramNames": [],
+      "paramTypes": [],
+      "paramIsMutable": [],
+      "returnTypes": []
+    }
+  ]
+}
