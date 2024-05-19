@@ -37,7 +37,7 @@ export async function getAssetPrices(assets: Asset[]) {
 async function getAssetQuotation(network: string, address: string) {
   const url = `${config.api.http.url}/${network}/${address}`;
   const data = await axios.get(url);
-  return Quotation.parse(data).Price;
+  return Quotation.parse(data.data).Price;
 }
 
 type FeedSelection = {

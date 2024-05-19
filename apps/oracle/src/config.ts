@@ -64,6 +64,7 @@ export default {
     contract: process.env.KADENA_CONTRACT || 'free.dia-oracle',
     networkId: process.env.KADENA_NETWORK_ID || 'testnet04',
     chainId: process.env.KADENA_CHAIN_ID || '0',
+    maxAssetsPerTx: parseInt(process.env.KADENA_MAX_ASSETS_PER_TX || '10', 10),
   },
 
   chainName: process.env.CHAIN_NAME as ChainName || ChainName.SOROBAN,
