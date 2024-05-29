@@ -48,6 +48,7 @@ const conditionalPairs = process.env.CONDITIONAL_ASSETS?.split(';').map((str) =>
 export enum ChainName {
   KADENA = 'kadena',
   SOROBAN = 'soroban',
+  ALEPHIUM = 'alephium',
 }
 
 export default {
@@ -65,6 +66,12 @@ export default {
     networkId: process.env.KADENA_NETWORK_ID || 'testnet04',
     chainId: process.env.KADENA_CHAIN_ID || '0',
     maxAssetsPerTx: parseInt(process.env.KADENA_MAX_ASSETS_PER_TX || '10', 10),
+  },
+  alephium: {
+    rpcUrl: process.env.ALEPHIUM_RPC_URL || 'http://localhost:22973',
+    secretKey: process.env.ALEPHIUM_PRIVATE_KEY || '',
+    contract: process.env.ALEPHIUM_CONTRACT || '2AsrYbF4PhVtoinHawPzV8iqcwrj26SCE2ghNDkb5Cdm1',
+    maxBatchSize: 10, // max number of prices to update in a single transaction
   },
 
   chainName: process.env.CHAIN_NAME as ChainName || ChainName.SOROBAN,

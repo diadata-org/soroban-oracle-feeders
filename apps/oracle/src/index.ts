@@ -4,6 +4,7 @@ import { Asset, getAssetPrices } from './api';
 import config, { ChainName } from './config';
 import { extendOracleTtl, restoreOracle, updateOracle as updateSorobanOracle } from './oracles/soroban';
 import { updateOracle as updateKadenaOracle } from './oracles/kadena';
+import { updateOracle as updateAlephiumOracle } from './oracles/alephium';
 
 function checkDeviation(oldPrice: number, newPrice: number) {
   const deviation = config.deviationPermille / 1000;
@@ -50,6 +51,9 @@ async function update(published: Map<string, number>, prices: Map<string, number
         break;
       case ChainName.SOROBAN:
         await updateSorobanOracle(keys, values);
+        break;
+      case ChainName.ALEPHIUM:
+        await updateAlephiumOracle(keys, values);
         break;
     }
     console.log(Object.fromEntries(updated));
