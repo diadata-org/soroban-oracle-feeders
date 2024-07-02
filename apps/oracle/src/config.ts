@@ -17,11 +17,14 @@ if (process.env.ASSETS && !process.env.GQL_ASSETS) {
 }
 
 const assets = assetsToParse.split(';').map((str) => {
-  const [network, address, symbol, ...entries] = str.split('-').map((str) => str.trim());
+  const [network, address, symbol, ...entries] = str
+    .replace('-ibc-', '-ibc/')
+    .split('-')
+    .map((str) => str.trim());
 
   const currAsset = {
     network,
-    address,
+    address: address.replace('ibc/', 'ibc-'),
     symbol,
     gqlParams: { FeedSelection: [] } as GqlParams,
   };
@@ -74,7 +77,7 @@ export default {
     maxBatchSize: 10, // max number of prices to update in a single transaction
   },
 
-  chainName: process.env.CHAIN_NAME as ChainName || ChainName.SOROBAN,
+  chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.SOROBAN,
 
   intervals: {
     frequency: parseInt(process.env.FREQUENCY_SECONDS || '120', 10) * 1000,
