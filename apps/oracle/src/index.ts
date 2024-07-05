@@ -2,7 +2,11 @@ import { interval, map, merge } from 'rxjs';
 import { createAsyncQueue, intoAsyncIterable } from '@repo/common';
 import { Asset, getAssetPrices } from './api';
 import config, { ChainName } from './config';
-import { extendOracleTtl, restoreOracle, updateOracle as updateSorobanOracle } from './oracles/soroban';
+import {
+  extendOracleTtl,
+  restoreOracle,
+  updateOracle as updateSorobanOracle,
+} from './oracles/soroban';
 import { updateOracle as updateKadenaOracle } from './oracles/kadena';
 import { updateOracle as updateAlephiumOracle } from './oracles/alephium';
 
@@ -66,8 +70,9 @@ async function update(published: Map<string, number>, prices: Map<string, number
 
 async function main() {
   const queue = createAsyncQueue({ onError: (e) => console.error(e) });
-  
-  if (config.chainName === ChainName.SOROBAN) { // soroban specific
+
+  if (config.chainName === ChainName.SOROBAN) {
+    // soroban specific
     await restoreOracle();
     await extendOracleTtl();
     setInterval(() => queue(extendOracleTtl), config.soroban.lifetimeInterval);
