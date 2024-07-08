@@ -11,9 +11,8 @@
     "start": "node ."
   },
   "dependencies": {
-    "@alephium/cli": "^0.38.2",
-    "@alephium/web3": "^0.38.0",
-    "@alephium/web3-wallet": "^0.38.0",
+    "@alephium/web3": "^1.0.6",
+    "@alephium/web3-wallet": "^1.0.6",
     "@kadena/client": "^1.8.1",
     "@kadena/types": "^0.6.0",
     "@repo/common": "*",

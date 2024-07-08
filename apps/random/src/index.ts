@@ -1,8 +1,16 @@
 import { interval } from 'rxjs';
 import { createAsyncQueue, intoAsyncIterable } from '@repo/common';
 import config, { ChainName } from './config';
-import { extendOracleTtl, getLastRound as getLastSorobanRound, restoreOracle, updateOracle as updateSorobanOracle } from './oracles/soroban';
-import { updateOracle as updateAlephiumOracle, getLastRound as getLastAlephiumRound } from './oracles/alephium';
+import {
+  extendOracleTtl,
+  getLastRound as getLastSorobanRound,
+  restoreOracle,
+  updateOracle as updateSorobanOracle,
+} from './oracles/soroban';
+import {
+  updateOracle as updateAlephiumOracle,
+  getLastRound as getLastAlephiumRound,
+} from './oracles/alephium';
 import { fetchRandomValue } from './api';
 
 async function main() {

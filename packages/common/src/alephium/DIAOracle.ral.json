@@ -1,0 +1,198 @@
+{
+  "version": "v3.1.4",
+  "name": "DIAOracle",
+  "bytecode": "01074044405240684075408f40dd414001000102021cd3a0e6c231140a5f5f6d61705f5f305f5f160044cbc54b050e047c7b180c0d0d140a5f5f6d61705f5f305f5f160044cb1701160101010d0d0d1601010102010000000103d3f884f741a00002010001010008d3916e2287b400031600a1000516005e0000010100051600a000450c7b01030303000ad352a1e869b40003a000d1a2160016011602000601031f402000402dd3b02d40d0b40003161e130a320d7b0c171f161f161e314c1fa000d1a2161f7a130a314d78161f7a130a314d130a2a78161f7a130a314d13142a780006161f0d2a171f4a7fdd00030304004027140a5f5f6d61705f5f305f5f160044cbc54b0ba000d1a2140a5f5f6d61705f5f305f5f160044b116011602d201024a11160116020d0e0c140a5f5f6d61705f5f305f5f160044cb1703160301020c0e0c160301020616001601160260",
+  "codeHash": "b33aeefbd2a1f83d99c281d0a408ab3abc3bd2967bcf110d87aea4652762c8f0",
+  "fieldsSig": {
+    "names": [
+      "admin"
+    ],
+    "types": [
+      "Address"
+    ],
+    "isMutable": [
+      true
+    ]
+  },
+  "eventsSig": [
+    {
+      "name": "AdminChanged",
+      "fieldNames": [
+        "newAdmin"
+      ],
+      "fieldTypes": [
+        "Address"
+      ]
+    },
+    {
+      "name": "OracleUpdate",
+      "fieldNames": [
+        "key",
+        "value",
+        "timestamp"
+      ],
+      "fieldTypes": [
+        "ByteVec",
+        "U256",
+        "U256"
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "getValue",
+      "paramNames": [
+        "key"
+      ],
+      "paramTypes": [
+        "ByteVec"
+      ],
+      "paramIsMutable": [
+        false
+      ],
+      "returnTypes": [
+        "DIAOracleValue"
+      ]
+    },
+    {
+      "name": "getAdmin",
+      "paramNames": [],
+      "paramTypes": [],
+      "paramIsMutable": [],
+      "returnTypes": [
+        "Address"
+      ]
+    },
+    {
+      "name": "changeAdmin",
+      "paramNames": [
+        "newAdmin"
+      ],
+      "paramTypes": [
+        "Address"
+      ],
+      "paramIsMutable": [
+        false
+      ],
+      "returnTypes": []
+    },
+    {
+      "name": "checkAdmin",
+      "paramNames": [
+        "caller"
+      ],
+      "paramTypes": [
+        "Address"
+      ],
+      "paramIsMutable": [
+        false
+      ],
+      "returnTypes": []
+    },
+    {
+      "name": "setValue",
+      "paramNames": [
+        "key",
+        "value",
+        "timestamp"
+      ],
+      "paramTypes": [
+        "ByteVec",
+        "U256",
+        "U256"
+      ],
+      "paramIsMutable": [
+        false,
+        false,
+        false
+      ],
+      "returnTypes": []
+    },
+    {
+      "name": "setMultipleValues",
+      "paramNames": [
+        "keys",
+        "values",
+        "timestamps",
+        "batchSize"
+      ],
+      "paramTypes": [
+        "[ByteVec;10]",
+        "[U256;10]",
+        "[U256;10]",
+        "U256"
+      ],
+      "paramIsMutable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "returnTypes": []
+    },
+    {
+      "name": "updateValue",
+      "paramNames": [
+        "key",
+        "value",
+        "timestamp"
+      ],
+      "paramTypes": [
+        "ByteVec",
+        "U256",
+        "U256"
+      ],
+      "paramIsMutable": [
+        false,
+        false,
+        false
+      ],
+      "returnTypes": []
+    }
+  ],
+  "constants": [
+    {
+      "name": "MaxBatchSize",
+      "value": {
+        "type": "U256",
+        "value": "10"
+      }
+    }
+  ],
+  "enums": [
+    {
+      "name": "ErrorCodes",
+      "fields": [
+        {
+          "name": "AdminAllowedOnly",
+          "value": {
+            "type": "U256",
+            "value": "0"
+          }
+        },
+        {
+          "name": "InvalidBatchSize",
+          "value": {
+            "type": "U256",
+            "value": "1"
+          }
+        },
+        {
+          "name": "InvalidKey",
+          "value": {
+            "type": "U256",
+            "value": "2"
+          }
+        }
+      ]
+    }
+  ],
+  "mapsSig": {
+    "names": [
+      "onchainValues"
+    ],
+    "types": [
+      "Map[ByteVec,DIAOracleValue]"
+    ]
+  }
+}
