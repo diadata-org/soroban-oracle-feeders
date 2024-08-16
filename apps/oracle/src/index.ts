@@ -10,15 +10,15 @@ import {
 import { updateOracle as updateKadenaOracle } from './oracles/kadena';
 import { updateOracle as updateAlephiumOracle } from './oracles/alephium';
 
-function checkDeviation(oldPrice: number, newPrice: number) {
-  const deviation = config.deviationPermille / 1000;
+export function checkDeviation(oldPrice: number, newPrice: number) {
+const deviation = config.deviationPermille / 1000;
   return (
     newPrice > 1e-8 &&
     (newPrice > oldPrice * (1 + deviation) || newPrice < oldPrice * (1 - deviation))
   );
 }
 
-async function update(published: Map<string, number>, prices: Map<string, number>) {
+export async function update(published: Map<string, number>, prices: Map<string, number>) {
   const filtered = [...prices.entries()].filter((entry, index) => {
     const [symbol, price] = entry;
 
