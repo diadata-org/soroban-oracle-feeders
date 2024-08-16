@@ -31,19 +31,35 @@ export async function getLastRound() {
 }
 
 export async function updateOracle(data: DrandResponse) {
-  const result = await randomOracle.transact.setRandomValue({
-    args: {
-      round: BigInt(data.round),
-      value: {
-        randomness: data.randomness,
-        signature: data.signature,
-        previousSignature: data.previous_signature,
-      },
-    },
-    signer: wallet,
-    attoAlphAmount: MAP_ENTRY_DEPOSIT,
-  });
 
-  console.log('result:', result);
-  console.log('Random oracle updated');
+  const maxRetries = config.alephium.maxRetryAttempts;
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      const result = await randomOracle.transact.setRandomValue({
+        args: {
+          round: BigInt(data.round),
+          value: {
+            randomness: data.randomness,
+            signature: data.signature,
+            previousSignature: data.previous_signature,
+          },
+        },
+        signer: wallet,
+        attoAlphAmount: MAP_ENTRY_DEPOSIT,
+      });
+
+      console.log('result:', result);
+      console.log('Random oracle updated');
+      break;
+    } catch (error) {
+      console.error(`Transaction failed. Attempt ${attempt} of ${maxRetries}. Error:`, error);
+      attempt++;
+      if (attempt >= maxRetries) {
+        console.error('Max retry attempts reached. Transaction failed.');
+        throw error;
+      }
+    }
+  }
 }

@@ -31,30 +31,47 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const keyBatches = splitIntoFixedBatches(keys, config.alephium.maxBatchSize);
   const priceBatches = splitIntoFixedBatches(prices, config.alephium.maxBatchSize);
 
+  const maxRetries = config.alephium.maxRetryAttempts;
+
   for (const ketBatchIndex in keyBatches) {
     const keyBatch = keyBatches[ketBatchIndex];
     const priceBatch = priceBatches[ketBatchIndex];
 
-    const result = await oracle.transact.setMultipleValues({
-      args: {
-        keys: fillArray(
-          keyBatch.map((key) => stringToHex(key)),
-          config.alephium.maxBatchSize,
-          stringToHex(''),
-        ),
-        values: fillArray(
-          priceBatch.map((price) => BigInt(Math.floor(price * 100_000_000))),
-          config.alephium.maxBatchSize,
-          0n,
-        ),
-        timestamps: fillArray([], config.alephium.maxBatchSize, BigInt(Date.now())),
-        batchSize: BigInt(keyBatch.length),
-      },
-      signer: wallet,
-      attoAlphAmount: MAP_ENTRY_DEPOSIT * BigInt(keyBatch.length),
-    });
+    let attempt = 0;
 
-    console.log('batch update:', result);
+    while (attempt < maxRetries) {
+      try {
+        const result = await oracle.transact.setMultipleValues({
+          args: {
+            keys: fillArray(
+              keyBatch.map((key) => stringToHex(key)),
+              config.alephium.maxBatchSize,
+              stringToHex(''),
+            ),
+            values: fillArray(
+              priceBatch.map((price) => BigInt(Math.floor(price * 100_000_000))),
+              config.alephium.maxBatchSize,
+              0n,
+            ),
+            timestamps: fillArray([], config.alephium.maxBatchSize, BigInt(Date.now())),
+            batchSize: BigInt(keyBatch.length),
+          },
+          signer: wallet,
+          attoAlphAmount: MAP_ENTRY_DEPOSIT * BigInt(keyBatch.length),
+        });
+
+        console.log('batch update:', result);
+        break; // Exit loop if transaction is successful
+      } catch (error) {
+        attempt++;
+        console.error(`Transaction failed. Attempt ${attempt} of ${maxRetries}. Error:`, error);
+
+        if (attempt >= maxRetries) {
+          console.error('Max retry attempts reached. Transaction failed.');
+          throw error;
+        }
+      }
+    }
   }
 
   console.log('Oracle updated');

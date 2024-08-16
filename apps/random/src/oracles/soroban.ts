@@ -25,6 +25,10 @@ if (config.chainName === ChainName.SOROBAN) {
   init();
 }
 
+export function getServer() {
+  return server;
+}
+
 export function init() {
   server = new SorobanRpc.Server(config.soroban.rpcUrl, { allowHttp: true });
   keypair = Keypair.fromSecret(config.soroban.secretKey);
@@ -86,12 +90,27 @@ export async function updateOracle(data: DrandResponse) {
     ),
   );
 
-  let tx = new TransactionBuilder(account, DEFAULT_TX_OPTIONS)
-    .addOperation(operation)
-    .setTimeout(30)
-    .build();
+  const maxRetries = config.soroban.maxRetryAttempts;
+  let attempt = 0;
+  while (attempt < maxRetries) {
+    try {
+      let tx = new TransactionBuilder(account, DEFAULT_TX_OPTIONS)
+        .addOperation(operation)
+        .setTimeout(30)
+        .build();
 
-  tx = await server.prepareTransaction(tx);
-  tx.sign(keypair);
-  await submitTx(server, tx);
+      tx = await server.prepareTransaction(tx);
+      tx.sign(keypair);
+      await submitTx(server, tx);
+      break;
+    } catch (error) {
+      attempt++;
+      console.error(`Transaction failed. Attempt ${attempt} of ${maxRetries}. Error:`, error);
+
+      if (attempt >= maxRetries) {
+        console.error('Max retry attempts reached. Transaction failed.');
+        throw error;
+      }
+    }
+  }
 }
