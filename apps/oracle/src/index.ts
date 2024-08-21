@@ -9,6 +9,7 @@ import {
 } from './oracles/soroban';
 import { updateOracle as updateKadenaOracle } from './oracles/kadena';
 import { updateOracle as updateAlephiumOracle } from './oracles/alephium';
+import { setupNock } from '../test/setupNock';
 
 export function checkDeviation(oldPrice: number, newPrice: number) {
 const deviation = config.deviationPermille / 1000;
@@ -71,6 +72,10 @@ export async function update(published: Map<string, number>, prices: Map<string,
 async function main() {
   const queue = createAsyncQueue({ onError: (e) => console.error(e) });
 
+  if (process.env.RUN_MOCK == 'true') { // e2e test
+    setupNock();
+  }
+  
   if (config.chainName === ChainName.SOROBAN) {
     // soroban specific
     await restoreOracle();
