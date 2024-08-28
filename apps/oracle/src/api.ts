@@ -34,7 +34,7 @@ export async function getAssetPrices(assets: Asset[]) {
   return prices;
 }
 
-async function getAssetQuotation(network: string, address: string) {
+export async function getAssetQuotation(network: string, address: string) {
   const url = `${config.api.http.url}/${network}/${address}`;
   const data = await axios.get(url);
   return Quotation.parse(data.data).Price;
@@ -67,7 +67,7 @@ const feedQuery = gql`
   }
 `;
 
-async function getGraphqlAssetQuotation(network: string, address: string, params: GqlParams) {
+export async function getGraphqlAssetQuotation(network: string, address: string, params: GqlParams) {
   const feedSelection = [];
   const base = { Address: address, Blockchain: network } as FeedSelection;
 

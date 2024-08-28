@@ -12,10 +12,15 @@ import {
   getLastRound as getLastAlephiumRound,
 } from './oracles/alephium';
 import { fetchRandomValue } from './api';
+import { setupNock } from '../test/setupNock';
 
 async function main() {
   const queue = createAsyncQueue({ onError: (e) => console.error(e) });
   let lastRound: number;
+
+  if (process.env.RUN_MOCK == 'true') { // e2e test
+    setupNock();
+  }
 
   switch (config.chainName) {
     case ChainName.SOROBAN:

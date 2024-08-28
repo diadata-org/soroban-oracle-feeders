@@ -59,6 +59,7 @@ export default {
     rpcUrl: process.env.SOROBAN_BLOCKCHAIN_NODE || 'https://soroban-testnet.stellar.org:443',
     secretKey: process.env.SOROBAN_PRIVATE_KEY || '',
     contractId: process.env.SOROBAN_DEPLOYED_CONTRACT || '',
+    maxRetryAttempts: 3,
     lifetimeInterval: 30 * 60 * 1000, // 30m
   },
   kadena: {
@@ -69,12 +70,14 @@ export default {
     networkId: process.env.KADENA_NETWORK_ID || 'testnet04',
     chainId: process.env.KADENA_CHAIN_ID || '0',
     maxAssetsPerTx: parseInt(process.env.KADENA_MAX_ASSETS_PER_TX || '10', 10),
+    maxRetryAttempts: 3,
   },
   alephium: {
     rpcUrl: process.env.ALEPHIUM_RPC_URL || 'http://localhost:22973',
     secretKey: process.env.ALEPHIUM_PRIVATE_KEY || '',
     contract: process.env.ALEPHIUM_CONTRACT || '2AsrYbF4PhVtoinHawPzV8iqcwrj26SCE2ghNDkb5Cdm1',
     maxBatchSize: 10, // max number of prices to update in a single transaction
+    maxRetryAttempts: 3,
   },
 
   chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.SOROBAN,

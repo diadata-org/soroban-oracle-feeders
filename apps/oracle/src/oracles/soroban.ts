@@ -11,7 +11,7 @@ import {
   extendInstanceTtl,
   restoreInstance,
   submitSorobanTx,
-} from '@repo/common';
+} from '@repo/common/src/soroban';
 import config, { ChainName } from '../config';
 
 let server: SorobanRpc.Server;
@@ -50,12 +50,30 @@ export async function updateOracle(keys: string[], prices: number[]) {
     nativeToScVal(values, { type: 'u128' }),
   );
 
-  let tx = new TransactionBuilder(account, DEFAULT_TX_OPTIONS)
-    .addOperation(operation)
-    .setTimeout(30)
-    .build();
+  const maxRetries = config.soroban.maxRetryAttempts;
+  let attempt = 0;
 
-  tx = await server.prepareTransaction(tx);
-  tx.sign(keypair);
-  await submitSorobanTx(server, tx);
+  while (attempt < maxRetries) {
+    try {
+      let tx = new TransactionBuilder(account, DEFAULT_TX_OPTIONS)
+        .addOperation(operation)
+        .setTimeout(30)
+        .build();
+
+      tx = await server.prepareTransaction(tx);
+      tx.sign(keypair);
+      await submitSorobanTx(server, tx);
+
+      console.log('Transaction submitted successfully.');
+      break;
+    } catch (error) {
+      attempt++;
+      console.error(`Transaction failed. Attempt ${attempt} of ${maxRetries}. Error:`, error);
+
+      if (attempt >= maxRetries) {
+        console.error('Max retry attempts reached. Transaction failed.');
+        throw error;
+      }
+    }
+  }
 }
