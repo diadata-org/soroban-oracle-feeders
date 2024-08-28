@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:21-alpine AS base
 
 FROM base AS builder
 WORKDIR /app
@@ -25,4 +25,4 @@ USER nodejs
 COPY --from=installer /app .
 
 ENV NODE_ENV=production
-CMD ["node", "apps/random/build/index.js"]
+CMD ["node", "apps/random/build/src/index.js"]

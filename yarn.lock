@@ -615,6 +615,16 @@
   resolved "https://registry.yarnpkg.com/@kadena/types/-/types-0.6.2.tgz#9c03662504b758fe47a2c58cde9d785ee277d14b"
   integrity sha512-VmHLikwclzi3vtS8Bxi/zUUgdBixNd/Zz+hq3mTUqWuLiIzGBwvJrZ5Q2zzol11voPk2+fBCoCaxnh2EtYYxGw==
 
+"@noble/hashes@1.1.5":
+  version "1.1.5"
+  resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.1.5.tgz#1a0377f3b9020efe2fae03290bd2a12140c95c11"
+  integrity sha512-LTMZiiLc+V4v1Yi16TD6aX2gmtKszNye0pQgbaLqkvhIqP7nVsSaJsWloGQjJfJ8offaoP5GtX3yY5swbcJxxQ==
+
+"@noble/hashes@^1.1.2":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.4.0.tgz#45814aa329f30e4fe0ba49426f49dfccdd066426"
+  integrity sha512-V1JJ1WTRUqHHrOSh597hURcMqVKVGL/ea3kv0gSnEdsEZ0/+VyPghM1lMNGc00z7CIQorSvbKpuJkxvuHbvdbg==
+
 "@noble/secp256k1@1.7.1":
   version "1.7.1"
   resolved "https://registry.yarnpkg.com/@noble/secp256k1/-/secp256k1-1.7.1.tgz#b251c70f824ce3ca7f8dc3df08d58f005cc0507c"
@@ -898,6 +908,34 @@
     "@stablelib/random" "^1.0.2"
     "@stablelib/wipe" "^1.0.1"
 
+"@stacks/common@^6.16.0":
+  version "6.16.0"
+  resolved "https://registry.yarnpkg.com/@stacks/common/-/common-6.16.0.tgz#1b980acf29fd66f34b26757e85d45c6abd2e4d32"
+  integrity sha512-PnzvhrdGRMVZvxTulitlYafSK4l02gPCBBoI9QEoTqgSnv62oaOXhYAUUkTMFKxdHW1seVEwZsrahuXiZPIAwg==
+  dependencies:
+    "@types/bn.js" "^5.1.0"
+    "@types/node" "^18.0.4"
+
+"@stacks/network@^6.16.0":
+  version "6.16.0"
+  resolved "https://registry.yarnpkg.com/@stacks/network/-/network-6.16.0.tgz#2d21d0a06fd5ad8f7f2b5fe672049ebac7a9fbd6"
+  integrity sha512-uqz9Nb6uf+SeyCKENJN+idt51HAfEeggQKrOMfGjpAeFgZV2CR66soB/ci9+OVQR/SURvasncAz2ScI1blfS8A==
+  dependencies:
+    "@stacks/common" "^6.16.0"
+    cross-fetch "^3.1.5"
+
+"@stacks/transactions@^6.16.1":
+  version "6.16.1"
+  resolved "https://registry.yarnpkg.com/@stacks/transactions/-/transactions-6.16.1.tgz#dee8f83651e1e4713fa3cc5f2c645ec0055319f2"
+  integrity sha512-yCtUM+8IN0QJbnnlFhY1wBW7Q30Cxje3Zmy8DgqdBoM/EPPWadez/8wNWFANVAMyUZeQ9V/FY+8MAw4E+pCReA==
+  dependencies:
+    "@noble/hashes" "1.1.5"
+    "@noble/secp256k1" "1.7.1"
+    "@stacks/common" "^6.16.0"
+    "@stacks/network" "^6.16.0"
+    c32check "^2.0.0"
+    lodash.clonedeep "^4.5.0"
+
 "@stellar/js-xdr@^3.1.2":
   version "3.1.2"
   resolved "https://registry.yarnpkg.com/@stellar/js-xdr/-/js-xdr-3.1.2.tgz#db7611135cf21e989602fd72f513c3bed621bc74"
@@ -983,6 +1021,13 @@
   dependencies:
     "@babel/types" "^7.20.7"
 
+"@types/bn.js@^5.1.0":
+  version "5.1.5"
+  resolved "https://registry.yarnpkg.com/@types/bn.js/-/bn.js-5.1.5.tgz#2e0dacdcce2c0f16b905d20ff87aedbc6f7b4bf0"
+  integrity sha512-V46N0zwKRF5Q00AZ6hWtN0T8gGmDUaUzLWQvHFo5yThtVwK/VCenFY3wXVbOvNfajEpsTfQM4IN9k/d6gUVX3A==
+  dependencies:
+    "@types/node" "*"
+
 "@types/graceful-fs@^4.1.3":
   version "4.1.9"
   resolved "https://registry.yarnpkg.com/@types/graceful-fs/-/graceful-fs-4.1.9.tgz#2a06bc0f68a20ab37b3e36aa238be6abdf49e8b4"
@@ -1040,6 +1085,13 @@
   version "16.18.105"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-16.18.105.tgz#7147176852774ec4d6dd626803888adf6b999feb"
   integrity sha512-w2d0Z9yMk07uH3+Cx0N8lqFyi3yjXZxlbYappPj+AsOlT02OyxyiuNoNHdGt6EuiSm8Wtgp2YV7vWg+GMFrvFA==
+
+"@types/node@^18.0.4":
+  version "18.19.47"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.19.47.tgz#18076201ad7dd3445046df6ce9ead5fe5abd9387"
+  integrity sha512-1f7dB3BL/bpd9tnDJrrHb66Y+cVrhxSOTGorRNdHwYTUlTay3HuTDPKo9a/4vX9pMQkhYBcAbL4jQdNlhCFP9A==
+  dependencies:
+    undici-types "~5.26.4"
 
 "@types/node@^20.10.5":
   version "20.14.15"
@@ -1470,7 +1522,7 @@ balanced-match@^1.0.0:
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
 
-base-x@4.0.0:
+base-x@4.0.0, base-x@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/base-x/-/base-x-4.0.0.tgz#d0e3b7753450c73f8ad2389b5c018a4af7b2224a"
   integrity sha512-FuwxlW4H5kh37X/oW59pwTzzTKRzfrrQwhmyspRM7swOEZcHtDZSCt45U6oKgtuFE+WYPblePMVIPR4RZrh/hw==
@@ -1683,6 +1735,14 @@ buffer@6.0.3, buffer@^6.0.3:
   dependencies:
     base64-js "^1.3.1"
     ieee754 "^1.2.1"
+
+c32check@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/c32check/-/c32check-2.0.0.tgz#b9365618b2fb135c0783d03f00605b7b0f90c659"
+  integrity sha512-rpwfAcS/CMqo0oCqDf3r9eeLgScRE3l/xHDCXhM3UyrfvIn7PrLq63uHh7yYbv8NzaZn5MVsVhIRpQ+5GZ5HyA==
+  dependencies:
+    "@noble/hashes" "^1.1.2"
+    base-x "^4.0.0"
 
 caching-transform@^4.0.0:
   version "4.0.0"
@@ -3262,6 +3322,11 @@ locate-path@^5.0.0:
   integrity sha512-t7hw9pI+WvuwNJXwk5zVHpyhIqzg2qTlklJOf0mVxGSbe3Fp2VieZcduNYjaLDoy6p9uGpQEGWG87WpMKlNq8g==
   dependencies:
     p-locate "^4.1.0"
+
+lodash.clonedeep@^4.5.0:
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/lodash.clonedeep/-/lodash.clonedeep-4.5.0.tgz#e23f3f9c4f8fbdde872529c1071857a086e5ccef"
+  integrity sha512-H5ZhCF25riFd9uB5UCkVKo61m3S/xZk1x4wA6yp/L3RFP6Z/eHH1ymQcGLo7J3GMPfm0V/7m1tryHuGVxpqEBQ==
 
 lodash.flattendeep@^4.4.0:
   version "4.4.0"

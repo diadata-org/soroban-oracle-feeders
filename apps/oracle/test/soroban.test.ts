@@ -10,7 +10,7 @@ import {
   extendInstanceTtl,
   restoreInstance,
   submitSorobanTx,
-} from '@repo/common/src/soroban';
+} from '@repo/common';
 import config from '../src/config';
 import { restoreOracle, extendOracleTtl, updateOracle, init } from '../src/oracles/soroban';
 import { DAY_IN_LEDGERS } from '@repo/common';
@@ -56,7 +56,7 @@ jest.mock('@stellar/stellar-sdk', () => {
   };
 });
 
-jest.mock('@repo/common/src/soroban', () => ({
+jest.mock('@repo/common', () => ({
   DAY_IN_LEDGERS: 17280,
   DEFAULT_TX_OPTIONS: { fee: BASE_FEE, networkPassphrase: Networks.TESTNET },
   extendInstanceTtl: jest.fn(),
