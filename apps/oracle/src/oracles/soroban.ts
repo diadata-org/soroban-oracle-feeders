@@ -11,7 +11,7 @@ import {
   extendInstanceTtl,
   restoreInstance,
   submitSorobanTx,
-} from '@repo/common/src/soroban';
+} from '@repo/common';
 import config, { ChainName } from '../config';
 
 let server: SorobanRpc.Server;
