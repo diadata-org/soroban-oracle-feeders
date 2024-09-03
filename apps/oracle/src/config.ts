@@ -52,6 +52,7 @@ export enum ChainName {
   KADENA = 'kadena',
   SOROBAN = 'soroban',
   ALEPHIUM = 'alephium',
+  STACKS = 'stacks',
 }
 
 export default {
@@ -77,6 +78,14 @@ export default {
     secretKey: process.env.ALEPHIUM_PRIVATE_KEY || '',
     contract: process.env.ALEPHIUM_CONTRACT || '2AsrYbF4PhVtoinHawPzV8iqcwrj26SCE2ghNDkb5Cdm1',
     maxBatchSize: 10, // max number of prices to update in a single transaction
+    maxRetryAttempts: 3,
+  },
+  stacks: {
+    rpcUrl: process.env.STACKS_RPC_URL,
+    contractName: process.env.STACKS_CONTRACT_NAME || 'dia-oracle',
+    secretKey: process.env.STACKS_PRIVATE_KEY || '753b7cc01a1a2e86221266a154af739463fce51219d97e4f856cd7200c3bd2a601',
+    contract: process.env.STACKS_CONTRACT || 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',
+    maxBatchSize: 10,
     maxRetryAttempts: 3,
   },
 
