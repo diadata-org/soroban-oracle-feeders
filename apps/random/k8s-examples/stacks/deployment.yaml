@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: random-oracle-deployment
+  labels:
+    app: random-oracle
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: random-oracle
+  template:
+    metadata:
+      labels:
+        app: random-oracle
+    spec:
+      containers:
+        - name: random-oracle-container
+          image: your-docker-repo/random-oracle-image:latest # Replace with your Docker image
+          ports:
+            - containerPort: 3000 # Adjust if necessary
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: CHAIN_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: random-oracle-config
+                  key: chainName
+            - name: STACKS_RPC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: random-oracle-config
+                  key: rpcUrl
+            - name: STACKS_CONTRACT
+              valueFrom:
+                configMapKeyRef:
+                  name: random-oracle-config
+                  key: contract
+            - name: STACKS_CONTRACT_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: random-oracle-config
+                  key: contractName
+            - name: STACKS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: random-oracle-secrets
+                  key: secretKey
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      restartPolicy: Always
