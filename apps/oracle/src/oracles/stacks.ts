@@ -41,14 +41,13 @@ export async function updateOracle(keys: string[], prices: number[]) {
       network,
       anchorMode: AnchorMode.Any,
     };
-
-    const transaction = await makeContractCall(batchTxOptions);
-
+    
     let attempt = 0;
     const maxRetries = config.stacks.maxRetryAttempts;
-
+    
     while (attempt < maxRetries) {
       try {
+        const transaction = await makeContractCall(batchTxOptions);
         const broadcastResponse = await broadcastTransaction(transaction, network);
 
         if (broadcastResponse.error) {
