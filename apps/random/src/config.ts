@@ -24,6 +24,7 @@ export default {
   },
   stacks: {
     rpcUrl: process.env.STACKS_RPC_URL,
+    backupRpcUrl: process.env.STACKS_BACKUP_RPC_URL,
     contractName: process.env.STACKS_CONTRACT_NAME || 'dia-random-oracle',
     secretKey: process.env.STACKS_PRIVATE_KEY || '753b7cc01a1a2e86221266a154af739463fce51219d97e4f856cd7200c3bd2a601',
     contract: process.env.STACKS_CONTRACT || 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',

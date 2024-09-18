@@ -4,6 +4,7 @@ import config, { ChainName } from '../config';
 import { splitIntoFixedBatches } from '../utils';
 
 let network: StacksMainnet;
+let backupNetwork: StacksMainnet | undefined;
 
 if (config.chainName === ChainName.STACKS) {
   init();
@@ -11,6 +12,10 @@ if (config.chainName === ChainName.STACKS) {
 
 export function init() {
   network = config.stacks.rpcUrl ? new StacksMainnet({ url: config.stacks.rpcUrl }) : new StacksDevnet();
+
+  if (config.stacks.backupRpcUrl) {
+    backupNetwork = new StacksMainnet({ url: config.stacks.backupRpcUrl });
+  }
 }
 
 export async function updateOracle(keys: string[], prices: number[]) {
@@ -28,27 +33,28 @@ export async function updateOracle(keys: string[], prices: number[]) {
       key: stringAsciiCV(key),
       value: uintCV(Math.floor(priceBatch[index] * 100_000_000)),
       timestamp: uintCV(date)
-    }))
+    }));
 
     const values = listCV(entries.map(tupleCV));
 
-    const batchTxOptions = {
-      contractAddress: config.stacks.contract,
-      contractName: config.stacks.contractName,
-      functionName: 'set-multiple-values',
-      functionArgs: [values],
-      senderKey: config.stacks.secretKey,
-      network,
-      anchorMode: AnchorMode.Any,
-    };
-    
     let attempt = 0;
     const maxRetries = config.stacks.maxRetryAttempts;
-    
+    let useBackup = false;
+
     while (attempt < maxRetries) {
       try {
+        const batchTxOptions = {
+          contractAddress: config.stacks.contract,
+          contractName: config.stacks.contractName,
+          functionName: 'set-multiple-values',
+          functionArgs: [values],
+          senderKey: config.stacks.secretKey,
+          network: useBackup && backupNetwork ? backupNetwork : network, // Use backup if needed
+          anchorMode: AnchorMode.Any,
+        };
+
         const transaction = await makeContractCall(batchTxOptions);
-        const broadcastResponse = await broadcastTransaction(transaction, network);
+        const broadcastResponse = await broadcastTransaction(transaction, batchTxOptions.network);
 
         if (broadcastResponse.error) {
           throw new Error(`Transaction failed with error: ${broadcastResponse.error}`);
@@ -60,6 +66,11 @@ export async function updateOracle(keys: string[], prices: number[]) {
       } catch (error) {
         attempt++;
         console.error(`Transaction failed. Attempt ${attempt} of ${maxRetries}. Error:`, error);
+
+        if (attempt === 1 && backupNetwork) {
+          console.error('Switching to backup node.');
+          useBackup = true;
+        }
 
         if (attempt >= maxRetries) {
           console.error('Max retry attempts reached. Transaction failed.');
