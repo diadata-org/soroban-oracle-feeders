@@ -19,12 +19,12 @@
     "fieldNames": [
       "randomness",
       "signature",
-      "previousSignature"
+      "round"
     ],
     "fieldTypes": [
       "ByteVec",
       "ByteVec",
-      "ByteVec"
+      "U256"
     ],
     "isMutable": [
       false,

@@ -12,5 +12,5 @@ export interface DIAOracleValue extends Record<string, Val> {
 export interface DIARandomValue extends Record<string, Val> {
   randomness: HexString;
   signature: HexString;
-  previousSignature: HexString;
+  round: bigint;
 }
