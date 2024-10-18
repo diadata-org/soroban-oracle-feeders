@@ -1,7 +1,8 @@
 import { AnchorMode, broadcastTransaction, uintCV, stringAsciiCV, makeContractCall, listCV, tupleCV } from '@stacks/transactions';
-import { StacksDevnet, StacksMainnet } from "@stacks/network";
+import { StacksDevnet, StacksMainnet, StacksTestnet } from "@stacks/network";
 import config, { ChainName } from '../config';
 import { splitIntoFixedBatches } from '../utils';
+import { set } from 'zod';
 
 let network: StacksMainnet;
 let backupNetwork: StacksMainnet | undefined;
@@ -10,8 +11,14 @@ if (config.chainName === ChainName.STACKS) {
   init();
 }
 
+const setNetwork = (url?: string): StacksMainnet => {
+  if (!url) return new StacksDevnet();
+  if (url.includes('testnet')) return new StacksTestnet({ url });
+  return new StacksMainnet({ url });
+}
+
 export function init() {
-  network = config.stacks.rpcUrl ? new StacksMainnet({ url: config.stacks.rpcUrl }) : new StacksDevnet();
+  network = setNetwork(config.stacks.rpcUrl);
 
   if (config.stacks.backupRpcUrl) {
     backupNetwork = new StacksMainnet({ url: config.stacks.backupRpcUrl });
