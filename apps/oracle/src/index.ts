@@ -10,6 +10,7 @@ import {
 import { updateOracle as updateKadenaOracle } from './oracles/kadena';
 import { updateOracle as updateAlephiumOracle } from './oracles/alephium';
 import { updateOracle as updateStacksOracle } from './oracles/stacks';
+import { updateOracle as updateOpNetOracle } from './oracles/opnet';
 import { setupNock } from '../test/setupNock';
 
 export function checkDeviation(oldPrice: number, newPrice: number) {
@@ -63,6 +64,9 @@ export async function update(published: Map<string, number>, prices: Map<string,
         break;
       case ChainName.STACKS:
         updateStacksOracle(keys, values);
+        break;
+      case ChainName.OPNET:
+        await updateOpNetOracle(keys, values);
         break;
     }
     console.log(Object.fromEntries(updated));

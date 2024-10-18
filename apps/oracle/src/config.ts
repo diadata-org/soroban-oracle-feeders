@@ -53,6 +53,7 @@ export enum ChainName {
   SOROBAN = 'soroban',
   ALEPHIUM = 'alephium',
   STACKS = 'stacks',
+  OPNET = 'opnet',
 }
 
 export default {
@@ -87,6 +88,14 @@ export default {
     secretKey: process.env.STACKS_PRIVATE_KEY || '753b7cc01a1a2e86221266a154af739463fce51219d97e4f856cd7200c3bd2a601',
     contract: process.env.STACKS_CONTRACT || 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',
     maxBatchSize: 10,
+    maxRetryAttempts: 3,
+  },
+  opnet: {
+    rpcUrl: process.env.OPNET_RPC_URL || 'https://regtest.opnet.org',
+    backupRpcUrl: process.env.OPNET_BACKUP_RPC_URL,
+    secretKey: process.env.OPNET_PRIVATE_KEY || 'cShTHPAqa5rX2p9GxN6QvwsFMnnhHLUx2WRE8ztNTWxqwBGWycH8',
+    contract: process.env.OPNET_CONTRACT || 'bcrt1qd2y6kdnsv80l9v6ccqwj77mecz4z474v27tew0',
+    maxBatchSize: 10, // max number of prices to update in a single transaction
     maxRetryAttempts: 3,
   },
 
