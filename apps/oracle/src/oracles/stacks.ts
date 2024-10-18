@@ -2,7 +2,6 @@ import { AnchorMode, broadcastTransaction, uintCV, stringAsciiCV, makeContractCa
 import { StacksDevnet, StacksMainnet, StacksTestnet } from "@stacks/network";
 import config, { ChainName } from '../config';
 import { splitIntoFixedBatches } from '../utils';
-import { set } from 'zod';
 
 let network: StacksMainnet;
 let backupNetwork: StacksMainnet | undefined;
