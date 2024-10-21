@@ -6,21 +6,21 @@ import { splitIntoFixedBatches } from '../utils';
 let network: StacksMainnet;
 let backupNetwork: StacksMainnet | undefined;
 
-if (config.chainName === ChainName.STACKS) {
-  init();
-}
-
 const setNetwork = (url?: string): StacksMainnet => {
   if (!url) return new StacksDevnet();
   if (url.includes('testnet')) return new StacksTestnet({ url });
   return new StacksMainnet({ url });
 }
 
+if (config.chainName === ChainName.STACKS) {
+  init();
+}
+
 export function init() {
   network = setNetwork(config.stacks.rpcUrl);
-
+  
   if (config.stacks.backupRpcUrl) {
-    backupNetwork = new StacksMainnet({ url: config.stacks.backupRpcUrl });
+    backupNetwork = setNetwork(config.stacks.backupRpcUrl);
   }
 }
 
