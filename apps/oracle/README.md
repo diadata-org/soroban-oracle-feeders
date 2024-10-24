@@ -6,7 +6,7 @@ This app fetches asset data from DIA API and stores it in the key/value oracle d
 
 Sample environment configuration can be found in `.env.example`
 
-In order to select the chain for this oracle data feeder, use the `CHAIN_NAME` environment variable. Available chains are `"kadena"`, `"soroban"`, `"alephium"`, `"stacks"`
+In order to select the chain for this oracle data feeder, use the `CHAIN_NAME` environment variable. Available chains are `"kadena"`, `"soroban"`, `"alephium"`, `"stacks"`, `"opnet"`
 
 ```properties
 CHAIN_NAME=""
@@ -30,6 +30,15 @@ STACKS_RPC_URL=""
 STACKS_CONTRACT_NAME=""
 STACKS_PRIVATE_KEY=""
 STACKS_CONTRACT=""
+
+OPNET_RPC_URL=""
+OPNET_BACKUP_RPC_URL=""
+OPNET_PRIVATE_KEY=""
+OPNET_CONTRACT=""
+
+# if differs from default
+OPNET_FEE_RATE=""
+OPNET_PRIORITY_FEE=""
 
 FREQUENCY_SECONDS="120"
 MANDATORY_FREQUENCY_SECONDS="0"

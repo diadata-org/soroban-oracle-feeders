@@ -94,9 +94,11 @@ export default {
     rpcUrl: process.env.OPNET_RPC_URL || 'https://regtest.opnet.org',
     backupRpcUrl: process.env.OPNET_BACKUP_RPC_URL,
     secretKey: process.env.OPNET_PRIVATE_KEY || 'cShTHPAqa5rX2p9GxN6QvwsFMnnhHLUx2WRE8ztNTWxqwBGWycH8',
-    contract: process.env.OPNET_CONTRACT || 'bcrt1qd2y6kdnsv80l9v6ccqwj77mecz4z474v27tew0',
+    contract: process.env.OPNET_CONTRACT || 'bcrt1q39y3gw0zxaq0hgkr0x3m80tz504p5ta5l8j7y4',
     maxBatchSize: 10, // max number of prices to update in a single transaction
     maxRetryAttempts: 3,
+    feeRate: parseInt(process.env.OPNET_FEE_RATE || '100', 10),
+    priorityFee: BigInt(process.env.OPNET_PRIORITY_FEE || '330'),
   },
 
   chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.SOROBAN,

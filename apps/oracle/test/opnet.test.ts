@@ -1,119 +1,165 @@
-// import { JSONRpcProvider, getContract } from 'opnet';
-// import { updateOracle, init } from '../src/oracles/opnet';
-// import { splitIntoFixedBatches } from '../src/utils';
-// import config from '../src/config';
+import {
+  JSONRpcProvider,
+  getContract,
+} from 'opnet';
+import { Wallet, TransactionFactory, OPNetLimitedProvider } from '@btc-vision/transaction';
+import config from '../src/config';
+import { updateOracle, init } from '../src/oracles/opnet';
+import { splitIntoFixedBatches } from '../src/utils';
 
-// // Mock necessary modules
-// jest.mock('opnet', () => ({
-//   JSONRpcProvider: jest.fn(),
-//   getContract: jest.fn(),
-// }));
+jest.mock('opnet', () => ({
+  JSONRpcProvider: jest.fn().mockImplementation(() => ({
+    url: 'https://testnet.opnet.org', // Provide a valid URL in the mock
+    utxoManager: {
+      getUTXOs: jest.fn().mockResolvedValue([{ txid: 'mockTxid', vout: 0 }]), // Mock UTXOs
+    },
+  })),
+  getContract: jest.fn(),
+}));
 
-// jest.mock('../src/utils', () => ({
-//   splitIntoFixedBatches: jest.fn(),
-// }));
+jest.mock('@btc-vision/transaction', () => {
+  const mockSignInteraction = jest.fn().mockResolvedValue(['signedTx1', 'signedTx2']);
+  const mockBroadcastTransaction = jest.fn()
+    .mockResolvedValueOnce({ success: true }) // Mock first transaction success
+    .mockResolvedValueOnce({ success: true }); // Mock second transaction success
 
-// describe('OpNet Oracle - updateOracle', () => {
-//   let mockProvider: JSONRpcProvider;
-//   let mockContract: any;
+  return {
+    Wallet: {
+      fromWif: jest.fn(),
+    },
+    TransactionFactory: jest.fn().mockImplementation(() => ({
+      signInteraction: mockSignInteraction,
+    })),
+    OPNetLimitedProvider: jest.fn().mockImplementation(() => ({
+      broadcastTransaction: mockBroadcastTransaction,
+    })),
+    __mocks__: {
+      mockSignInteraction,
+      mockBroadcastTransaction,
+    },
+  };
+});
 
-//   beforeAll(() => {
-//     // Initialize the OpNet environment
-//     init();
+jest.mock('@btc-vision/bsi-binary', () => ({
+  BinaryWriter: jest.fn().mockImplementation(() => ({
+    writeSelector: jest.fn(),
+    writeU8: jest.fn(),
+    writeStringWithLength: jest.fn(),
+    writeBytes: jest.fn(),
+    getBuffer: jest.fn().mockReturnValue(Buffer.from('mockBuffer')), // Mock a valid buffer
+  })),
+  ABICoder: jest.fn().mockImplementation(() => ({
+    encodeSelector: jest.fn().mockReturnValue('mockSelector'), // Mock the encodeSelector method
+  })),
+  BufferHelper: {
+    hexToUint8Array: jest.fn().mockImplementation((hex) => {
+      return new Uint8Array(hex.match(/.{1,2}/g).map((byte: string) => parseInt(byte, 16)));
+    }),
+  },
+}));
 
-//     // Mock JSONRpcProvider and contract
-//     mockProvider = new JSONRpcProvider('https://testnet.opnet.org');
-//     mockContract = {
-//       setMultipleValues: jest.fn(),
-//     };
+jest.mock('../src/utils', () => ({
+  splitIntoFixedBatches: jest.fn(),
+}));
 
-//     (getContract as jest.Mock).mockReturnValue(mockContract);
-//   });
+jest.mock('../src/config', () => ({
+  ChainName: {
+    OPNET: 'OPNET',
+  },
+  opnet: {
+    rpcUrl: 'https://testnet.opnet.org', // Valid mocked URL
+    backupRpcUrl: 'https://backup.opnet.org',
+    secretKey: 'mock-secret-key',
+    contract: 'mock-contract',
+    maxBatchSize: 2,
+    maxRetryAttempts: 3,
+  },
+  chainName: 'opnet',
+}));
 
-//   beforeEach(() => {
-//     jest.clearAllMocks();
-//   });
+describe('OpNet Oracle - updateOracle', () => {
+  const mockProvider = new (JSONRpcProvider as jest.Mock)();
+  const mockWallet = { p2tr: 'mockAddress', keypair: 'mockKeypair' };
+  const mockContract = {
+    address: { toString: jest.fn().mockReturnValue('mockContractAddress') },
+  };
 
-//   it('should successfully submit transactions for each batch', async () => {
-//     const keys = ['key1', 'key2'];
-//     const prices = [100, 200];
+  beforeAll(() => {
+    // Mock Wallet and Contract
+    (Wallet.fromWif as jest.Mock).mockReturnValue(mockWallet);
+    (getContract as jest.Mock).mockReturnValue(mockContract);
 
-//     // Mock Date and utility functions
-//     const mockDate = Date.now();
-//     jest.spyOn(Date, 'now').mockReturnValue(mockDate);
+    // Initialize the OpNet oracle environment
+    init();
+  });
 
-//     (splitIntoFixedBatches as jest.Mock).mockImplementation((items) => [items]);
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-//     // Mock contract call
-//     mockContract.setMultipleValues.mockResolvedValue('success');
+  it('should successfully submit transactions for each batch', async () => {
+    const keys = ['key1', 'key2'];
+    const prices = [100, 200];
 
-//     await updateOracle(keys, prices);
+    (splitIntoFixedBatches as jest.Mock).mockImplementation((items) => [items]); // Mock splitting batches
 
-//     expect(mockContract.setMultipleValues).toHaveBeenCalledWith(
-//       ['key1', 'key2'],
-//       [100_000_000, 200_000_000]
-//     );
-//   });
+    // Mock fetching UTXOs
+    const mockUTXOs = [{ txid: 'mockTxId', vout: 0 }];
+    mockProvider.utxoManager = {
+      getUTXOs: jest.fn().mockResolvedValue(mockUTXOs),
+    };
 
-//   it('should retry transaction on failure and eventually succeed', async () => {
-//     const keys = ['key1', 'key2'];
-//     const prices = [100, 200];
+    const transactionFactory = new (TransactionFactory as jest.MockedClass<typeof TransactionFactory>)();
+    const limitedProvider = new (OPNetLimitedProvider as jest.MockedClass<typeof OPNetLimitedProvider>)(config.opnet.rpcUrl);
 
-//     // Mock Date and utility functions
-//     const mockDate = Date.now();
-//     jest.spyOn(Date, 'now').mockReturnValue(mockDate);
+    await updateOracle(keys, prices);
 
-//     (splitIntoFixedBatches as jest.Mock).mockImplementation((items) => [items]);
+    // Assertions for signing interaction
+    expect(transactionFactory.signInteraction).toHaveBeenCalled();
+    expect(limitedProvider.broadcastTransaction).toHaveBeenCalledTimes(2); // For each transaction broadcast
+  });
 
-//     // Mock contract call to fail once and then succeed
-//     mockContract.setMultipleValues
-//       .mockRejectedValueOnce(new Error('Transaction failed'))
-//       .mockResolvedValueOnce('success');
+  it('should retry transaction on failure and eventually succeed', async () => {
+    const keys = ['key1', 'key2'];
+    const prices = [100, 200];
 
-//     await updateOracle(keys, prices);
+    (splitIntoFixedBatches as jest.Mock).mockImplementation((items) => [items]);
 
-//     expect(mockContract.setMultipleValues).toHaveBeenCalledTimes(2); // 1 failure, 1 success
-//   });
+    const transactionFactory = new (TransactionFactory as jest.Mock)();
+    const limitedProvider = new (OPNetLimitedProvider as jest.Mock)();
+    const mockUTXOs = [{ txid: 'mockTxId', vout: 0 }];
+    mockProvider.utxoManager = {
+      getUTXOs: jest.fn().mockResolvedValue(mockUTXOs),
+    };
 
-//   it('should switch to the backup provider after first failure', async () => {
-//     const keys = ['key1', 'key2'];
-//     const prices = [100, 200];
+    // Mocking failure for the first attempt and success for the second
+    transactionFactory.signInteraction = jest.fn().mockResolvedValue(['signedTx1', 'signedTx2']);
+    limitedProvider.broadcastTransaction
+      .mockRejectedValueOnce(new Error('Transaction failed')) // First transaction fails
+      .mockResolvedValueOnce({ success: true }) // Retry succeeds
+      .mockResolvedValueOnce({ success: true }) // Mock second broadcast success
 
-//     // Mock Date and utility functions
-//     const mockDate = Date.now();
-//     jest.spyOn(Date, 'now').mockReturnValue(mockDate);
+    await updateOracle(keys, prices);
 
-//     (splitIntoFixedBatches as jest.Mock).mockImplementation((items) => [items]);
+    // Expect retry logic to kick in after the first failure
+    expect(limitedProvider.broadcastTransaction).toHaveBeenCalledTimes(3); // One fail, two success (first and second broadcast)
+  });
 
-//     // Mock contract call to fail on primary provider and then succeed on backup
-//     mockContract.setMultipleValues
-//       .mockRejectedValueOnce(new Error('Transaction failed'))
-//       .mockResolvedValueOnce('success');
+  it('should throw an error after max retry attempts are reached', async () => {
+    const keys = ['key1', 'key2'];
+    const prices = [100, 200];
 
-//     await updateOracle(keys, prices);
+    (splitIntoFixedBatches as jest.Mock).mockImplementation((items) => [items]);
 
-//     expect(mockContract.setMultipleValues).toHaveBeenCalledTimes(2);
-//     expect(mockContract.setMultipleValues).toHaveBeenCalledWith(
-//       ['key1', 'key2'],
-//       [100_000_000, 200_000_000]
-//     );
-//   });
+    const transactionFactory = new (TransactionFactory as jest.Mock)();
+    const limitedProvider = new (OPNetLimitedProvider as jest.Mock)();
 
-//   it('should throw an error after max retry attempts are reached', async () => {
-//     const keys = ['key1', 'key2'];
-//     const prices = [100, 200];
+    transactionFactory.signInteraction = jest.fn().mockResolvedValue(['signedTx1', 'signedTx2']);
+    limitedProvider.broadcastTransaction.mockRejectedValue(new Error('Transaction failed'));
 
-//     // Mock Date and utility functions
-//     const mockDate = Date.now();
-//     jest.spyOn(Date, 'now').mockReturnValue(mockDate);
+    await expect(updateOracle(keys, prices)).rejects.toThrow('Transaction failed');
 
-//     (splitIntoFixedBatches as jest.Mock).mockImplementation((items) => [items]);
-
-//     // Mock contract call to always fail
-//     mockContract.setMultipleValues.mockRejectedValue(new Error('Transaction failed'));
-
-//     await expect(updateOracle(keys, prices)).rejects.toThrow('Transaction failed');
-
-//     expect(mockContract.setMultipleValues).toHaveBeenCalledTimes(config.opnet.maxRetryAttempts);
-//   });
-// });
+    // Ensure it tried max retries
+    expect(limitedProvider.broadcastTransaction).toHaveBeenCalledTimes(config.opnet.maxRetryAttempts);
+  });
+});

@@ -5,14 +5,10 @@ import {
   IOP_NETContract
 } from 'opnet';
 import { Wallet, TransactionFactory, OPNetLimitedProvider } from "@btc-vision/transaction";
-import {
-  BinaryWriter,
-  ABICoder,
-} from '@btc-vision/bsi-binary';
+import { BinaryWriter, ABICoder, BufferHelper } from '@btc-vision/bsi-binary';
 import { Network, networks } from "bitcoinjs-lib";
 import config, { ChainName } from '../config';
 import { splitIntoFixedBatches } from '../utils';
-import { BytesReader } from '@stacks/transactions';
 
 let provider: JSONRpcProvider;
 let backupProvider: JSONRpcProvider | undefined;
@@ -25,17 +21,12 @@ if (config.chainName === ChainName.OPNET) {
 }
 
 export async function init() {
-  // Primary provider
   provider = new JSONRpcProvider(config.opnet.rpcUrl);
-
-  // Backup provider (if configured)
   if (config.opnet.backupRpcUrl) {
     backupProvider = new JSONRpcProvider(config.opnet.backupRpcUrl);
   }
 
   const hostname = new URL(provider.url).hostname;
-
-  // Determine network type
   switch (hostname) {
     case 'api.opnet.org':
       network = networks.bitcoin;
@@ -51,13 +42,18 @@ export async function init() {
   }
 
   wallet = Wallet.fromWif(config.opnet.secretKey, network);
-
   contract = getContract<IOP_NETContract>(
     config.opnet.contract,
     OP_NET_ABI,
     provider,
     wallet.p2tr,
   );
+}
+
+export function writeU128(writer: BinaryWriter, value: bigint) {
+  const hex = value.toString(16).padStart(32, '0');
+  const bytes = BufferHelper.hexToUint8Array(hex);
+  writer.writeBytes(bytes);
 }
 
 /**
@@ -95,10 +91,8 @@ export async function updateOracle(keys: string[], prices: number[]) {
         writer.writeU8(keyBatch.length);
         keyBatch.forEach((key, index) => {
           writer.writeStringWithLength(key);
-          writer.writeU64(0n);
-          writer.writeU64(BigInt(Math.floor(priceBatch[index] * 100_000_000)));
-          writer.writeU64(0n);
-          writer.writeU64(BigInt(Date.now()));
+          writeU128(writer, BigInt(Math.floor(priceBatch[index] * 100_000_000)));
+          writeU128(writer, BigInt(Date.now()));
         });
 
         const calldata = writer.getBuffer() as Buffer;
@@ -109,18 +103,14 @@ export async function updateOracle(keys: string[], prices: number[]) {
           utxos, // UTXOs to fund the transaction
           signer: wallet.keypair, // Wallet's keypair for signing the transaction
           network, // The BitcoinJS network
-          feeRate: 100, // Fee rate in satoshis per byte
-          priorityFee: 330n, // Priority fee for faster transaction
+          feeRate: config.opnet.feeRate, // Fee rate in satoshis per byte
+          priorityFee: config.opnet.priorityFee, // Priority fee for faster transaction
           calldata, // The calldata for the contract interaction
         };
         const transactionFactory = new TransactionFactory();
         const signedTx = await transactionFactory.signInteraction(
           interactionParameters
         );
-
-        console.log(signedTx);
-        console.log(`Interaction parameters:`);
-        console.log(interactionParameters);
 
         const limitedProvider = new OPNetLimitedProvider(
           currentProviderUrl
@@ -142,48 +132,6 @@ export async function updateOracle(keys: string[], prices: number[]) {
           throw new Error("Second transaction broadcast failed.");
         }
         console.log(`Batch ${batchIndex} update successful.`);
-
-        ////// testing fetch  
-        // const testWriter = new BinaryWriter();
-        // testWriter.writeSelector(Number('0x' + bitcoinAbiCoder.encodeSelector('getValue')))
-        // testWriter.writeStringWithLength(keyBatch[0]);
-        // const testInteractionParameters = {
-        //   from: wallet.p2tr,
-        //   to: contract.address.toString(),
-        //   utxos, // UTXOs to fund the transaction
-        //   signer: wallet.keypair, // Wallet's keypair for signing the transaction
-        //   network, // The BitcoinJS network
-        //   feeRate: 100, // Fee rate in satoshis per byte
-        //   priorityFee: 330n, // Priority fee for faster transaction
-        //   calldata: Buffer.from(testWriter.getBuffer()), // The calldata for the contract interaction
-        // };
-
-        // const testSignedTx = await transactionFactory.signInteraction(
-        //   testInteractionParameters
-        // );
-        // const testFirstTxBroadcast = await limitedProvider.broadcastTransaction(
-        //   testSignedTx[0],
-        //   false
-        // );
-        // if (!testFirstTxBroadcast || !testFirstTxBroadcast.success) {
-        //   throw new Error("First transaction broadcast failed.");
-        // }
-        // const testSecondTxBroadcast = await limitedProvider.broadcastTransaction(
-        //   testSignedTx[1],
-        //   false
-        // );
-        // if (!testSecondTxBroadcast || !testSecondTxBroadcast.success) {
-        //   throw new Error("Second transaction broadcast failed.");
-        // }
-        // console.log(`testfirstTxBroadcast result:`);
-        // console.log(testFirstTxBroadcast.result);
-        // console.log(`testSecondTxBroadcast result:`);
-        // console.log(testSecondTxBroadcast.result);
-        // const reader = new BytesReader(Buffer.from(testSecondTxBroadcast.result!, 'hex'));
-        // const asd = reader.readBigUIntBE(256);
-        // console.log(`asd: ${asd}`);
-        /////
-
         break;
       } catch (error) {
         attempt++;
