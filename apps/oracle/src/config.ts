@@ -19,7 +19,7 @@ if (process.env.ASSETS && !process.env.GQL_ASSETS) {
 const assets = assetsToParse.split(';').map((str) => {
   const [network, address, symbol, ...entries] = str
     .replace('-ibc-', '-ibc/')
-    .split('-')
+    .split('§')
     .map((str) => str.trim());
 
   const currAsset = {
