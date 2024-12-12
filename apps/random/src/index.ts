@@ -11,6 +11,10 @@ import {
   updateOracle as updateAlephiumOracle,
   getLastRound as getLastAlephiumRound,
 } from './oracles/alephium';
+import { 
+  updateOracle as updateStacksOracle,
+  getLastRound as getLastStacksRound,
+ } from './oracles/stacks';
 import { fetchRandomValue } from './api';
 import { setupNock } from '../test/setupNock';
 
@@ -32,6 +36,9 @@ async function main() {
     case ChainName.ALEPHIUM:
       lastRound = await getLastAlephiumRound();
       break;
+    case ChainName.STACKS:
+      lastRound = await getLastStacksRound();
+      break
   }
 
   const ticker = interval(config.intervals.frequency);
@@ -46,6 +53,9 @@ async function main() {
             break;
           case ChainName.ALEPHIUM:
             await updateAlephiumOracle(value);
+            break;
+          case ChainName.STACKS:
+            await updateStacksOracle(value);
             break;
         }
         lastRound = value.round;

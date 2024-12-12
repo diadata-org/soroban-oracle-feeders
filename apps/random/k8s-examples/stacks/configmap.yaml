@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: random-oracle-config
+data:
+  chainName: "stacks"
+  rpcUrl: "https://stacks-node-api.mainnet.stacks.co"
+  contract: "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM"
+  contractName: "dia-random-oracle"
