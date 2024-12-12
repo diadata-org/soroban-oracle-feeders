@@ -13,7 +13,7 @@ import { updateOracle as updateStacksOracle } from './oracles/stacks';
 import { setupNock } from '../test/setupNock';
 
 export function checkDeviation(oldPrice: number, newPrice: number) {
-const deviation = config.deviationPermille / 1000;
+  const deviation = config.deviationPermille / 1000;
   return (
     newPrice > 1e-8 &&
     (newPrice > oldPrice * (1 + deviation) || newPrice < oldPrice * (1 - deviation))
@@ -76,10 +76,11 @@ export async function update(published: Map<string, number>, prices: Map<string,
 async function main() {
   const queue = createAsyncQueue({ onError: (e) => console.error(e) });
 
-  if (process.env.RUN_MOCK == 'true') { // e2e test
+  if (process.env.RUN_MOCK == 'true') {
+    // e2e test
     setupNock();
   }
-  
+
   if (config.chainName === ChainName.SOROBAN) {
     // soroban specific
     await restoreOracle();
@@ -89,11 +90,17 @@ async function main() {
 
   let published = new Map<string, number>();
 
-  const executeUpdate = async (assets: Asset[]) => {
+  const executeUpdate = async (assets: Asset[], isMandatory = false) => {
     const prices = await getAssetPrices(assets);
+
     if (prices.size) {
       queue(async () => {
-        published = await update(published, prices);
+        if (isMandatory) {
+          const emptyMap = new Map<string, number>();
+          published = await update(emptyMap, prices);
+        } else {
+          published = await update(published, prices);
+        }
       });
     }
   };
@@ -111,11 +118,8 @@ async function main() {
     const combined = merge(ticker.pipe(map(() => false)), mandatoryTicker.pipe(map(() => true)));
 
     for await (const isMandatory of intoAsyncIterable(combined)) {
-      if (isMandatory) {
-        await executeUpdate(mandatoryAssets);
-      } else {
-        await executeUpdate(config.api.assets);
-      }
+      const assets = isMandatory ? mandatoryAssets : config.api.assets;
+      await executeUpdate(assets, isMandatory);
     }
   } else {
     for await (const _ of intoAsyncIterable(ticker)) {
