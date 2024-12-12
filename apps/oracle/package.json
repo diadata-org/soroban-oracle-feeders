@@ -18,7 +18,7 @@
     "@kadena/client": "^1.8.1",
     "@kadena/types": "^0.6.0",
     "@repo/common": "*",
-    "@stellar/stellar-sdk": "^12.2.0",
+    "@stellar/stellar-sdk": "^13.0.0",
     "axios": "^1.7.3",
     "cross-env": "^7.0.3",
     "dotenv": "^16.3.1",

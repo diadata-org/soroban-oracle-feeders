@@ -1,7 +1,7 @@
 import {
   Contract,
   Keypair,
-  SorobanRpc,
+  rpc,
   TransactionBuilder,
   Networks,
   BASE_FEE,
@@ -29,7 +29,7 @@ jest.mock('@stellar/stellar-sdk', () => {
         secret: 'SXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
       }),
     },
-    SorobanRpc: {
+    rpc: {
       Server: jest.fn().mockImplementation(() => ({
         getAccount: jest.fn().mockResolvedValue({
           sequence: '1',
@@ -65,13 +65,13 @@ jest.mock('@repo/common', () => ({
 }));
 
 describe('Soroban Oracle', () => {
-  let mockServer: SorobanRpc.Server;
+  let mockServer: rpc.Server;
   let mockKeypair: Keypair;
   let mockContract: Contract;
 
   beforeAll(() => {
     init(); // Initialize the soroban setup
-    mockServer = new SorobanRpc.Server(config.soroban.rpcUrl, { allowHttp: true });
+    mockServer = new rpc.Server(config.soroban.rpcUrl, { allowHttp: true });
     mockKeypair = Keypair.fromSecret(config.soroban.secretKey);
     mockContract = new Contract(config.soroban.contractId);
   });

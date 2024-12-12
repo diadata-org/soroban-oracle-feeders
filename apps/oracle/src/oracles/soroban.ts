@@ -2,7 +2,7 @@ import {
   Contract,
   Keypair,
   nativeToScVal,
-  SorobanRpc,
+  rpc,
   TransactionBuilder,
 } from '@stellar/stellar-sdk';
 import {
@@ -14,7 +14,7 @@ import {
 } from '@repo/common';
 import config, { ChainName } from '../config';
 
-let server: SorobanRpc.Server;
+let server: rpc.Server;
 let keypair: Keypair;
 let contract: Contract;
 
@@ -23,7 +23,7 @@ if (config.chainName === ChainName.SOROBAN) {
 }
 
 export function init() {
-  server = new SorobanRpc.Server(config.soroban.rpcUrl, { allowHttp: true });
+  server = new rpc.Server(config.soroban.rpcUrl, { allowHttp: true });
   keypair = Keypair.fromSecret(config.soroban.secretKey);
   contract = new Contract(config.soroban.contractId);
 }
