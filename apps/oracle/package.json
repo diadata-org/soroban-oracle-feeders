@@ -21,7 +21,7 @@
     "@stacks/auth": "^6.16.1",
     "@stacks/network": "^6.16.0",
     "@stacks/transactions": "^6.16.1",
-    "@stellar/stellar-sdk": "^13.2.0",
+    "@stellar/stellar-sdk": "^13.0.0",
     "axios": "^1.7.3",
     "cross-env": "^7.0.3",
     "dotenv": "^16.3.1",
