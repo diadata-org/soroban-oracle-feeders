@@ -11,10 +11,10 @@ import {
   updateOracle as updateAlephiumOracle,
   getLastRound as getLastAlephiumRound,
 } from './oracles/alephium';
-import { 
+import {
   updateOracle as updateStacksOracle,
   getLastRound as getLastStacksRound,
- } from './oracles/stacks';
+} from './oracles/stacks';
 import { fetchRandomValue } from './api';
 import { setupNock } from '../test/setupNock';
 
@@ -22,7 +22,8 @@ async function main() {
   const queue = createAsyncQueue({ onError: (e) => console.error(e) });
   let lastRound: number;
 
-  if (process.env.RUN_MOCK == 'true') { // e2e test
+  if (process.env.RUN_MOCK == 'true') {
+    // e2e test
     setupNock();
   }
 
@@ -38,7 +39,7 @@ async function main() {
       break;
     case ChainName.STACKS:
       lastRound = await getLastStacksRound();
-      break
+      break;
   }
 
   const ticker = interval(config.intervals.frequency);

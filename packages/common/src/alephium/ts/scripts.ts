@@ -10,6 +10,6 @@ import {
   Script,
   SignerProvider,
   HexString,
-} from "@alephium/web3";
+} from '@alephium/web3';
 
-import { DIAOracleValue, DIARandomValue, AllStructs } from "./types";
+import { DIAOracleValue, DIARandomValue, AllStructs } from './types';

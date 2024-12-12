@@ -31,7 +31,6 @@ export async function getLastRound() {
 }
 
 export async function updateOracle(data: DrandResponse) {
-
   const maxRetries = config.alephium.maxRetryAttempts;
   let attempt = 0;
 

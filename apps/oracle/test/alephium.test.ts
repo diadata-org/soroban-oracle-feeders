@@ -73,7 +73,7 @@ describe('Alephium Oracle - updateOracle', () => {
         },
         signer: mockWallet,
         attoAlphAmount: BigInt(1000000000000000000) * BigInt(keys.length),
-      })
+      }),
     );
   });
 

@@ -1,10 +1,4 @@
-import {
-  Contract,
-  Keypair,
-  nativeToScVal,
-  rpc,
-  TransactionBuilder,
-} from '@stellar/stellar-sdk';
+import { Contract, Keypair, nativeToScVal, rpc, TransactionBuilder } from '@stellar/stellar-sdk';
 import {
   DAY_IN_LEDGERS,
   DEFAULT_TX_OPTIONS,
@@ -42,7 +36,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const account = await server.getAccount(keypair.publicKey());
 
   const timestamp = Math.floor(Date.now() / 1000);
-  const values = prices.map((p) => [timestamp,  Math.floor(p * 100_000_000)] as const);
+  const values = prices.map((p) => [timestamp, Math.floor(p * 100_000_000)] as const);
 
   const operation = contract.call(
     'set_multiple_values',

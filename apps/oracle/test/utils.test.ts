@@ -4,11 +4,7 @@ describe('splitIntoFixedBatches', () => {
   it('should split an array into batches of specified size', () => {
     const items = [1, 2, 3, 4, 5, 6, 7];
     const batchSize = 3;
-    const expectedBatches = [
-      [1, 2, 3],
-      [4, 5, 6],
-      [7],
-    ];
+    const expectedBatches = [[1, 2, 3], [4, 5, 6], [7]];
 
     const result = splitIntoFixedBatches(items, batchSize);
 
@@ -28,9 +24,7 @@ describe('splitIntoFixedBatches', () => {
   it('should handle a batch size larger than the array', () => {
     const items = [1, 2];
     const batchSize = 5;
-    const expectedBatches = [
-      [1, 2],
-    ];
+    const expectedBatches = [[1, 2]];
 
     const result = splitIntoFixedBatches(items, batchSize);
 
