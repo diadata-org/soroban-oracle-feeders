@@ -1,8 +1,6 @@
 import { jest } from '@jest/globals';
 import { Keypair, Contract } from '@stellar/stellar-sdk';
-import {
-  getAssetPrices,
-} from '../src/api';
+import { getAssetPrices } from '../src/api';
 import {
   extendOracleTtl,
   restoreOracle,
@@ -20,7 +18,9 @@ jest.mock('@stellar/stellar-sdk', () => {
     ...originalModule,
     Keypair: {
       fromSecret: jest.fn().mockReturnValue({
-        publicKey: jest.fn().mockReturnValue('GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'),
+        publicKey: jest
+          .fn()
+          .mockReturnValue('GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'),
         secret: 'SXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
       }),
     },
@@ -124,8 +124,14 @@ describe('update', () => {
   it('should handle conditional pairs and update appropriately', async () => {
     config.conditionalPairs = [[0, 1]]; // Mock conditional pairs
 
-    const published = new Map<string, number>([['ETH', 1000], ['BNB', 300]]);
-    const prices = new Map<string, number>([['ETH', 1100], ['BNB', 350]]);
+    const published = new Map<string, number>([
+      ['ETH', 1000],
+      ['BNB', 300],
+    ]);
+    const prices = new Map<string, number>([
+      ['ETH', 1100],
+      ['BNB', 350],
+    ]);
 
     const result = await update(published, prices);
 

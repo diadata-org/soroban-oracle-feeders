@@ -1,5 +1,13 @@
-import { AnchorMode, broadcastTransaction, uintCV, stringAsciiCV, makeContractCall, listCV, tupleCV } from '@stacks/transactions';
-import { StacksDevnet, StacksMainnet, StacksTestnet } from "@stacks/network";
+import {
+  AnchorMode,
+  broadcastTransaction,
+  uintCV,
+  stringAsciiCV,
+  makeContractCall,
+  listCV,
+  tupleCV,
+} from '@stacks/transactions';
+import { StacksDevnet, StacksMainnet, StacksTestnet } from '@stacks/network';
 import config, { ChainName } from '../config';
 import { splitIntoFixedBatches } from '../utils';
 
@@ -10,7 +18,7 @@ const setNetwork = (url?: string): StacksMainnet => {
   if (!url) return new StacksDevnet();
   if (url.includes('testnet')) return new StacksTestnet({ url });
   return new StacksMainnet({ url });
-}
+};
 
 if (config.chainName === ChainName.STACKS) {
   init();
@@ -18,7 +26,7 @@ if (config.chainName === ChainName.STACKS) {
 
 export function init() {
   network = setNetwork(config.stacks.rpcUrl);
-  
+
   if (config.stacks.backupRpcUrl) {
     backupNetwork = setNetwork(config.stacks.backupRpcUrl);
   }
@@ -38,7 +46,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
     const entries = keyBatch.map((key, index) => ({
       key: stringAsciiCV(key),
       value: uintCV(Math.floor(priceBatch[index] * 100_000_000)),
-      timestamp: uintCV(date)
+      timestamp: uintCV(date),
     }));
 
     const values = listCV(entries.map(tupleCV));

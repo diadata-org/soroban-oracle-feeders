@@ -67,7 +67,11 @@ const feedQuery = gql`
   }
 `;
 
-export async function getGraphqlAssetQuotation(network: string, address: string, params: GqlParams) {
+export async function getGraphqlAssetQuotation(
+  network: string,
+  address: string,
+  params: GqlParams,
+) {
   const feedSelection = [];
   const base = { Address: address, Blockchain: network } as FeedSelection;
 

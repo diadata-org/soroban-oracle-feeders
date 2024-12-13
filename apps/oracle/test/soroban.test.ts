@@ -6,11 +6,7 @@ import {
   Networks,
   BASE_FEE,
 } from '@stellar/stellar-sdk';
-import {
-  extendInstanceTtl,
-  restoreInstance,
-  submitSorobanTx,
-} from '@repo/common';
+import { extendInstanceTtl, restoreInstance, submitSorobanTx } from '@repo/common';
 import config from '../src/config';
 import { restoreOracle, extendOracleTtl, updateOracle, init } from '../src/oracles/soroban';
 import { DAY_IN_LEDGERS } from '@repo/common';
@@ -25,7 +21,9 @@ jest.mock('@stellar/stellar-sdk', () => {
     })),
     Keypair: {
       fromSecret: jest.fn().mockReturnValue({
-        publicKey: jest.fn().mockReturnValue('GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'),
+        publicKey: jest
+          .fn()
+          .mockReturnValue('GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'),
         secret: 'SXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
       }),
     },
@@ -95,7 +93,7 @@ describe('Soroban Oracle', () => {
         }),
         expect.objectContaining({
           call: expect.any(Function),
-        })
+        }),
       );
     });
   });
@@ -126,7 +124,7 @@ describe('Soroban Oracle', () => {
           }),
           threshold,
           extendTo,
-        })
+        }),
       );
     });
   });
@@ -138,7 +136,8 @@ describe('Soroban Oracle', () => {
 
       await updateOracle(keys, prices);
       // Capture the arguments passed to submitSorobanTx
-      const submitArgs = (submitSorobanTx as jest.MockedFunction<typeof submitSorobanTx>).mock.calls[0]; // [server, tx]
+      const submitArgs = (submitSorobanTx as jest.MockedFunction<typeof submitSorobanTx>).mock
+        .calls[0]; // [server, tx]
 
       console.log('submitSorobanTx called with:', submitArgs);
 
@@ -151,7 +150,7 @@ describe('Soroban Oracle', () => {
         }),
         expect.objectContaining({
           sign: expect.any(Function),
-        })
+        }),
       );
     });
 

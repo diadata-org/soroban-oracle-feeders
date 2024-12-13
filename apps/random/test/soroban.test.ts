@@ -11,7 +11,7 @@ import {
   extendInstanceTtl,
   restoreInstance,
   submitSorobanTx,
-  DEFAULT_TX_OPTIONS
+  DEFAULT_TX_OPTIONS,
 } from '@repo/common';
 import { DrandResponse } from '../src/api';
 import config, { ChainName } from '../src/config';
@@ -32,7 +32,9 @@ jest.mock('@stellar/stellar-sdk', () => {
     nativeToScVal: jest.fn(),
     Keypair: {
       fromSecret: jest.fn().mockReturnValue({
-        publicKey: jest.fn().mockReturnValue('GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'),
+        publicKey: jest
+          .fn()
+          .mockReturnValue('GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'),
         sign: jest.fn(),
       }),
     },
@@ -60,7 +62,7 @@ jest.mock('@stellar/stellar-sdk', () => {
       setSorobanData: jest.fn().mockReturnThis(),
       setTimeout: jest.fn().mockReturnThis(),
       build: jest.fn().mockReturnThis(),
-      sign: jest.fn(),  // Mock sign method on TransactionBuilder
+      sign: jest.fn(), // Mock sign method on TransactionBuilder
     })),
   };
 });
@@ -108,7 +110,7 @@ describe('Soroban Randomness Oracle', () => {
         expect.objectContaining({
           call: expect.any(Function),
           getFootprint: expect.any(Function),
-        })
+        }),
       );
     });
   });
@@ -141,8 +143,18 @@ describe('Soroban Randomness Oracle', () => {
 
   describe('getLastRound', () => {
     it('should fetch and return the last round correctly', async () => {
-
-      const mockTx = new TransactionBuilder({ accountId: () => { return 'mockAccount'; }, sequenceNumber: () => { return '1'; }, incrementSequenceNumber: () => { } }, DEFAULT_TX_OPTIONS)
+      const mockTx = new TransactionBuilder(
+        {
+          accountId: () => {
+            return 'mockAccount';
+          },
+          sequenceNumber: () => {
+            return '1';
+          },
+          incrementSequenceNumber: () => {},
+        },
+        DEFAULT_TX_OPTIONS,
+      )
         .addOperation(mockContract.call('last_round'))
         .setTimeout(30)
         .build();
@@ -158,20 +170,27 @@ describe('Soroban Randomness Oracle', () => {
       const lastRound = await getLastRound();
 
       expect(mockServer.simulateTransaction).toHaveBeenCalled();
-      expect(mockServer.simulateTransaction).toHaveBeenCalledWith(expect.objectContaining({
-        addOperation: expect.any(Function),
-        build: expect.any(Function),
-        setSorobanData: expect.any(Function),
-        setTimeout: expect.any(Function),
-        sign: expect.any(Function),
-      }));
+      expect(mockServer.simulateTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          addOperation: expect.any(Function),
+          build: expect.any(Function),
+          setSorobanData: expect.any(Function),
+          setTimeout: expect.any(Function),
+          sign: expect.any(Function),
+        }),
+      );
       expect(lastRound).toBe(1234); // Expect the returned round to be 1234
     });
   });
 
   describe('updateOracle', () => {
     it('should build and submit a transaction to update the oracle', async () => {
-      const mockTx = { build: jest.fn().mockReturnThis(), setTimeout: jest.fn().mockReturnThis(), addOperation: jest.fn().mockReturnThis(), sign: jest.fn() };
+      const mockTx = {
+        build: jest.fn().mockReturnThis(),
+        setTimeout: jest.fn().mockReturnThis(),
+        addOperation: jest.fn().mockReturnThis(),
+        sign: jest.fn(),
+      };
       const mockDrandResponse: DrandResponse = {
         round: 1234,
         randomness: 'abc123',
