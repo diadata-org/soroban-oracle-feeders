@@ -7,6 +7,7 @@ import {
   listCV,
   tupleCV,
   estimateContractFunctionCall,
+  getNonce,
 } from '@stacks/transactions';
 import { StacksDevnet, StacksMainnet, StacksTestnet } from '@stacks/network';
 import config, { ChainName } from '../config';
@@ -40,6 +41,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const keyBatches = splitIntoFixedBatches(keys, config.stacks.maxBatchSize);
   const priceBatches = splitIntoFixedBatches(prices, config.stacks.maxBatchSize);
 
+  let nonce = await getNonce(config.stacks.secretKey, network);
   let useBackup = false;
 
   for (let batchIndex = 0; batchIndex < keyBatches.length; batchIndex++) {
@@ -67,6 +69,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
           senderKey: config.stacks.secretKey,
           network: useBackup && backupNetwork ? backupNetwork : network, // Use backup if needed
           anchorMode: AnchorMode.Any,
+          nonce,
         };
 
         const transaction = await makeContractCall(batchTxOptions);
@@ -87,6 +90,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
 
         const txId = broadcastResponse.txid;
         console.log(`Batch ${batchIndex + 1} Transaction ID: ${txId}`);
+        nonce += 1n;
         break; // Exit loop if transaction is successful
       } catch (error) {
         attempt++;
