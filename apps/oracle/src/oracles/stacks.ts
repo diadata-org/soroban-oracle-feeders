@@ -9,6 +9,7 @@ import {
   estimateContractFunctionCall,
   getNonce,
   getAddressFromPrivateKey,
+  TransactionVersion,
 } from '@stacks/transactions';
 import { StacksDevnet, StacksMainnet, StacksTestnet } from '@stacks/network';
 import config, { ChainName } from '../config';
@@ -42,7 +43,9 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const keyBatches = splitIntoFixedBatches(keys, config.stacks.maxBatchSize);
   const priceBatches = splitIntoFixedBatches(prices, config.stacks.maxBatchSize);
 
-  const address = getAddressFromPrivateKey(config.stacks.secretKey);
+  const version = network.isMainnet() ? TransactionVersion.Mainnet : TransactionVersion.Testnet;
+  const address = getAddressFromPrivateKey(config.stacks.secretKey, version);
+
   let nonce = (await getNonce(address, network)) + 1n;
   let useBackup = false;
 
@@ -74,20 +77,23 @@ export async function updateOracle(keys: string[], prices: number[]) {
           nonce,
         };
 
-        const transaction = await makeContractCall(batchTxOptions);
-        const estimatedFee = await estimateContractFunctionCall(transaction);
+        const contractCall = await makeContractCall(batchTxOptions);
+        const estimatedFee = await estimateContractFunctionCall(contractCall);
 
         let fee = (estimatedFee * config.stacks.feeRate) / 100n;
         if (attempt > 0) {
           const rate = 100n + BigInt(attempt) * 10n;
           fee = (fee * rate) / 100n;
         }
-        transaction.setFee(fee);
 
-        const broadcastResponse = await broadcastTransaction(transaction, batchTxOptions.network);
+        const signedTransaction = await makeContractCall({ ...batchTxOptions, fee });
+        const broadcastResponse = await broadcastTransaction(
+          signedTransaction,
+          batchTxOptions.network,
+        );
 
         if (broadcastResponse.error) {
-          throw new Error(`Transaction failed with error: ${broadcastResponse.error}`);
+          throw new Error(`Transaction failed with error: ${broadcastResponse.reason}`);
         }
 
         const txId = broadcastResponse.txid;
