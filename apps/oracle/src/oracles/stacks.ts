@@ -43,7 +43,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const priceBatches = splitIntoFixedBatches(prices, config.stacks.maxBatchSize);
 
   const address = getAddressFromPrivateKey(config.stacks.secretKey);
-  let nonce = await getNonce(address, network);
+  let nonce = (await getNonce(address, network)) + 1n;
   let useBackup = false;
 
   for (let batchIndex = 0; batchIndex < keyBatches.length; batchIndex++) {
