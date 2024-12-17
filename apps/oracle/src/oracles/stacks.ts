@@ -8,6 +8,7 @@ import {
   tupleCV,
   estimateContractFunctionCall,
   getNonce,
+  getAddressFromPrivateKey,
 } from '@stacks/transactions';
 import { StacksDevnet, StacksMainnet, StacksTestnet } from '@stacks/network';
 import config, { ChainName } from '../config';
@@ -41,7 +42,8 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const keyBatches = splitIntoFixedBatches(keys, config.stacks.maxBatchSize);
   const priceBatches = splitIntoFixedBatches(prices, config.stacks.maxBatchSize);
 
-  let nonce = await getNonce(config.stacks.secretKey, network);
+  const address = getAddressFromPrivateKey(config.stacks.secretKey);
+  let nonce = await getNonce(address, network);
   let useBackup = false;
 
   for (let batchIndex = 0; batchIndex < keyBatches.length; batchIndex++) {
