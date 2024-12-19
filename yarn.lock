@@ -976,6 +976,11 @@
     schema-inspector "^2.0.2"
     zone-file "^2.0.0-beta.3"
 
+"@stacks/stacks-blockchain-api-types@^7.14.1":
+  version "7.14.1"
+  resolved "https://registry.yarnpkg.com/@stacks/stacks-blockchain-api-types/-/stacks-blockchain-api-types-7.14.1.tgz#8b718f02b4c5612c7bbfd7f41d1702dcb958e69d"
+  integrity sha512-65hvhXxC+EUqHJAQsqlBCqXB+zwfxZICSKYJugdg6BCp9I9qniyfz5XyQeC4RMVo0tgEoRdS/b5ZCFo5kLWmxA==
+
 "@stacks/transactions@^6.16.1":
   version "6.16.1"
   resolved "https://registry.yarnpkg.com/@stacks/transactions/-/transactions-6.16.1.tgz#dee8f83651e1e4713fa3cc5f2c645ec0055319f2"

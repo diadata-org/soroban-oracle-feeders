@@ -1,3 +1,4 @@
+import axios from 'axios';
 import {
   AnchorMode,
   broadcastTransaction,
@@ -7,11 +8,11 @@ import {
   listCV,
   tupleCV,
   estimateContractFunctionCall,
-  getNonce,
   getAddressFromPrivateKey,
   TransactionVersion,
 } from '@stacks/transactions';
 import { StacksDevnet, StacksMainnet, StacksTestnet } from '@stacks/network';
+import type { TransactionResults } from '@stacks/stacks-blockchain-api-types';
 import config, { ChainName } from '../config';
 import { splitIntoFixedBatches } from '../utils';
 
@@ -46,7 +47,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const version = network.isMainnet() ? TransactionVersion.Mainnet : TransactionVersion.Testnet;
   const address = getAddressFromPrivateKey(config.stacks.secretKey, version);
 
-  let nonce = (await getNonce(address, network)) + 1n;
+  let nonce = await getAccountNonce(address);
   let useBackup = false;
 
   for (let batchIndex = 0; batchIndex < keyBatches.length; batchIndex++) {
@@ -118,4 +119,17 @@ export async function updateOracle(keys: string[], prices: number[]) {
   }
 
   console.log('Oracle updated');
+}
+
+async function getAccountNonce(address: string) {
+  const query = new URLSearchParams();
+  query.set('from_address', address);
+  query.set('limit', '1');
+  query.set('sort_by', 'burn_block_time');
+  query.set('order', 'desc');
+  query.set('unanchored', 'false');
+
+  const res = await axios(`${config.stacks.rpcUrl}/extended/v1/tx?${query}`);
+  const body = res.data as TransactionResults;
+  return BigInt(body.results[0].nonce + 1);
 }
