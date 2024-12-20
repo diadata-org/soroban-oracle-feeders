@@ -12,7 +12,7 @@ let server: rpc.Server;
 let keypair: Keypair;
 let contract: Contract;
 
-if (config.chainName === ChainName.SOROBAN) {
+if (config.chainName === ChainName.Soroban) {
   init();
 }
 

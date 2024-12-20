@@ -8,7 +8,7 @@ let nodeProvider: NodeProvider;
 let wallet: PrivateKeyWallet;
 let oracle: DIAOracleInstance;
 
-if (config.chainName === ChainName.ALEPHIUM) {
+if (config.chainName === ChainName.Alephium) {
   init();
 }
 

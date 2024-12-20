@@ -2,6 +2,7 @@ import { interval, map, merge } from 'rxjs';
 import { createAsyncQueue, intoAsyncIterable } from '@repo/common';
 import { Asset, getAssetPrices } from './api';
 import config, { ChainName } from './config';
+import { getCmcPrice, getCoingeckoPrice } from './guardian';
 import {
   extendOracleTtl,
   restoreOracle,
@@ -12,7 +13,7 @@ import { updateOracle as updateAlephiumOracle } from './oracles/alephium';
 import { updateOracle as updateStacksOracle } from './oracles/stacks';
 import { setupNock } from '../test/setupNock';
 
-export function checkDeviation(oldPrice: number, newPrice: number) {
+function checkDeviation(oldPrice: number, newPrice: number) {
   const deviation = config.deviationPermille / 1000;
   return (
     newPrice > 1e-8 &&
@@ -20,7 +21,7 @@ export function checkDeviation(oldPrice: number, newPrice: number) {
   );
 }
 
-export async function update(published: Map<string, number>, prices: Map<string, number>) {
+async function update(published: Map<string, number>, prices: Map<string, number>) {
   const filtered = [...prices.entries()].filter((entry, index) => {
     const [symbol, price] = entry;
 
@@ -39,38 +40,82 @@ export async function update(published: Map<string, number>, prices: Map<string,
     return checkDeviation(published.get(symbol) || 0, price);
   });
 
-  const updated = new Map(published);
+  const updateCollector = new Map<string, number>();
+  const priceCollector = new Map(published);
 
-  if (filtered.length) {
-    const keys = Array<string>(filtered.length);
-    const values = Array<number>(filtered.length);
+  for (const [symbol, price] of filtered) {
+    const asset = config.api.assets.find((x) => x.symbol === symbol)!;
+    const externalPrices = [];
 
-    for (const [i, [key, value]] of filtered.entries()) {
-      updated.set(key, value);
-      keys[i] = key + '/USD';
-      values[i] = value;
+    if (asset.coingeckoName) {
+      try {
+        const coingeckoPrice = await getCoingeckoPrice(asset.coingeckoName);
+        externalPrices.push(coingeckoPrice);
+      } catch (err: unknown) {
+        console.error(`Error retrieving coingecko information for ${symbol}:`, err);
+      }
+    }
+    if (asset.cmcName) {
+      try {
+        const cmcPrice = await getCmcPrice(asset.cmcName);
+        externalPrices.push(cmcPrice);
+      } catch (err: unknown) {
+        console.error(`Error retrieving CMC information for ${symbol}:`, err);
+      }
+    }
+
+    if (externalPrices.length) {
+      const matched = externalPrices.some((guardianPrice) => {
+        return Math.abs(guardianPrice - price) / guardianPrice <= asset.allowedDeviation;
+      });
+
+      if (matched) {
+        updateCollector.set(symbol, price);
+      } else {
+        console.log(`Error: No guardian match found for asset ${symbol} with price ${price}!`);
+      }
+    } else if (asset.coingeckoName || asset.cmcName) {
+      console.error('Error: None of the guardians returned a valid result"');
+      continue;
+    }
+
+    console.log(
+      `Entering deviation based update zone for old price ${published.get(
+        symbol,
+      )} of asset ${symbol}. New price: ${price}`,
+    );
+  }
+
+  if (updateCollector.size) {
+    const keys: string[] = [];
+    const values: number[] = [];
+
+    for (const [key, value] of updateCollector.entries()) {
+      priceCollector.set(key, value);
+      keys.push(key + '/USD');
+      values.push(value);
     }
 
     switch (config.chainName) {
-      case ChainName.KADENA:
+      case ChainName.Kadena:
         await updateKadenaOracle(keys, values);
         break;
-      case ChainName.SOROBAN:
+      case ChainName.Soroban:
         await updateSorobanOracle(keys, values);
         break;
-      case ChainName.ALEPHIUM:
+      case ChainName.Alephium:
         await updateAlephiumOracle(keys, values);
         break;
-      case ChainName.STACKS:
+      case ChainName.Stacks:
         updateStacksOracle(keys, values);
         break;
     }
-    console.log(Object.fromEntries(updated));
+    console.log(Object.fromEntries(priceCollector));
   } else {
     console.log('No update necessary');
   }
 
-  return updated;
+  return priceCollector;
 }
 
 async function main() {
@@ -81,7 +126,7 @@ async function main() {
     setupNock();
   }
 
-  if (config.chainName === ChainName.SOROBAN) {
+  if (config.chainName === ChainName.Soroban) {
     // soroban specific
     await restoreOracle();
     await extendOracleTtl();

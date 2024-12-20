@@ -25,7 +25,7 @@ const setNetwork = (url?: string): StacksMainnet => {
   return new StacksMainnet({ url });
 };
 
-if (config.chainName === ChainName.STACKS) {
+if (config.chainName === ChainName.Stacks) {
   init();
 }
 
