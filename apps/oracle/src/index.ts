@@ -73,6 +73,7 @@ async function update(published: Map<string, number>, prices: Map<string, number
         updateCollector.set(symbol, price);
       } else {
         console.log(`Error: No guardian match found for asset ${symbol} with price ${price}!`);
+        continue;
       }
     } else if (asset.coingeckoName || asset.cmcName) {
       console.error('Error: None of the guardians returned a valid result"');
