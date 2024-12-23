@@ -26,11 +26,25 @@ const assets = assetsToParse.split(';').map((str) => {
     network,
     address: address.replace('ibc/', 'ibc-'),
     symbol,
+    coingeckoName: '',
+    cmcName: '',
+    allowedDeviation: 0.0,
     gqlParams: { FeedSelection: [] } as GqlParams,
   };
 
-  if (entries.length && useGql) {
-    const gqlQuery = entries.join('-');
+  if (entries.length > 1) {
+    [currAsset.coingeckoName, currAsset.cmcName] = entries;
+
+    if (currAsset.coingeckoName || currAsset.cmcName) {
+      const allowedDeviation = parseFloat(entries[2]);
+      if (!isNaN(allowedDeviation)) {
+        currAsset.allowedDeviation = allowedDeviation;
+      }
+    }
+  }
+
+  if (entries.length > 3) {
+    const gqlQuery = entries[3];
     if (gqlQuery) {
       try {
         currAsset.gqlParams = GqlParams.parse(JSON.parse(gqlQuery));
@@ -49,10 +63,10 @@ const conditionalPairs = process.env.CONDITIONAL_ASSETS?.split(';').map((str) =>
 });
 
 export enum ChainName {
-  KADENA = 'kadena',
-  SOROBAN = 'soroban',
-  ALEPHIUM = 'alephium',
-  STACKS = 'stacks',
+  Kadena = 'kadena',
+  Soroban = 'soroban',
+  Alephium = 'alephium',
+  Stacks = 'stacks',
 }
 
 export default {
@@ -93,12 +107,13 @@ export default {
     maxRetryAttempts: 3,
   },
 
-  chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.SOROBAN,
+  chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.Soroban,
 
   intervals: {
     frequency: parseInt(process.env.FREQUENCY_SECONDS || '120', 10) * 1000,
     mandatoryFrequency: parseInt(process.env.MANDATORY_FREQUENCY_SECONDS || '0', 10) * 1000,
   },
+
   api: {
     useGql,
     assets,
@@ -111,6 +126,16 @@ export default {
       methodology: process.env.GQL_METHODOLOGY || 'vwap',
     },
   },
+
   deviationPermille: parseInt(process.env.DEVIATION_PERMILLE || '10', 10),
   conditionalPairs: conditionalPairs || [],
+
+  coingecko: {
+    apiKey: process.env.COINGECKO_API_KEY || '',
+    url: process.env.COINGECKO_API_URL || 'https://pro-api.coingecko.com',
+  },
+  cmc: {
+    apiKey: process.env.CMC_API_KEY || '',
+    url: process.env.CMC_API_URL || 'https://pro-api.coinmarketcap.com',
+  },
 };

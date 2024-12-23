@@ -43,4 +43,10 @@ CONDITIONAL_ASSETS=""
 GQL_METHODOLOGY="vwap"
 ASSETS=""
 GQL_ASSETS="Ethereum-0x6B175474E89094C44Da98b954EedeAC495271d0F-DAI"
+
+COINGECKO_API_KEY=""
+COINGECKO_API_URL="https://pro-api.coingecko.com"
+
+CMC_API_KEY=""
+CMC_API_URL="https://pro-api.coinmarketcap.com"
 ```
