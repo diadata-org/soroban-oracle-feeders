@@ -7,8 +7,20 @@
   },
   {
     "name": "DIARandomValue",
-    "fieldNames": ["randomness", "signature", "previousSignature"],
-    "fieldTypes": ["ByteVec", "ByteVec", "ByteVec"],
-    "isMutable": [false, false, false]
+    "fieldNames": [
+      "randomness",
+      "signature",
+      "round"
+    ],
+    "fieldTypes": [
+      "ByteVec",
+      "ByteVec",
+      "U256"
+    ],
+    "isMutable": [
+      false,
+      false,
+      false
+    ]
   }
 ]
