@@ -30,11 +30,11 @@ import {
   signExecuteMethod,
   addStdIdToFields,
   encodeContractFields,
-} from "@alephium/web3";
-import { default as DIARandomOracleContractJson } from "../DIARandomOracle.ral.json";
-import { getContractByCodeHash } from "./contracts";
-import { DIAOracleValue, DIARandomValue, AllStructs } from "./types";
-import { RalphMap } from "@alephium/web3";
+} from '@alephium/web3';
+import { default as DIARandomOracleContractJson } from '../DIARandomOracle.ral.json';
+import { getContractByCodeHash } from './contracts';
+import { DIAOracleValue, DIARandomValue, AllStructs } from './types';
+import { RalphMap } from '@alephium/web3';
 
 // Custom types for the contract
 export namespace DIARandomOracleTypes {
@@ -54,7 +54,7 @@ export namespace DIARandomOracleTypes {
 
   export interface CallMethodTable {
     getLastRound: {
-      params: Omit<CallContractParams<{}>, "args">;
+      params: Omit<CallContractParams<{}>, 'args'>;
       result: CallContractResult<bigint>;
     };
     getRandomValue: {
@@ -62,7 +62,7 @@ export namespace DIARandomOracleTypes {
       result: CallContractResult<DIARandomValue>;
     };
     getAdmin: {
-      params: Omit<CallContractParams<{}>, "args">;
+      params: Omit<CallContractParams<{}>, 'args'>;
       result: CallContractResult<Address>;
     };
     changeAdmin: {
@@ -82,10 +82,8 @@ export namespace DIARandomOracleTypes {
   export type CallMethodResult<T extends keyof CallMethodTable> =
     CallMethodTable[T]["result"];
 
-
-
   export type MultiCallParams = Partial<{
-    [Name in keyof CallMethodTable]: CallMethodTable[Name]["params"];
+    [Name in keyof CallMethodTable]: CallMethodTable[Name]['params'];
   }>;
 
 
@@ -93,13 +91,13 @@ export namespace DIARandomOracleTypes {
 
   export type MultiCallResults<T extends MultiCallParams> = {
     [MaybeName in keyof T]: MaybeName extends keyof CallMethodTable
-      ? CallMethodTable[MaybeName]["result"]
+      ? CallMethodTable[MaybeName]['result']
       : undefined;
   };
 
   export interface SignExecuteMethodTable {
     getLastRound: {
-      params: Omit<SignExecuteContractMethodParams<{}>, "args">;
+      params: Omit<SignExecuteContractMethodParams<{}>, 'args'>;
       result: SignExecuteScriptTxResult;
     };
     getRandomValue: {
@@ -107,7 +105,7 @@ export namespace DIARandomOracleTypes {
       result: SignExecuteScriptTxResult;
     };
     getAdmin: {
-      params: Omit<SignExecuteContractMethodParams<{}>, "args">;
+      params: Omit<SignExecuteContractMethodParams<{}>, 'args'>;
       result: SignExecuteScriptTxResult;
     };
     changeAdmin: {
@@ -123,20 +121,17 @@ export namespace DIARandomOracleTypes {
     };
   }
   export type SignExecuteMethodParams<T extends keyof SignExecuteMethodTable> =
-    SignExecuteMethodTable[T]["params"];
+    SignExecuteMethodTable[T]['params'];
   export type SignExecuteMethodResult<T extends keyof SignExecuteMethodTable> =
-    SignExecuteMethodTable[T]["result"];
+    SignExecuteMethodTable[T]['result'];
 }
 
-class Factory extends ContractFactory<
-  DIARandomOracleInstance,
-  DIARandomOracleTypes.Fields
-> {
+class Factory extends ContractFactory<DIARandomOracleInstance, DIARandomOracleTypes.Fields> {
   encodeFields(fields: DIARandomOracleTypes.Fields) {
     return encodeContractFields(
       addStdIdToFields(this.contract, fields),
       this.contract.fieldsSig,
-      AllStructs
+      AllStructs,
     );
   }
 
@@ -146,7 +141,7 @@ class Factory extends ContractFactory<
 
   eventIndex = { AdminChanged: 0, OracleUpdate: 1 };
   consts = {
-    ErrorCodes: { AdminAllowedOnly: BigInt("0"), InvalidRound: BigInt("1") },
+    ErrorCodes: { AdminAllowedOnly: BigInt('0'), InvalidRound: BigInt('1') },
   };
 
   at(address: string): DIARandomOracleInstance {
@@ -161,26 +156,21 @@ class Factory extends ContractFactory<
           never,
           { randomValues?: Map<bigint, DIARandomValue> }
         >,
-        "testArgs"
-      >
-    ): Promise<
-      TestContractResult<bigint, { randomValues?: Map<bigint, DIARandomValue> }>
-    > => {
-      return testMethod(this, "getLastRound", params, getContractByCodeHash);
+        'testArgs'
+      >,
+    ): Promise<TestContractResult<bigint, { randomValues?: Map<bigint, DIARandomValue> }>> => {
+      return testMethod(this, 'getLastRound', params, getContractByCodeHash);
     },
     getRandomValue: async (
       params: TestContractParams<
         DIARandomOracleTypes.Fields,
         { round: bigint },
         { randomValues?: Map<bigint, DIARandomValue> }
-      >
+      >,
     ): Promise<
-      TestContractResult<
-        DIARandomValue,
-        { randomValues?: Map<bigint, DIARandomValue> }
-      >
+      TestContractResult<DIARandomValue, { randomValues?: Map<bigint, DIARandomValue> }>
     > => {
-      return testMethod(this, "getRandomValue", params, getContractByCodeHash);
+      return testMethod(this, 'getRandomValue', params, getContractByCodeHash);
     },
     getAdmin: async (
       params: Omit<
@@ -189,48 +179,37 @@ class Factory extends ContractFactory<
           never,
           { randomValues?: Map<bigint, DIARandomValue> }
         >,
-        "testArgs"
-      >
-    ): Promise<
-      TestContractResult<
-        Address,
-        { randomValues?: Map<bigint, DIARandomValue> }
-      >
-    > => {
-      return testMethod(this, "getAdmin", params, getContractByCodeHash);
+        'testArgs'
+      >,
+    ): Promise<TestContractResult<Address, { randomValues?: Map<bigint, DIARandomValue> }>> => {
+      return testMethod(this, 'getAdmin', params, getContractByCodeHash);
     },
     changeAdmin: async (
       params: TestContractParams<
         DIARandomOracleTypes.Fields,
         { newAdmin: Address },
         { randomValues?: Map<bigint, DIARandomValue> }
-      >
-    ): Promise<
-      TestContractResult<null, { randomValues?: Map<bigint, DIARandomValue> }>
-    > => {
-      return testMethod(this, "changeAdmin", params, getContractByCodeHash);
+      >,
+    ): Promise<TestContractResult<null, { randomValues?: Map<bigint, DIARandomValue> }>> => {
+      return testMethod(this, 'changeAdmin', params, getContractByCodeHash);
     },
     checkAdmin: async (
       params: TestContractParams<
         DIARandomOracleTypes.Fields,
         { caller: Address },
         { randomValues?: Map<bigint, DIARandomValue> }
-      >
-    ): Promise<
-      TestContractResult<null, { randomValues?: Map<bigint, DIARandomValue> }>
-    > => {
-      return testMethod(this, "checkAdmin", params, getContractByCodeHash);
+      >,
+    ): Promise<TestContractResult<null, { randomValues?: Map<bigint, DIARandomValue> }>> => {
+      return testMethod(this, 'checkAdmin', params, getContractByCodeHash);
     },
     setRandomValue: async (
       params: TestContractParams<
         DIARandomOracleTypes.Fields,
         { modifiedRound: bigint; value: DIARandomValue },
         { randomValues?: Map<bigint, DIARandomValue> }
-      >
-    ): Promise<
-      TestContractResult<null, { randomValues?: Map<bigint, DIARandomValue> }>
-    > => {
-      return testMethod(this, "setRandomValue", params, getContractByCodeHash);
+      >,
+    ): Promise<TestContractResult<null, { randomValues?: Map<bigint, DIARandomValue> }>> => {
+      return testMethod(this, 'setRandomValue', params, getContractByCodeHash);
     },
   };
 }
@@ -255,7 +234,7 @@ export class DIARandomOracleInstance extends ContractInstance {
     randomValues: new RalphMap<bigint, DIARandomValue>(
       DIARandomOracle.contract,
       this.contractId,
-      "randomValues"
+      'randomValues',
     ),
   };
 
@@ -269,100 +248,76 @@ export class DIARandomOracleInstance extends ContractInstance {
 
   subscribeAdminChangedEvent(
     options: EventSubscribeOptions<DIARandomOracleTypes.AdminChangedEvent>,
-    fromCount?: number
+    fromCount?: number,
   ): EventSubscription {
     return subscribeContractEvent(
       DIARandomOracle.contract,
       this,
       options,
-      "AdminChanged",
-      fromCount
+      'AdminChanged',
+      fromCount,
     );
   }
 
   subscribeOracleUpdateEvent(
     options: EventSubscribeOptions<DIARandomOracleTypes.OracleUpdateEvent>,
-    fromCount?: number
+    fromCount?: number,
   ): EventSubscription {
     return subscribeContractEvent(
       DIARandomOracle.contract,
       this,
       options,
-      "OracleUpdate",
-      fromCount
+      'OracleUpdate',
+      fromCount,
     );
   }
 
   subscribeAllEvents(
     options: EventSubscribeOptions<
-      | DIARandomOracleTypes.AdminChangedEvent
-      | DIARandomOracleTypes.OracleUpdateEvent
+      DIARandomOracleTypes.AdminChangedEvent | DIARandomOracleTypes.OracleUpdateEvent
     >,
-    fromCount?: number
+    fromCount?: number,
   ): EventSubscription {
-    return subscribeContractEvents(
-      DIARandomOracle.contract,
-      this,
-      options,
-      fromCount
-    );
+    return subscribeContractEvents(DIARandomOracle.contract, this, options, fromCount);
   }
 
   methods = {
     getLastRound: async (
-      params?: DIARandomOracleTypes.CallMethodParams<"getLastRound">
-    ): Promise<DIARandomOracleTypes.CallMethodResult<"getLastRound">> => {
+      params?: DIARandomOracleTypes.CallMethodParams<'getLastRound'>,
+    ): Promise<DIARandomOracleTypes.CallMethodResult<'getLastRound'>> => {
       return callMethod(
         DIARandomOracle,
         this,
-        "getLastRound",
+        'getLastRound',
         params === undefined ? {} : params,
-        getContractByCodeHash
+        getContractByCodeHash,
       );
     },
     getRandomValue: async (
-      params: DIARandomOracleTypes.CallMethodParams<"getRandomValue">
-    ): Promise<DIARandomOracleTypes.CallMethodResult<"getRandomValue">> => {
-      return callMethod(
-        DIARandomOracle,
-        this,
-        "getRandomValue",
-        params,
-        getContractByCodeHash
-      );
+      params: DIARandomOracleTypes.CallMethodParams<'getRandomValue'>,
+    ): Promise<DIARandomOracleTypes.CallMethodResult<'getRandomValue'>> => {
+      return callMethod(DIARandomOracle, this, 'getRandomValue', params, getContractByCodeHash);
     },
     getAdmin: async (
-      params?: DIARandomOracleTypes.CallMethodParams<"getAdmin">
-    ): Promise<DIARandomOracleTypes.CallMethodResult<"getAdmin">> => {
+      params?: DIARandomOracleTypes.CallMethodParams<'getAdmin'>,
+    ): Promise<DIARandomOracleTypes.CallMethodResult<'getAdmin'>> => {
       return callMethod(
         DIARandomOracle,
         this,
-        "getAdmin",
+        'getAdmin',
         params === undefined ? {} : params,
-        getContractByCodeHash
+        getContractByCodeHash,
       );
     },
     changeAdmin: async (
-      params: DIARandomOracleTypes.CallMethodParams<"changeAdmin">
-    ): Promise<DIARandomOracleTypes.CallMethodResult<"changeAdmin">> => {
-      return callMethod(
-        DIARandomOracle,
-        this,
-        "changeAdmin",
-        params,
-        getContractByCodeHash
-      );
+      params: DIARandomOracleTypes.CallMethodParams<'changeAdmin'>,
+    ): Promise<DIARandomOracleTypes.CallMethodResult<'changeAdmin'>> => {
+      return callMethod(DIARandomOracle, this, 'changeAdmin', params, getContractByCodeHash);
     },
     setRandomValue: async (
-      params: DIARandomOracleTypes.CallMethodParams<"setRandomValue">
-    ): Promise<DIARandomOracleTypes.CallMethodResult<"setRandomValue">> => {
-      return callMethod(
-        DIARandomOracle,
-        this,
-        "setRandomValue",
-        params,
-        getContractByCodeHash
-      );
+      params: DIARandomOracleTypes.CallMethodParams<'setRandomValue'>,
+    ): Promise<DIARandomOracleTypes.CallMethodResult<'setRandomValue'>> => {
+      return callMethod(DIARandomOracle, this, 'setRandomValue', params, getContractByCodeHash);
     },
   };
 
@@ -370,46 +325,40 @@ export class DIARandomOracleInstance extends ContractInstance {
 
   transact = {
     getLastRound: async (
-      params: DIARandomOracleTypes.SignExecuteMethodParams<"getLastRound">
-    ): Promise<
-      DIARandomOracleTypes.SignExecuteMethodResult<"getLastRound">
-    > => {
-      return signExecuteMethod(DIARandomOracle, this, "getLastRound", params);
+      params: DIARandomOracleTypes.SignExecuteMethodParams<'getLastRound'>,
+    ): Promise<DIARandomOracleTypes.SignExecuteMethodResult<'getLastRound'>> => {
+      return signExecuteMethod(DIARandomOracle, this, 'getLastRound', params);
     },
     getRandomValue: async (
-      params: DIARandomOracleTypes.SignExecuteMethodParams<"getRandomValue">
-    ): Promise<
-      DIARandomOracleTypes.SignExecuteMethodResult<"getRandomValue">
-    > => {
-      return signExecuteMethod(DIARandomOracle, this, "getRandomValue", params);
+      params: DIARandomOracleTypes.SignExecuteMethodParams<'getRandomValue'>,
+    ): Promise<DIARandomOracleTypes.SignExecuteMethodResult<'getRandomValue'>> => {
+      return signExecuteMethod(DIARandomOracle, this, 'getRandomValue', params);
     },
     getAdmin: async (
-      params: DIARandomOracleTypes.SignExecuteMethodParams<"getAdmin">
-    ): Promise<DIARandomOracleTypes.SignExecuteMethodResult<"getAdmin">> => {
-      return signExecuteMethod(DIARandomOracle, this, "getAdmin", params);
+      params: DIARandomOracleTypes.SignExecuteMethodParams<'getAdmin'>,
+    ): Promise<DIARandomOracleTypes.SignExecuteMethodResult<'getAdmin'>> => {
+      return signExecuteMethod(DIARandomOracle, this, 'getAdmin', params);
     },
     changeAdmin: async (
-      params: DIARandomOracleTypes.SignExecuteMethodParams<"changeAdmin">
-    ): Promise<DIARandomOracleTypes.SignExecuteMethodResult<"changeAdmin">> => {
-      return signExecuteMethod(DIARandomOracle, this, "changeAdmin", params);
+      params: DIARandomOracleTypes.SignExecuteMethodParams<'changeAdmin'>,
+    ): Promise<DIARandomOracleTypes.SignExecuteMethodResult<'changeAdmin'>> => {
+      return signExecuteMethod(DIARandomOracle, this, 'changeAdmin', params);
     },
     setRandomValue: async (
-      params: DIARandomOracleTypes.SignExecuteMethodParams<"setRandomValue">
-    ): Promise<
-      DIARandomOracleTypes.SignExecuteMethodResult<"setRandomValue">
-    > => {
-      return signExecuteMethod(DIARandomOracle, this, "setRandomValue", params);
+      params: DIARandomOracleTypes.SignExecuteMethodParams<'setRandomValue'>,
+    ): Promise<DIARandomOracleTypes.SignExecuteMethodResult<'setRandomValue'>> => {
+      return signExecuteMethod(DIARandomOracle, this, 'setRandomValue', params);
     },
   };
 
   async multicall<Calls extends DIARandomOracleTypes.MultiCallParams>(
-    calls: Calls
+    calls: Calls,
   ): Promise<DIARandomOracleTypes.MultiCallResults<Calls>> {
     return (await multicallMethods(
       DIARandomOracle,
       this,
       calls,
-      getContractByCodeHash
+      getContractByCodeHash,
     )) as DIARandomOracleTypes.MultiCallResults<Calls>;
   }
 }

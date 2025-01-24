@@ -1,5 +1,13 @@
-import { AnchorMode, broadcastTransaction, uintCV, makeContractCall, tupleCV, callReadOnlyFunction, cvToValue } from '@stacks/transactions';
-import { StacksDevnet, StacksMainnet } from "@stacks/network";
+import {
+  AnchorMode,
+  broadcastTransaction,
+  uintCV,
+  makeContractCall,
+  tupleCV,
+  callReadOnlyFunction,
+  cvToValue,
+} from '@stacks/transactions';
+import { StacksDevnet, StacksMainnet } from '@stacks/network';
 import config, { ChainName } from '../config';
 import { bufferFromHex } from '@stacks/transactions/dist/cl';
 
@@ -11,8 +19,10 @@ if (config.chainName === ChainName.STACKS) {
 }
 
 export function init() {
-  network = config.stacks.rpcUrl ? new StacksMainnet({ url: config.stacks.rpcUrl }) : new StacksDevnet();
-  
+  network = config.stacks.rpcUrl
+    ? new StacksMainnet({ url: config.stacks.rpcUrl })
+    : new StacksDevnet();
+
   if (config.stacks.backupRpcUrl) {
     backupNetwork = new StacksMainnet({ url: config.stacks.backupRpcUrl });
   }
@@ -25,7 +35,7 @@ export async function getLastRound() {
     functionName: 'get-last-round',
     functionArgs: [],
     network,
-    senderAddress: config.stacks.contract
+    senderAddress: config.stacks.contract,
   };
   try {
     const result = await callReadOnlyFunction(txOptions);
@@ -42,7 +52,12 @@ export async function getLastRound() {
   }
 }
 
-export async function updateOracle(data: { round: number, randomness: string, signature: string, previous_signature: string }) {
+export async function updateOracle(data: {
+  round: number;
+  randomness: string;
+  signature: string;
+  previous_signature: string;
+}) {
   const maxRetries = config.stacks.maxRetryAttempts;
   let attempt = 0;
   let useBackup = false;
@@ -58,8 +73,8 @@ export async function updateOracle(data: { round: number, randomness: string, si
           tupleCV({
             randomness: bufferFromHex(data.randomness),
             signature: bufferFromHex(data.signature),
-            'previous-signature': bufferFromHex(data.previous_signature)
-          })
+            'previous-signature': bufferFromHex(data.previous_signature),
+          }),
         ],
         senderKey: config.stacks.secretKey,
         network: useBackup && backupNetwork ? backupNetwork : network,
@@ -68,7 +83,7 @@ export async function updateOracle(data: { round: number, randomness: string, si
 
       const transaction = await makeContractCall(txOptions);
       const broadcastResponse = await broadcastTransaction(transaction, txOptions.network);
-      
+
       if (broadcastResponse.error) {
         throw new Error(`Transaction failed with error: ${broadcastResponse}`);
       }
@@ -76,11 +91,11 @@ export async function updateOracle(data: { round: number, randomness: string, si
       const txId = broadcastResponse.txid;
       console.log(`Transaction ID: ${txId}`);
       console.log('Random oracle updated');
-      break;  // Exit loop if transaction is successful
+      break; // Exit loop if transaction is successful
     } catch (error) {
       console.error(`Transaction failed. Attempt ${attempt + 1} of ${maxRetries}. Error:`, error);
       attempt++;
-      
+
       if (attempt === 1 && backupNetwork) {
         console.error('Switching to backup node.');
         useBackup = true;

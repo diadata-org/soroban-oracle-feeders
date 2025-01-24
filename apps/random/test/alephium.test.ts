@@ -64,7 +64,9 @@ describe('Alephium Randomness Oracle', () => {
     });
 
     it('should throw an error if getLastRound fails', async () => {
-      (mockRandomOracle.view.getLastRound as jest.Mock).mockRejectedValue(new Error('Failed to fetch last round'));
+      (mockRandomOracle.view.getLastRound as jest.Mock).mockRejectedValue(
+        new Error('Failed to fetch last round'),
+      );
 
       await expect(getLastRound()).rejects.toThrow('Failed to fetch last round');
     });
@@ -97,7 +99,7 @@ describe('Alephium Randomness Oracle', () => {
           },
           signer: mockWallet,
           attoAlphAmount: expect.any(BigInt),
-        })
+        }),
       );
     });
 
@@ -109,7 +111,9 @@ describe('Alephium Randomness Oracle', () => {
         previous_signature: 'mockPreviousSignature',
       };
 
-      (mockRandomOracle.transact.setRandomValue as jest.Mock).mockRejectedValue(new Error('Transaction failed'));
+      (mockRandomOracle.transact.setRandomValue as jest.Mock).mockRejectedValue(
+        new Error('Transaction failed'),
+      );
 
       await expect(updateOracle(mockData)).rejects.toThrow('Transaction failed');
     });

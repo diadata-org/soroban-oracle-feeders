@@ -1,5 +1,13 @@
-import { AnchorMode, broadcastTransaction, makeContractCall, stringAsciiCV, uintCV, listCV, tupleCV } from '@stacks/transactions';
-import { StacksMainnet, StacksDevnet } from "@stacks/network";
+import {
+  AnchorMode,
+  broadcastTransaction,
+  makeContractCall,
+  stringAsciiCV,
+  uintCV,
+  listCV,
+  tupleCV,
+} from '@stacks/transactions';
+import { StacksMainnet, StacksDevnet } from '@stacks/network';
 import config, { ChainName } from '../src/config';
 import { updateOracle, init } from '../src/oracles/stacks';
 import { splitIntoFixedBatches } from '../src/utils';
@@ -29,7 +37,9 @@ describe('Stacks Oracle - updateOracle', () => {
   beforeAll(() => {
     // Initialize the network based on the config
     init();
-    mockNetwork = new (config.stacks.rpcUrl ? StacksMainnet : StacksDevnet)({ url: config.stacks.rpcUrl });
+    mockNetwork = new (config.stacks.rpcUrl ? StacksMainnet : StacksDevnet)({
+      url: config.stacks.rpcUrl,
+    });
   });
 
   beforeEach(() => {
@@ -51,10 +61,12 @@ describe('Stacks Oracle - updateOracle', () => {
 
     await updateOracle(keys, prices);
 
-    expect(makeContractCall).toHaveBeenCalledWith(expect.objectContaining({
-      functionArgs: expect.any(Array),
-      network: mockNetwork,
-    }));
+    expect(makeContractCall).toHaveBeenCalledWith(
+      expect.objectContaining({
+        functionArgs: expect.any(Array),
+        network: mockNetwork,
+      }),
+    );
 
     expect(broadcastTransaction).toHaveBeenCalledWith(transactionMock, mockNetwork);
   });
@@ -89,8 +101,9 @@ describe('Stacks Oracle - updateOracle', () => {
     (splitIntoFixedBatches as jest.Mock).mockImplementation((items) => [items]);
 
     const transactionMock = { txid: 'mock-txid' };
-    const broadcastTransactionMock = (broadcastTransaction as jest.MockedFunction<typeof broadcastTransaction>)
-      .mockRejectedValue(new Error('Transaction failed'));
+    const broadcastTransactionMock = (
+      broadcastTransaction as jest.MockedFunction<typeof broadcastTransaction>
+    ).mockRejectedValue(new Error('Transaction failed'));
 
     await expect(updateOracle(keys, prices)).rejects.toThrow('Transaction failed');
 

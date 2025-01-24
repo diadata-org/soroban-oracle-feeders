@@ -22,12 +22,12 @@ describe('Randomness Oracle API', () => {
     const result = await fetchRandomValue();
 
     expect(axios.get).toHaveBeenCalledWith(config.drandApiUrl);
-    expect(result).toEqual(DrandResponse.parse(mockResponseData));  // Validate the result using the parse method
+    expect(result).toEqual(DrandResponse.parse(mockResponseData)); // Validate the result using the parse method
   });
 
   it('should throw an error if the API response is invalid', async () => {
     const invalidResponseData = {
-      round: 'invalid_round',  // invalid round type
+      round: 'invalid_round', // invalid round type
       randomness: 'abc123',
       signature: 'signature123',
       previous_signature: 'previousSignature123',
@@ -35,12 +35,12 @@ describe('Randomness Oracle API', () => {
 
     (axios.get as jest.Mock).mockResolvedValueOnce({ data: invalidResponseData });
 
-    await expect(fetchRandomValue()).rejects.toThrow();  // Expect an error to be thrown due to invalid data
+    await expect(fetchRandomValue()).rejects.toThrow(); // Expect an error to be thrown due to invalid data
   });
 
   it('should handle network errors gracefully', async () => {
     (axios.get as jest.Mock).mockRejectedValueOnce(new Error('Network Error'));
 
-    await expect(fetchRandomValue()).rejects.toThrow('Network Error');  // Ensure network errors are properly caught
+    await expect(fetchRandomValue()).rejects.toThrow('Network Error'); // Ensure network errors are properly caught
   });
 });

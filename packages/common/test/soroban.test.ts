@@ -5,7 +5,7 @@ import {
   Keypair,
   Networks,
   Operation,
-  SorobanRpc,
+  rpc,
   TransactionBuilder,
   xdr,
 } from '@stellar/stellar-sdk';
@@ -32,12 +32,12 @@ jest.mock('@stellar/stellar-sdk', () => {
       setSorobanData: jest.fn().mockReturnThis(),
       setTimeout: jest.fn().mockReturnThis(),
       build: jest.fn().mockReturnThis(),
-      sign: jest.fn(),  // Mock sign method on TransactionBuilder
+      sign: jest.fn(), // Mock sign method on TransactionBuilder
     })),
-    SorobanRpc: {
+    rpc: {
       Server: jest.fn().mockImplementation(() => ({
         sendTransaction: jest.fn().mockResolvedValue({
-          status: 'PENDING',  // Mock status to return 'PENDING'
+          status: 'PENDING', // Mock status to return 'PENDING'
           hash: 'mockTransactionHash',
           errorResult: null,
         }),
@@ -72,12 +72,14 @@ jest.mock('@stellar/stellar-sdk', () => {
         contractCode: jest.fn().mockImplementation((data) => {
           return new originalModule.xdr.LedgerKey('contractCode', data);
         }),
-      },),
+      }),
       contractId: jest.fn().mockReturnValue('mockContractId'),
     })),
     Keypair: {
       fromSecret: jest.fn().mockReturnValue({
-        publicKey: jest.fn().mockReturnValue('GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'),
+        publicKey: jest
+          .fn()
+          .mockReturnValue('GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'),
         sign: jest.fn(),
       }),
     },
@@ -104,17 +106,27 @@ jest.mock('../src/utils', () => ({
 }));
 
 describe('Soroban Functions', () => {
-  let mockServer: SorobanRpc.Server;
+  let mockServer: rpc.Server;
   let mockKeypair: Keypair;
   let mockContract: Contract;
   let mockTx: TransactionBuilder;
 
   beforeEach(() => {
-    mockServer = new SorobanRpc.Server('http://localhost:8000');
+    mockServer = new rpc.Server('http://localhost:8000');
     mockKeypair = Keypair.fromSecret('SXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
     mockContract = new Contract('mockContractId');
-    mockTx = new TransactionBuilder({ accountId: () => { return 'mockAccount'; }, sequenceNumber: () => { return '1'; }, incrementSequenceNumber: () => { } }, DEFAULT_TX_OPTIONS);
-
+    mockTx = new TransactionBuilder(
+      {
+        accountId: () => {
+          return 'mockAccount';
+        },
+        sequenceNumber: () => {
+          return '1';
+        },
+        incrementSequenceNumber: () => {},
+      },
+      DEFAULT_TX_OPTIONS,
+    );
 
     jest.clearAllMocks();
   });
@@ -122,13 +134,14 @@ describe('Soroban Functions', () => {
   describe('extendInstanceTtl', () => {
     it('should extend the TTL of the contract instance', async () => {
       const wasmEntry = {
-        liveUntilLedgerSeq: 150, contractData: jest.fn().mockReturnThis(),
+        liveUntilLedgerSeq: 150,
+        contractData: jest.fn().mockReturnThis(),
         val: {
           contractData: jest.fn().mockReturnThis(),
           instance: jest.fn().mockReturnThis(),
           executable: jest.fn().mockReturnThis(),
           wasmHash: jest.fn().mockReturnValue('mockWasmHash'),
-          val: jest.fn().mockReturnThis()
+          val: jest.fn().mockReturnThis(),
         },
       };
       const latestLedger = { sequence: 100 };
@@ -178,9 +191,9 @@ describe('Soroban Functions', () => {
           instance: jest.fn().mockReturnThis(),
           executable: jest.fn().mockReturnThis(),
           wasmHash: jest.fn().mockReturnValue('mockWasmHash'),
-          val: jest.fn().mockReturnThis()
+          val: jest.fn().mockReturnThis(),
         },
-      }
+      };
       const latestLedger = { sequence: 101 };
 
       (mockServer.getLatestLedger as jest.Mock).mockResolvedValue(latestLedger);

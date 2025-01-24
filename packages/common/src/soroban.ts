@@ -6,7 +6,7 @@ import {
   Networks,
   Operation,
   SorobanDataBuilder,
-  SorobanRpc,
+  rpc,
   Transaction,
   TransactionBuilder,
   xdr,
@@ -16,7 +16,7 @@ import { sleep } from './utils';
 export const DAY_IN_LEDGERS = 17280;
 export const DEFAULT_TX_OPTIONS = { fee: BASE_FEE, networkPassphrase: Networks.TESTNET };
 
-export async function submitSorobanTx(server: SorobanRpc.Server, tx: Transaction | FeeBumpTransaction) {
+export async function submitSorobanTx(server: rpc.Server, tx: Transaction | FeeBumpTransaction) {
   const sendResponse = await server.sendTransaction(tx);
   if (sendResponse.status !== 'PENDING') {
     throw new Error(`Transaction failed: ${sendResponse.errorResult}`);
@@ -39,7 +39,7 @@ export async function submitSorobanTx(server: SorobanRpc.Server, tx: Transaction
 }
 
 export type ExtendTtlConfig = {
-  server: SorobanRpc.Server;
+  server: rpc.Server;
   source: Keypair;
   contract: Contract;
   threshold: number;
@@ -88,7 +88,7 @@ export async function extendInstanceTtl({
 }
 
 export async function restoreInstance(
-  server: SorobanRpc.Server,
+  server: rpc.Server,
   source: Keypair,
   contract: Contract,
   options: TransactionBuilder.TransactionBuilderOptions = DEFAULT_TX_OPTIONS,
@@ -120,7 +120,7 @@ export async function restoreInstance(
   }
 }
 
-async function getWasmEntry(server: SorobanRpc.Server, key: xdr.LedgerKey) {
+async function getWasmEntry(server: rpc.Server, key: xdr.LedgerKey) {
   const response = await server.getLedgerEntries(key);
   if (!response.entries.length) {
     throw new Error('No ledger entries found');
