@@ -131,5 +131,9 @@ async function getAccountNonce(address: string) {
 
   const res = await axios(`${config.stacks.rpcUrl}/extended/v1/tx?${query}`);
   const body = res.data as TransactionResults;
-  return BigInt(body.results[0].nonce + 1);
+
+  if (body.total) {
+    return BigInt(body.results[0].nonce + 1);
+  }
+  return 0n;
 }

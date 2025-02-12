@@ -51,6 +51,7 @@ async function update(published: Map<string, number>, prices: Map<string, number
       try {
         const coingeckoPrice = await getCoingeckoPrice(asset.coingeckoName);
         externalPrices.push(coingeckoPrice);
+        console.log(`Coingecko price for ${asset.symbol}: ${coingeckoPrice}`);
       } catch (err: unknown) {
         console.error(`Error retrieving coingecko information for ${symbol}:`, err);
       }
@@ -59,6 +60,7 @@ async function update(published: Map<string, number>, prices: Map<string, number
       try {
         const cmcPrice = await getCmcPrice(asset.cmcName);
         externalPrices.push(cmcPrice);
+        console.log(`CMC price for ${asset.symbol}: ${cmcPrice}`);
       } catch (err: unknown) {
         console.error(`Error retrieving CMC information for ${symbol}:`, err);
       }
@@ -69,9 +71,7 @@ async function update(published: Map<string, number>, prices: Map<string, number
         return Math.abs(guardianPrice - price) / guardianPrice <= asset.allowedDeviation;
       });
 
-      if (matched) {
-        updateCollector.set(symbol, price);
-      } else {
+      if (!matched) {
         console.log(`Error: No guardian match found for asset ${symbol} with price ${price}!`);
         continue;
       }
@@ -80,10 +80,12 @@ async function update(published: Map<string, number>, prices: Map<string, number
       continue;
     }
 
+    updateCollector.set(symbol, price);
+
     console.log(
-      `Entering deviation based update zone for old price ${published.get(
-        symbol,
-      )} of asset ${symbol}. New price: ${price}`,
+      `Entering deviation based update zone for old price ${
+        published.get(symbol) ?? 0
+      } of asset ${symbol}. New price: ${price}`,
     );
   }
 
