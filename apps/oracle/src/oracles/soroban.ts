@@ -1,10 +1,4 @@
-import {
-  Contract,
-  Keypair,
-  nativeToScVal,
-  SorobanRpc,
-  TransactionBuilder,
-} from '@stellar/stellar-sdk';
+import { Contract, Keypair, nativeToScVal, rpc, TransactionBuilder } from '@stellar/stellar-sdk';
 import {
   DAY_IN_LEDGERS,
   DEFAULT_TX_OPTIONS,
@@ -14,16 +8,16 @@ import {
 } from '@repo/common';
 import config, { ChainName } from '../config';
 
-let server: SorobanRpc.Server;
+let server: rpc.Server;
 let keypair: Keypair;
 let contract: Contract;
 
-if (config.chainName === ChainName.SOROBAN) {
+if (config.chainName === ChainName.Soroban) {
   init();
 }
 
 export function init() {
-  server = new SorobanRpc.Server(config.soroban.rpcUrl, { allowHttp: true });
+  server = new rpc.Server(config.soroban.rpcUrl, { allowHttp: true });
   keypair = Keypair.fromSecret(config.soroban.secretKey);
   contract = new Contract(config.soroban.contractId);
 }
@@ -42,7 +36,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const account = await server.getAccount(keypair.publicKey());
 
   const timestamp = Math.floor(Date.now() / 1000);
-  const values = prices.map((p) => [timestamp,  Math.floor(p * 100_000_000)] as const);
+  const values = prices.map((p) => [timestamp, Math.floor(p * 100_000_000)] as const);
 
   const operation = contract.call(
     'set_multiple_values',

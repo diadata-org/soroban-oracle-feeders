@@ -19,18 +19,32 @@ if (process.env.ASSETS && !process.env.GQL_ASSETS) {
 const assets = assetsToParse.split(';').map((str) => {
   const [network, address, symbol, ...entries] = str
     .replace('-ibc-', '-ibc/')
-    .split('-')
+    .split('§')
     .map((str) => str.trim());
 
   const currAsset = {
     network,
     address: address.replace('ibc/', 'ibc-'),
     symbol,
+    coingeckoName: '',
+    cmcName: '',
+    allowedDeviation: 0.0,
     gqlParams: { FeedSelection: [] } as GqlParams,
   };
 
-  if (entries.length && useGql) {
-    const gqlQuery = entries.join('-');
+  if (entries.length > 1) {
+    [currAsset.coingeckoName, currAsset.cmcName] = entries;
+
+    if (currAsset.coingeckoName || currAsset.cmcName) {
+      const allowedDeviation = parseFloat(entries[2]);
+      if (!isNaN(allowedDeviation)) {
+        currAsset.allowedDeviation = allowedDeviation;
+      }
+    }
+  }
+
+  if (entries.length > 3) {
+    const gqlQuery = entries[3];
     if (gqlQuery) {
       try {
         currAsset.gqlParams = GqlParams.parse(JSON.parse(gqlQuery));
@@ -49,11 +63,11 @@ const conditionalPairs = process.env.CONDITIONAL_ASSETS?.split(';').map((str) =>
 });
 
 export enum ChainName {
-  KADENA = 'kadena',
-  SOROBAN = 'soroban',
-  ALEPHIUM = 'alephium',
-  STACKS = 'stacks',
-  OPNET = 'opnet',
+  Kadena = 'kadena',
+  Soroban = 'soroban',
+  Alephium = 'alephium',
+  Stacks = 'stacks',
+  Opnet = 'opnet',
 }
 
 export default {
@@ -85,15 +99,19 @@ export default {
     rpcUrl: process.env.STACKS_RPC_URL,
     backupRpcUrl: process.env.STACKS_BACKUP_RPC_URL,
     contractName: process.env.STACKS_CONTRACT_NAME || 'dia-oracle',
-    secretKey: process.env.STACKS_PRIVATE_KEY || '753b7cc01a1a2e86221266a154af739463fce51219d97e4f856cd7200c3bd2a601',
+    secretKey:
+      process.env.STACKS_PRIVATE_KEY ||
+      '753b7cc01a1a2e86221266a154af739463fce51219d97e4f856cd7200c3bd2a601',
     contract: process.env.STACKS_CONTRACT || 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',
+    feeRate: BigInt(process.env.STACKS_FEE_RATE || '100'),
     maxBatchSize: 10,
     maxRetryAttempts: 3,
   },
   opnet: {
     rpcUrl: process.env.OPNET_RPC_URL || 'https://regtest.opnet.org',
     backupRpcUrl: process.env.OPNET_BACKUP_RPC_URL,
-    secretKey: process.env.OPNET_PRIVATE_KEY || 'cShTHPAqa5rX2p9GxN6QvwsFMnnhHLUx2WRE8ztNTWxqwBGWycH8',
+    secretKey:
+      process.env.OPNET_PRIVATE_KEY || 'cShTHPAqa5rX2p9GxN6QvwsFMnnhHLUx2WRE8ztNTWxqwBGWycH8',
     contract: process.env.OPNET_CONTRACT || 'bcrt1q39y3gw0zxaq0hgkr0x3m80tz504p5ta5l8j7y4',
     maxBatchSize: 10, // max number of prices to update in a single transaction
     maxRetryAttempts: 3,
@@ -101,12 +119,13 @@ export default {
     priorityFee: BigInt(process.env.OPNET_PRIORITY_FEE || '330'),
   },
 
-  chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.SOROBAN,
+  chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.Soroban,
 
   intervals: {
     frequency: parseInt(process.env.FREQUENCY_SECONDS || '120', 10) * 1000,
     mandatoryFrequency: parseInt(process.env.MANDATORY_FREQUENCY_SECONDS || '0', 10) * 1000,
   },
+
   api: {
     useGql,
     assets,
@@ -119,6 +138,16 @@ export default {
       methodology: process.env.GQL_METHODOLOGY || 'vwap',
     },
   },
+
   deviationPermille: parseInt(process.env.DEVIATION_PERMILLE || '10', 10),
   conditionalPairs: conditionalPairs || [],
+
+  coingecko: {
+    apiKey: process.env.COINGECKO_API_KEY || '',
+    url: process.env.COINGECKO_API_URL || 'https://pro-api.coingecko.com',
+  },
+  cmc: {
+    apiKey: process.env.CMC_API_KEY || '',
+    url: process.env.CMC_API_URL || 'https://pro-api.coinmarketcap.com',
+  },
 };

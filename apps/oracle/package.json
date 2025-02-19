@@ -22,8 +22,7 @@
     "@stacks/auth": "^6.16.1",
     "@stacks/network": "^6.16.0",
     "@stacks/transactions": "^6.16.1",
-    "@stellar/stellar-sdk": "^12.2.0",
-    "as-bignum": "^0.3.1",
+    "@stellar/stellar-sdk": "^13.0.0",
     "axios": "^1.7.3",
     "bitcoinjs-lib": "^7.0.0-rc.0",
     "chalk": "^5.3.0",
@@ -45,6 +44,7 @@
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@repo/typescript-config": "*",
+    "@stacks/stacks-blockchain-api-types": "^7.14.1",
     "@types/graphql": "^14.5.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.10.5",
@@ -59,7 +59,7 @@
   },
   "packageManager": "yarn@1.22.19",
   "engines": {
-    "node": "^21.x",
+    "node": "^22.x",
     "npm": "^10.x"
   }
 }

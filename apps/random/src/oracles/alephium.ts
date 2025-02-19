@@ -3,6 +3,7 @@ import { PrivateKeyWallet } from '@alephium/web3-wallet';
 import { DIARandomOracle, DIARandomOracleInstance } from '@repo/common';
 import config, { ChainName } from '../config';
 import type { DrandResponse } from '../api';
+import { bigint } from 'zod';
 
 let nodeProvider: NodeProvider;
 let wallet: PrivateKeyWallet;
@@ -31,19 +32,20 @@ export async function getLastRound() {
 }
 
 export async function updateOracle(data: DrandResponse) {
-
   const maxRetries = config.alephium.maxRetryAttempts;
   let attempt = 0;
 
   while (attempt < maxRetries) {
     try {
+      let modifiedRound = data.round%1000
+      console.log("modifiedRound",)
       const result = await randomOracle.transact.setRandomValue({
         args: {
-          round: BigInt(data.round),
+          modifiedRound: BigInt(modifiedRound),
           value: {
             randomness: data.randomness,
             signature: data.signature,
-            previousSignature: data.previous_signature,
+            round: BigInt(data.round),
           },
         },
         signer: wallet,

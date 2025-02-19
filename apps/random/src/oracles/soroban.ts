@@ -3,7 +3,7 @@ import {
   Keypair,
   nativeToScVal,
   scValToNative,
-  SorobanRpc,
+  rpc,
   TransactionBuilder,
   xdr,
 } from '@stellar/stellar-sdk';
@@ -17,7 +17,7 @@ import {
 import type { DrandResponse } from '../api';
 import config, { ChainName } from '../config';
 
-let server: SorobanRpc.Server;
+let server: rpc.Server;
 let keypair: Keypair;
 let contract: Contract;
 
@@ -30,7 +30,7 @@ export function getServer() {
 }
 
 export function init() {
-  server = new SorobanRpc.Server(config.soroban.rpcUrl, { allowHttp: true });
+  server = new rpc.Server(config.soroban.rpcUrl, { allowHttp: true });
   keypair = Keypair.fromSecret(config.soroban.secretKey);
   contract = new Contract(config.soroban.contractId);
 }
@@ -54,7 +54,7 @@ export async function getLastRound() {
     .build();
 
   const sim = await server.simulateTransaction(tx);
-  if (!SorobanRpc.Api.isSimulationSuccess(sim)) {
+  if (!rpc.Api.isSimulationSuccess(sim)) {
     throw new Error(`Simulation failed: ${sim.error}`);
   }
   if (!sim.result) {

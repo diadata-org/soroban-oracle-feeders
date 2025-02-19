@@ -4,25 +4,15 @@
   "bytecode": "01040e40244031403f010000000103d3f884f741a00002010001010008d3916e2287b400021600a1000516005e0000010100051600a000450c7b010000000003d3a18dde5cb40002",
   "codeHash": "98a92bccb738d1e440cb4d4b17967784b69ce728edcc841110094f713593a252",
   "fieldsSig": {
-    "names": [
-      "admin"
-    ],
-    "types": [
-      "Address"
-    ],
-    "isMutable": [
-      true
-    ]
+    "names": ["admin"],
+    "types": ["Address"],
+    "isMutable": [true]
   },
   "eventsSig": [
     {
       "name": "AdminChanged",
-      "fieldNames": [
-        "newAdmin"
-      ],
-      "fieldTypes": [
-        "Address"
-      ]
+      "fieldNames": ["newAdmin"],
+      "fieldTypes": ["Address"]
     }
   ],
   "functions": [
@@ -31,34 +21,20 @@
       "paramNames": [],
       "paramTypes": [],
       "paramIsMutable": [],
-      "returnTypes": [
-        "Address"
-      ]
+      "returnTypes": ["Address"]
     },
     {
       "name": "changeAdmin",
-      "paramNames": [
-        "newAdmin"
-      ],
-      "paramTypes": [
-        "Address"
-      ],
-      "paramIsMutable": [
-        false
-      ],
+      "paramNames": ["newAdmin"],
+      "paramTypes": ["Address"],
+      "paramIsMutable": [false],
       "returnTypes": []
     },
     {
       "name": "checkAdmin",
-      "paramNames": [
-        "caller"
-      ],
-      "paramTypes": [
-        "Address"
-      ],
-      "paramIsMutable": [
-        false
-      ],
+      "paramNames": ["caller"],
+      "paramTypes": ["Address"],
+      "paramIsMutable": [false],
       "returnTypes": []
     },
     {

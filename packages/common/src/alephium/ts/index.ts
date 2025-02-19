@@ -2,7 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export * from "./DIAOracle";
-export * from "./DIAOracleBaseTest";
-export * from "./DIARandomOracle";
-export * from "./scripts";
+export * from './DIAOracle';
+export * from './DIAOracleBaseTest';
+export * from './DIARandomOracle';
+export * from './scripts';

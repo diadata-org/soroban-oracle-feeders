@@ -31,11 +31,11 @@ import {
   signExecuteMethod,
   addStdIdToFields,
   encodeContractFields,
-} from "@alephium/web3";
-import { default as DIAOracleContractJson } from "../DIAOracle.ral.json";
-import { getContractByCodeHash } from "./contracts";
-import { DIAOracleValue, DIARandomValue, AllStructs } from "./types";
-import { RalphMap } from "@alephium/web3";
+} from '@alephium/web3';
+import { default as DIAOracleContractJson } from '../DIAOracle.ral.json';
+import { getContractByCodeHash } from './contracts';
+import { DIAOracleValue, DIARandomValue, AllStructs } from './types';
+import { RalphMap } from '@alephium/web3';
 
 // Custom types for the contract
 export namespace DIAOracleTypes {
@@ -58,7 +58,7 @@ export namespace DIAOracleTypes {
       result: CallContractResult<DIAOracleValue>;
     };
     getAdmin: {
-      params: Omit<CallContractParams<{}>, "args">;
+      params: Omit<CallContractParams<{}>, 'args'>;
       result: CallContractResult<Address>;
     };
     changeAdmin: {
@@ -85,20 +85,9 @@ export namespace DIAOracleTypes {
           HexString,
           HexString,
           HexString,
-          HexString
+          HexString,
         ];
-        values: [
-          bigint,
-          bigint,
-          bigint,
-          bigint,
-          bigint,
-          bigint,
-          bigint,
-          bigint,
-          bigint,
-          bigint
-        ];
+        values: [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint];
         timestamps: [
           bigint,
           bigint,
@@ -109,23 +98,21 @@ export namespace DIAOracleTypes {
           bigint,
           bigint,
           bigint,
-          bigint
+          bigint,
         ];
         batchSize: bigint;
       }>;
       result: CallContractResult<null>;
     };
   }
-  export type CallMethodParams<T extends keyof CallMethodTable> =
-    CallMethodTable[T]["params"];
-  export type CallMethodResult<T extends keyof CallMethodTable> =
-    CallMethodTable[T]["result"];
+  export type CallMethodParams<T extends keyof CallMethodTable> = CallMethodTable[T]['params'];
+  export type CallMethodResult<T extends keyof CallMethodTable> = CallMethodTable[T]['result'];
   export type MultiCallParams = Partial<{
-    [Name in keyof CallMethodTable]: CallMethodTable[Name]["params"];
+    [Name in keyof CallMethodTable]: CallMethodTable[Name]['params'];
   }>;
   export type MultiCallResults<T extends MultiCallParams> = {
     [MaybeName in keyof T]: MaybeName extends keyof CallMethodTable
-      ? CallMethodTable[MaybeName]["result"]
+      ? CallMethodTable[MaybeName]['result']
       : undefined;
   };
 
@@ -135,7 +122,7 @@ export namespace DIAOracleTypes {
       result: SignExecuteScriptTxResult;
     };
     getAdmin: {
-      params: Omit<SignExecuteContractMethodParams<{}>, "args">;
+      params: Omit<SignExecuteContractMethodParams<{}>, 'args'>;
       result: SignExecuteScriptTxResult;
     };
     changeAdmin: {
@@ -162,20 +149,9 @@ export namespace DIAOracleTypes {
           HexString,
           HexString,
           HexString,
-          HexString
+          HexString,
         ];
-        values: [
-          bigint,
-          bigint,
-          bigint,
-          bigint,
-          bigint,
-          bigint,
-          bigint,
-          bigint,
-          bigint,
-          bigint
-        ];
+        values: [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint];
         timestamps: [
           bigint,
           bigint,
@@ -186,7 +162,7 @@ export namespace DIAOracleTypes {
           bigint,
           bigint,
           bigint,
-          bigint
+          bigint,
         ];
         batchSize: bigint;
       }>;
@@ -194,20 +170,17 @@ export namespace DIAOracleTypes {
     };
   }
   export type SignExecuteMethodParams<T extends keyof SignExecuteMethodTable> =
-    SignExecuteMethodTable[T]["params"];
+    SignExecuteMethodTable[T]['params'];
   export type SignExecuteMethodResult<T extends keyof SignExecuteMethodTable> =
-    SignExecuteMethodTable[T]["result"];
+    SignExecuteMethodTable[T]['result'];
 }
 
-class Factory extends ContractFactory<
-  DIAOracleInstance,
-  DIAOracleTypes.Fields
-> {
+class Factory extends ContractFactory<DIAOracleInstance, DIAOracleTypes.Fields> {
   encodeFields(fields: DIAOracleTypes.Fields) {
     return encodeContractFields(
       addStdIdToFields(this.contract, fields),
       this.contract.fieldsSig,
-      AllStructs
+      AllStructs,
     );
   }
 
@@ -217,11 +190,11 @@ class Factory extends ContractFactory<
 
   eventIndex = { AdminChanged: 0, OracleUpdate: 1 };
   consts = {
-    MaxBatchSize: BigInt("10"),
+    MaxBatchSize: BigInt('10'),
     ErrorCodes: {
-      AdminAllowedOnly: BigInt("0"),
-      InvalidBatchSize: BigInt("1"),
-      InvalidKey: BigInt("2"),
+      AdminAllowedOnly: BigInt('0'),
+      InvalidBatchSize: BigInt('1'),
+      InvalidKey: BigInt('2'),
     },
   };
 
@@ -235,14 +208,11 @@ class Factory extends ContractFactory<
         DIAOracleTypes.Fields,
         { key: HexString },
         { onchainValues?: Map<HexString, DIAOracleValue> }
-      >
+      >,
     ): Promise<
-      TestContractResult<
-        DIAOracleValue,
-        { onchainValues?: Map<HexString, DIAOracleValue> }
-      >
+      TestContractResult<DIAOracleValue, { onchainValues?: Map<HexString, DIAOracleValue> }>
     > => {
-      return testMethod(this, "getValue", params, getContractByCodeHash);
+      return testMethod(this, 'getValue', params, getContractByCodeHash);
     },
     getAdmin: async (
       params: Omit<
@@ -251,57 +221,39 @@ class Factory extends ContractFactory<
           never,
           { onchainValues?: Map<HexString, DIAOracleValue> }
         >,
-        "testArgs"
-      >
+        'testArgs'
+      >,
     ): Promise<
-      TestContractResult<
-        Address,
-        { onchainValues?: Map<HexString, DIAOracleValue> }
-      >
+      TestContractResult<Address, { onchainValues?: Map<HexString, DIAOracleValue> }>
     > => {
-      return testMethod(this, "getAdmin", params, getContractByCodeHash);
+      return testMethod(this, 'getAdmin', params, getContractByCodeHash);
     },
     changeAdmin: async (
       params: TestContractParams<
         DIAOracleTypes.Fields,
         { newAdmin: Address },
         { onchainValues?: Map<HexString, DIAOracleValue> }
-      >
-    ): Promise<
-      TestContractResult<
-        null,
-        { onchainValues?: Map<HexString, DIAOracleValue> }
-      >
-    > => {
-      return testMethod(this, "changeAdmin", params, getContractByCodeHash);
+      >,
+    ): Promise<TestContractResult<null, { onchainValues?: Map<HexString, DIAOracleValue> }>> => {
+      return testMethod(this, 'changeAdmin', params, getContractByCodeHash);
     },
     checkAdmin: async (
       params: TestContractParams<
         DIAOracleTypes.Fields,
         { caller: Address },
         { onchainValues?: Map<HexString, DIAOracleValue> }
-      >
-    ): Promise<
-      TestContractResult<
-        null,
-        { onchainValues?: Map<HexString, DIAOracleValue> }
-      >
-    > => {
-      return testMethod(this, "checkAdmin", params, getContractByCodeHash);
+      >,
+    ): Promise<TestContractResult<null, { onchainValues?: Map<HexString, DIAOracleValue> }>> => {
+      return testMethod(this, 'checkAdmin', params, getContractByCodeHash);
     },
     setValue: async (
       params: TestContractParams<
         DIAOracleTypes.Fields,
         { key: HexString; value: bigint; timestamp: bigint },
         { onchainValues?: Map<HexString, DIAOracleValue> }
-      >
-    ): Promise<
-      TestContractResult<
-        null,
-        { onchainValues?: Map<HexString, DIAOracleValue> }
-      >
-    > => {
-      return testMethod(this, "setValue", params, getContractByCodeHash);
+      >,
+    ): Promise<TestContractResult<null, { onchainValues?: Map<HexString, DIAOracleValue> }>> => {
+      return testMethod(this, 'setValue', params, getContractByCodeHash);
     },
     setMultipleValues: async (
       params: TestContractParams<
@@ -317,20 +269,9 @@ class Factory extends ContractFactory<
             HexString,
             HexString,
             HexString,
-            HexString
+            HexString,
           ];
-          values: [
-            bigint,
-            bigint,
-            bigint,
-            bigint,
-            bigint,
-            bigint,
-            bigint,
-            bigint,
-            bigint,
-            bigint
-          ];
+          values: [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint];
           timestamps: [
             bigint,
             bigint,
@@ -341,38 +282,23 @@ class Factory extends ContractFactory<
             bigint,
             bigint,
             bigint,
-            bigint
+            bigint,
           ];
           batchSize: bigint;
         },
         { onchainValues?: Map<HexString, DIAOracleValue> }
-      >
-    ): Promise<
-      TestContractResult<
-        null,
-        { onchainValues?: Map<HexString, DIAOracleValue> }
-      >
-    > => {
-      return testMethod(
-        this,
-        "setMultipleValues",
-        params,
-        getContractByCodeHash
-      );
+      >,
+    ): Promise<TestContractResult<null, { onchainValues?: Map<HexString, DIAOracleValue> }>> => {
+      return testMethod(this, 'setMultipleValues', params, getContractByCodeHash);
     },
     updateValue: async (
       params: TestContractParams<
         DIAOracleTypes.Fields,
         { key: HexString; value: bigint; timestamp: bigint },
         { onchainValues?: Map<HexString, DIAOracleValue> }
-      >
-    ): Promise<
-      TestContractResult<
-        null,
-        { onchainValues?: Map<HexString, DIAOracleValue> }
-      >
-    > => {
-      return testMethod(this, "updateValue", params, getContractByCodeHash);
+      >,
+    ): Promise<TestContractResult<null, { onchainValues?: Map<HexString, DIAOracleValue> }>> => {
+      return testMethod(this, 'updateValue', params, getContractByCodeHash);
     },
   };
 }
@@ -381,10 +307,10 @@ class Factory extends ContractFactory<
 export const DIAOracle = new Factory(
   Contract.fromJson(
     DIAOracleContractJson,
-    "=30-2+59=455-1+9=37-1+d=38+7a7e0214696e73657274206174206d617020706174683a2000=108",
-    "4cd1d01561d5fdfb1c83f51f7ecdae84f2155e2a5cfdbb9ae488330f58ff5077",
-    AllStructs
-  )
+    '=30-2+59=455-1+9=37-1+d=38+7a7e0214696e73657274206174206d617020706174683a2000=108',
+    '4cd1d01561d5fdfb1c83f51f7ecdae84f2155e2a5cfdbb9ae488330f58ff5077',
+    AllStructs,
+  ),
 );
 
 // Use this class to interact with the blockchain
@@ -397,7 +323,7 @@ export class DIAOracleInstance extends ContractInstance {
     onchainValues: new RalphMap<HexString, DIAOracleValue>(
       DIAOracle.contract,
       this.contractId,
-      "onchainValues"
+      'onchainValues',
     ),
   };
 
@@ -411,99 +337,58 @@ export class DIAOracleInstance extends ContractInstance {
 
   subscribeAdminChangedEvent(
     options: EventSubscribeOptions<DIAOracleTypes.AdminChangedEvent>,
-    fromCount?: number
+    fromCount?: number,
   ): EventSubscription {
-    return subscribeContractEvent(
-      DIAOracle.contract,
-      this,
-      options,
-      "AdminChanged",
-      fromCount
-    );
+    return subscribeContractEvent(DIAOracle.contract, this, options, 'AdminChanged', fromCount);
   }
 
   subscribeOracleUpdateEvent(
     options: EventSubscribeOptions<DIAOracleTypes.OracleUpdateEvent>,
-    fromCount?: number
+    fromCount?: number,
   ): EventSubscription {
-    return subscribeContractEvent(
-      DIAOracle.contract,
-      this,
-      options,
-      "OracleUpdate",
-      fromCount
-    );
+    return subscribeContractEvent(DIAOracle.contract, this, options, 'OracleUpdate', fromCount);
   }
 
   subscribeAllEvents(
     options: EventSubscribeOptions<
       DIAOracleTypes.AdminChangedEvent | DIAOracleTypes.OracleUpdateEvent
     >,
-    fromCount?: number
+    fromCount?: number,
   ): EventSubscription {
-    return subscribeContractEvents(
-      DIAOracle.contract,
-      this,
-      options,
-      fromCount
-    );
+    return subscribeContractEvents(DIAOracle.contract, this, options, fromCount);
   }
 
   methods = {
     getValue: async (
-      params: DIAOracleTypes.CallMethodParams<"getValue">
-    ): Promise<DIAOracleTypes.CallMethodResult<"getValue">> => {
-      return callMethod(
-        DIAOracle,
-        this,
-        "getValue",
-        params,
-        getContractByCodeHash
-      );
+      params: DIAOracleTypes.CallMethodParams<'getValue'>,
+    ): Promise<DIAOracleTypes.CallMethodResult<'getValue'>> => {
+      return callMethod(DIAOracle, this, 'getValue', params, getContractByCodeHash);
     },
     getAdmin: async (
-      params?: DIAOracleTypes.CallMethodParams<"getAdmin">
-    ): Promise<DIAOracleTypes.CallMethodResult<"getAdmin">> => {
+      params?: DIAOracleTypes.CallMethodParams<'getAdmin'>,
+    ): Promise<DIAOracleTypes.CallMethodResult<'getAdmin'>> => {
       return callMethod(
         DIAOracle,
         this,
-        "getAdmin",
+        'getAdmin',
         params === undefined ? {} : params,
-        getContractByCodeHash
+        getContractByCodeHash,
       );
     },
     changeAdmin: async (
-      params: DIAOracleTypes.CallMethodParams<"changeAdmin">
-    ): Promise<DIAOracleTypes.CallMethodResult<"changeAdmin">> => {
-      return callMethod(
-        DIAOracle,
-        this,
-        "changeAdmin",
-        params,
-        getContractByCodeHash
-      );
+      params: DIAOracleTypes.CallMethodParams<'changeAdmin'>,
+    ): Promise<DIAOracleTypes.CallMethodResult<'changeAdmin'>> => {
+      return callMethod(DIAOracle, this, 'changeAdmin', params, getContractByCodeHash);
     },
     setValue: async (
-      params: DIAOracleTypes.CallMethodParams<"setValue">
-    ): Promise<DIAOracleTypes.CallMethodResult<"setValue">> => {
-      return callMethod(
-        DIAOracle,
-        this,
-        "setValue",
-        params,
-        getContractByCodeHash
-      );
+      params: DIAOracleTypes.CallMethodParams<'setValue'>,
+    ): Promise<DIAOracleTypes.CallMethodResult<'setValue'>> => {
+      return callMethod(DIAOracle, this, 'setValue', params, getContractByCodeHash);
     },
     setMultipleValues: async (
-      params: DIAOracleTypes.CallMethodParams<"setMultipleValues">
-    ): Promise<DIAOracleTypes.CallMethodResult<"setMultipleValues">> => {
-      return callMethod(
-        DIAOracle,
-        this,
-        "setMultipleValues",
-        params,
-        getContractByCodeHash
-      );
+      params: DIAOracleTypes.CallMethodParams<'setMultipleValues'>,
+    ): Promise<DIAOracleTypes.CallMethodResult<'setMultipleValues'>> => {
+      return callMethod(DIAOracle, this, 'setMultipleValues', params, getContractByCodeHash);
     },
   };
 
@@ -511,40 +396,40 @@ export class DIAOracleInstance extends ContractInstance {
 
   transact = {
     getValue: async (
-      params: DIAOracleTypes.SignExecuteMethodParams<"getValue">
-    ): Promise<DIAOracleTypes.SignExecuteMethodResult<"getValue">> => {
-      return signExecuteMethod(DIAOracle, this, "getValue", params);
+      params: DIAOracleTypes.SignExecuteMethodParams<'getValue'>,
+    ): Promise<DIAOracleTypes.SignExecuteMethodResult<'getValue'>> => {
+      return signExecuteMethod(DIAOracle, this, 'getValue', params);
     },
     getAdmin: async (
-      params: DIAOracleTypes.SignExecuteMethodParams<"getAdmin">
-    ): Promise<DIAOracleTypes.SignExecuteMethodResult<"getAdmin">> => {
-      return signExecuteMethod(DIAOracle, this, "getAdmin", params);
+      params: DIAOracleTypes.SignExecuteMethodParams<'getAdmin'>,
+    ): Promise<DIAOracleTypes.SignExecuteMethodResult<'getAdmin'>> => {
+      return signExecuteMethod(DIAOracle, this, 'getAdmin', params);
     },
     changeAdmin: async (
-      params: DIAOracleTypes.SignExecuteMethodParams<"changeAdmin">
-    ): Promise<DIAOracleTypes.SignExecuteMethodResult<"changeAdmin">> => {
-      return signExecuteMethod(DIAOracle, this, "changeAdmin", params);
+      params: DIAOracleTypes.SignExecuteMethodParams<'changeAdmin'>,
+    ): Promise<DIAOracleTypes.SignExecuteMethodResult<'changeAdmin'>> => {
+      return signExecuteMethod(DIAOracle, this, 'changeAdmin', params);
     },
     setValue: async (
-      params: DIAOracleTypes.SignExecuteMethodParams<"setValue">
-    ): Promise<DIAOracleTypes.SignExecuteMethodResult<"setValue">> => {
-      return signExecuteMethod(DIAOracle, this, "setValue", params);
+      params: DIAOracleTypes.SignExecuteMethodParams<'setValue'>,
+    ): Promise<DIAOracleTypes.SignExecuteMethodResult<'setValue'>> => {
+      return signExecuteMethod(DIAOracle, this, 'setValue', params);
     },
     setMultipleValues: async (
-      params: DIAOracleTypes.SignExecuteMethodParams<"setMultipleValues">
-    ): Promise<DIAOracleTypes.SignExecuteMethodResult<"setMultipleValues">> => {
-      return signExecuteMethod(DIAOracle, this, "setMultipleValues", params);
+      params: DIAOracleTypes.SignExecuteMethodParams<'setMultipleValues'>,
+    ): Promise<DIAOracleTypes.SignExecuteMethodResult<'setMultipleValues'>> => {
+      return signExecuteMethod(DIAOracle, this, 'setMultipleValues', params);
     },
   };
 
   async multicall<Calls extends DIAOracleTypes.MultiCallParams>(
-    calls: Calls
+    calls: Calls,
   ): Promise<DIAOracleTypes.MultiCallResults<Calls>> {
     return (await multicallMethods(
       DIAOracle,
       this,
       calls,
-      getContractByCodeHash
+      getContractByCodeHash,
     )) as DIAOracleTypes.MultiCallResults<Calls>;
   }
 }

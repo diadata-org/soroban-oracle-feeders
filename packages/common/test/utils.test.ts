@@ -2,7 +2,6 @@ import { Observable, of } from 'rxjs';
 import { sleep, createAsyncQueue, intoAsyncIterable } from '../src/utils';
 
 describe('Utility Functions', () => {
-
   describe('sleep', () => {
     it('should resolve after the specified time', async () => {
       const start = Date.now();
@@ -18,19 +17,21 @@ describe('Utility Functions', () => {
       const results: string[] = [];
       const queue = createAsyncQueue();
 
-      const task1 = () => new Promise<void>((resolve) => {
-        setTimeout(() => {
-          results.push('task1');
-          resolve();
-        }, 50);
-      });
+      const task1 = () =>
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            results.push('task1');
+            resolve();
+          }, 50);
+        });
 
-      const task2 = () => new Promise<void>((resolve) => {
-        setTimeout(() => {
-          results.push('task2');
-          resolve();
-        }, 30);
-      });
+      const task2 = () =>
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            results.push('task2');
+            resolve();
+          }, 30);
+        });
 
       queue(task1);
       queue(task2);
@@ -45,25 +46,28 @@ describe('Utility Functions', () => {
       const errorSpy = jest.fn();
       const queue = createAsyncQueue({ onError: errorSpy });
 
-      const task1 = () => new Promise<void>((resolve) => {
-        setTimeout(() => {
-          results.push('task1');
-          resolve();
-        }, 50);
-      });
+      const task1 = () =>
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            results.push('task1');
+            resolve();
+          }, 50);
+        });
 
-      const task2 = () => new Promise<void>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('task2 failed'));
-        }, 30);
-      });
+      const task2 = () =>
+        new Promise<void>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('task2 failed'));
+          }, 30);
+        });
 
-      const task3 = () => new Promise<void>((resolve) => {
-        setTimeout(() => {
-          results.push('task3');
-          resolve();
-        }, 20);
-      });
+      const task3 = () =>
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            results.push('task3');
+            resolve();
+          }, 20);
+        });
 
       queue(task1);
       queue(task2);
@@ -79,15 +83,17 @@ describe('Utility Functions', () => {
       const results: string[] = [];
       const queue = createAsyncQueue({ timeout: 50 });
 
-      const task1 = () => new Promise<void>((resolve) => {
-        results.push('task1');
-        resolve();
-      });
+      const task1 = () =>
+        new Promise<void>((resolve) => {
+          results.push('task1');
+          resolve();
+        });
 
-      const task2 = () => new Promise<void>((resolve) => {
-        results.push('task2');
-        resolve();
-      });
+      const task2 = () =>
+        new Promise<void>((resolve) => {
+          results.push('task2');
+          resolve();
+        });
 
       queue(task1);
       queue(task2);

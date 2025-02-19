@@ -1,20 +1,39 @@
-import { AnchorMode, broadcastTransaction, uintCV, stringAsciiCV, makeContractCall, listCV, tupleCV } from '@stacks/transactions';
-import { StacksDevnet, StacksMainnet } from "@stacks/network";
+import axios from 'axios';
+import {
+  AnchorMode,
+  broadcastTransaction,
+  uintCV,
+  stringAsciiCV,
+  makeContractCall,
+  listCV,
+  tupleCV,
+  estimateContractFunctionCall,
+  getAddressFromPrivateKey,
+  TransactionVersion,
+} from '@stacks/transactions';
+import { StacksDevnet, StacksMainnet, StacksTestnet } from '@stacks/network';
+import type { TransactionResults } from '@stacks/stacks-blockchain-api-types';
 import config, { ChainName } from '../config';
 import { splitIntoFixedBatches } from '../utils';
 
 let network: StacksMainnet;
 let backupNetwork: StacksMainnet | undefined;
 
-if (config.chainName === ChainName.STACKS) {
+const setNetwork = (url?: string): StacksMainnet => {
+  if (!url) return new StacksDevnet();
+  if (url.includes('testnet')) return new StacksTestnet({ url });
+  return new StacksMainnet({ url });
+};
+
+if (config.chainName === ChainName.Stacks) {
   init();
 }
 
 export function init() {
-  network = config.stacks.rpcUrl ? new StacksMainnet({ url: config.stacks.rpcUrl }) : new StacksDevnet();
+  network = setNetwork(config.stacks.rpcUrl);
 
   if (config.stacks.backupRpcUrl) {
-    backupNetwork = new StacksMainnet({ url: config.stacks.backupRpcUrl });
+    backupNetwork = setNetwork(config.stacks.backupRpcUrl);
   }
 }
 
@@ -25,6 +44,12 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const keyBatches = splitIntoFixedBatches(keys, config.stacks.maxBatchSize);
   const priceBatches = splitIntoFixedBatches(prices, config.stacks.maxBatchSize);
 
+  const version = network.isMainnet() ? TransactionVersion.Mainnet : TransactionVersion.Testnet;
+  const address = getAddressFromPrivateKey(config.stacks.secretKey, version);
+
+  let nonce = await getAccountNonce(address);
+  let useBackup = false;
+
   for (let batchIndex = 0; batchIndex < keyBatches.length; batchIndex++) {
     const keyBatch = keyBatches[batchIndex];
     const priceBatch = priceBatches[batchIndex];
@@ -32,14 +57,13 @@ export async function updateOracle(keys: string[], prices: number[]) {
     const entries = keyBatch.map((key, index) => ({
       key: stringAsciiCV(key),
       value: uintCV(Math.floor(priceBatch[index] * 100_000_000)),
-      timestamp: uintCV(date)
+      timestamp: uintCV(date),
     }));
 
     const values = listCV(entries.map(tupleCV));
 
     let attempt = 0;
     const maxRetries = config.stacks.maxRetryAttempts;
-    let useBackup = false;
 
     while (attempt < maxRetries) {
       try {
@@ -51,17 +75,31 @@ export async function updateOracle(keys: string[], prices: number[]) {
           senderKey: config.stacks.secretKey,
           network: useBackup && backupNetwork ? backupNetwork : network, // Use backup if needed
           anchorMode: AnchorMode.Any,
+          nonce,
         };
 
-        const transaction = await makeContractCall(batchTxOptions);
-        const broadcastResponse = await broadcastTransaction(transaction, batchTxOptions.network);
+        const contractCall = await makeContractCall(batchTxOptions);
+        const estimatedFee = await estimateContractFunctionCall(contractCall);
+
+        let fee = (estimatedFee * config.stacks.feeRate) / 100n;
+        if (attempt > 0) {
+          const rate = 100n + BigInt(attempt) * 10n;
+          fee = (fee * rate) / 100n;
+        }
+
+        const signedTransaction = await makeContractCall({ ...batchTxOptions, fee });
+        const broadcastResponse = await broadcastTransaction(
+          signedTransaction,
+          batchTxOptions.network,
+        );
 
         if (broadcastResponse.error) {
-          throw new Error(`Transaction failed with error: ${broadcastResponse.error}`);
+          throw new Error(`Transaction failed with error: ${broadcastResponse.reason}`);
         }
 
         const txId = broadcastResponse.txid;
         console.log(`Batch ${batchIndex + 1} Transaction ID: ${txId}`);
+        nonce += 1n;
         break; // Exit loop if transaction is successful
       } catch (error) {
         attempt++;
@@ -81,4 +119,21 @@ export async function updateOracle(keys: string[], prices: number[]) {
   }
 
   console.log('Oracle updated');
+}
+
+async function getAccountNonce(address: string) {
+  const query = new URLSearchParams();
+  query.set('from_address', address);
+  query.set('limit', '1');
+  query.set('sort_by', 'burn_block_time');
+  query.set('order', 'desc');
+  query.set('unanchored', 'false');
+
+  const res = await axios(`${config.stacks.rpcUrl}/extended/v1/tx?${query}`);
+  const body = res.data as TransactionResults;
+
+  if (body.total) {
+    return BigInt(body.results[0].nonce + 1);
+  }
+  return 0n;
 }

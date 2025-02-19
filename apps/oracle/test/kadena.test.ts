@@ -57,7 +57,9 @@ describe('Kadena Oracle - updateOracle', () => {
 
     await updateOracle(keys, prices);
 
-    expect(createClient).toHaveBeenCalledWith('http://mock-kadena-rpc-url/chainweb/0.0/testnet04/chain/0/pact');
+    expect(createClient).toHaveBeenCalledWith(
+      'http://mock-kadena-rpc-url/chainweb/0.0/testnet04/chain/0/pact',
+    );
     expect(splitIntoFixedBatches).toHaveBeenCalledTimes(3); // For keys, dates, and prices
     expect(createSignWithKeypair).toHaveBeenCalledWith({
       publicKey: 'mockPublicKey',

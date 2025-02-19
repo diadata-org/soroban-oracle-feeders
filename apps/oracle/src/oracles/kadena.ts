@@ -17,7 +17,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const client = createClient(hostUrl);
   const signWithKeypair = createSignWithKeypair(keyPair);
 
-  const isoDate = `${(new Date()).toISOString().split('.')[0]}Z`;
+  const isoDate = `${new Date().toISOString().split('.')[0]}Z`;
   const dates = prices.map(() => isoDate);
 
   const keysBatches = splitIntoFixedBatches(keys, config.kadena.maxAssetsPerTx);
@@ -27,13 +27,17 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const maxRetries = config.kadena.maxRetryAttempts;
 
   for (let i = 0; i < keysBatches.length; i++) {
-    const formattedString = "[" + datesBatches[i].map(date => `(time "${date}")`).join(", ") + "]";
+    const formattedString =
+      '[' + datesBatches[i].map((date) => `(time "${date}")`).join(', ') + ']';
     const unsignedTransaction = Pact.builder
       .execution(
         `(${config.kadena.contract}.set-multiple-values ${JSON.stringify(keysBatches[i])} ${formattedString} ${JSON.stringify(pricesBatches[i])})`,
       )
       .addSigner(keyPair.publicKey)
-      .setMeta({ chainId: config.kadena.chainId as ChainId, senderAccount: `k:${keyPair.publicKey}` })
+      .setMeta({
+        chainId: config.kadena.chainId as ChainId,
+        senderAccount: `k:${keyPair.publicKey}`,
+      })
       .setNetworkId(config.kadena.networkId)
       .createTransaction();
 

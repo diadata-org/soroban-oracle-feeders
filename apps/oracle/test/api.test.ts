@@ -44,7 +44,9 @@ describe('API Module', () => {
       };
 
       (axios.get as jest.Mock).mockResolvedValueOnce({ data: mockQuotation });
-      (axios.get as jest.Mock).mockResolvedValueOnce({ data: { ...mockQuotation, Symbol: 'BNB', Price: 300 } });
+      (axios.get as jest.Mock).mockResolvedValueOnce({
+        data: { ...mockQuotation, Symbol: 'BNB', Price: 300 },
+      });
 
       const prices = await apiModule.getAssetPrices(mockAssets);
 
@@ -141,7 +143,7 @@ describe('API Module', () => {
       (request as jest.Mock).mockResolvedValue({ GetFeed: [] });
 
       await expect(
-        apiModule.getGraphqlAssetQuotation('eth', '0x123', { FeedSelection: [] })
+        apiModule.getGraphqlAssetQuotation('eth', '0x123', { FeedSelection: [] }),
       ).rejects.toThrow('No results');
     });
   });

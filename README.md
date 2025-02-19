@@ -3,6 +3,7 @@
 This monorepo contains data feeder scripts for DIA Soroban oracles. You can find more details about every data feeder in the `apps` folder.
 
 ## Restart Policy
+
 The oracle feeder is built under the assumption that the origin data API returns a valid response. If any error is found within requesting the API, the feeder exits and should be run in an environment where it is restarted automatically.
 The default docker-compose setup is ensuring such an automatic restart.
 

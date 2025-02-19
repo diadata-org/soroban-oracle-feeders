@@ -31,10 +31,10 @@ import {
   signExecuteMethod,
   addStdIdToFields,
   encodeContractFields,
-} from "@alephium/web3";
-import { default as DIAOracleBaseTestContractJson } from "../test/DIAOracleBaseTest.ral.json";
-import { getContractByCodeHash } from "./contracts";
-import { DIAOracleValue, DIARandomValue, AllStructs } from "./types";
+} from '@alephium/web3';
+import { default as DIAOracleBaseTestContractJson } from '../test/DIAOracleBaseTest.ral.json';
+import { getContractByCodeHash } from './contracts';
+import { DIAOracleValue, DIARandomValue, AllStructs } from './types';
 
 // Custom types for the contract
 export namespace DIAOracleBaseTestTypes {
@@ -48,7 +48,7 @@ export namespace DIAOracleBaseTestTypes {
 
   export interface CallMethodTable {
     getAdmin: {
-      params: Omit<CallContractParams<{}>, "args">;
+      params: Omit<CallContractParams<{}>, 'args'>;
       result: CallContractResult<Address>;
     };
     changeAdmin: {
@@ -56,26 +56,24 @@ export namespace DIAOracleBaseTestTypes {
       result: CallContractResult<null>;
     };
     protected: {
-      params: Omit<CallContractParams<{}>, "args">;
+      params: Omit<CallContractParams<{}>, 'args'>;
       result: CallContractResult<null>;
     };
   }
-  export type CallMethodParams<T extends keyof CallMethodTable> =
-    CallMethodTable[T]["params"];
-  export type CallMethodResult<T extends keyof CallMethodTable> =
-    CallMethodTable[T]["result"];
+  export type CallMethodParams<T extends keyof CallMethodTable> = CallMethodTable[T]['params'];
+  export type CallMethodResult<T extends keyof CallMethodTable> = CallMethodTable[T]['result'];
   export type MultiCallParams = Partial<{
-    [Name in keyof CallMethodTable]: CallMethodTable[Name]["params"];
+    [Name in keyof CallMethodTable]: CallMethodTable[Name]['params'];
   }>;
   export type MultiCallResults<T extends MultiCallParams> = {
     [MaybeName in keyof T]: MaybeName extends keyof CallMethodTable
-      ? CallMethodTable[MaybeName]["result"]
+      ? CallMethodTable[MaybeName]['result']
       : undefined;
   };
 
   export interface SignExecuteMethodTable {
     getAdmin: {
-      params: Omit<SignExecuteContractMethodParams<{}>, "args">;
+      params: Omit<SignExecuteContractMethodParams<{}>, 'args'>;
       result: SignExecuteScriptTxResult;
     };
     changeAdmin: {
@@ -83,25 +81,22 @@ export namespace DIAOracleBaseTestTypes {
       result: SignExecuteScriptTxResult;
     };
     protected: {
-      params: Omit<SignExecuteContractMethodParams<{}>, "args">;
+      params: Omit<SignExecuteContractMethodParams<{}>, 'args'>;
       result: SignExecuteScriptTxResult;
     };
   }
   export type SignExecuteMethodParams<T extends keyof SignExecuteMethodTable> =
-    SignExecuteMethodTable[T]["params"];
+    SignExecuteMethodTable[T]['params'];
   export type SignExecuteMethodResult<T extends keyof SignExecuteMethodTable> =
-    SignExecuteMethodTable[T]["result"];
+    SignExecuteMethodTable[T]['result'];
 }
 
-class Factory extends ContractFactory<
-  DIAOracleBaseTestInstance,
-  DIAOracleBaseTestTypes.Fields
-> {
+class Factory extends ContractFactory<DIAOracleBaseTestInstance, DIAOracleBaseTestTypes.Fields> {
   encodeFields(fields: DIAOracleBaseTestTypes.Fields) {
     return encodeContractFields(
       addStdIdToFields(this.contract, fields),
       this.contract.fieldsSig,
-      AllStructs
+      AllStructs,
     );
   }
 
@@ -110,7 +105,7 @@ class Factory extends ContractFactory<
   }
 
   eventIndex = { AdminChanged: 0 };
-  consts = { ErrorCodes: { AdminAllowedOnly: BigInt("0") } };
+  consts = { ErrorCodes: { AdminAllowedOnly: BigInt('0') } };
 
   at(address: string): DIAOracleBaseTestInstance {
     return new DIAOracleBaseTestInstance(address);
@@ -120,34 +115,28 @@ class Factory extends ContractFactory<
     getAdmin: async (
       params: Omit<
         TestContractParamsWithoutMaps<DIAOracleBaseTestTypes.Fields, never>,
-        "testArgs"
-      >
+        'testArgs'
+      >,
     ): Promise<TestContractResultWithoutMaps<Address>> => {
-      return testMethod(this, "getAdmin", params, getContractByCodeHash);
+      return testMethod(this, 'getAdmin', params, getContractByCodeHash);
     },
     changeAdmin: async (
-      params: TestContractParamsWithoutMaps<
-        DIAOracleBaseTestTypes.Fields,
-        { newAdmin: Address }
-      >
+      params: TestContractParamsWithoutMaps<DIAOracleBaseTestTypes.Fields, { newAdmin: Address }>,
     ): Promise<TestContractResultWithoutMaps<null>> => {
-      return testMethod(this, "changeAdmin", params, getContractByCodeHash);
+      return testMethod(this, 'changeAdmin', params, getContractByCodeHash);
     },
     checkAdmin: async (
-      params: TestContractParamsWithoutMaps<
-        DIAOracleBaseTestTypes.Fields,
-        { caller: Address }
-      >
+      params: TestContractParamsWithoutMaps<DIAOracleBaseTestTypes.Fields, { caller: Address }>,
     ): Promise<TestContractResultWithoutMaps<null>> => {
-      return testMethod(this, "checkAdmin", params, getContractByCodeHash);
+      return testMethod(this, 'checkAdmin', params, getContractByCodeHash);
     },
     protected: async (
       params: Omit<
         TestContractParamsWithoutMaps<DIAOracleBaseTestTypes.Fields, never>,
-        "testArgs"
-      >
+        'testArgs'
+      >,
     ): Promise<TestContractResultWithoutMaps<null>> => {
-      return testMethod(this, "protected", params, getContractByCodeHash);
+      return testMethod(this, 'protected', params, getContractByCodeHash);
     },
   };
 }
@@ -156,10 +145,10 @@ class Factory extends ContractFactory<
 export const DIAOracleBaseTest = new Factory(
   Contract.fromJson(
     DIAOracleBaseTestContractJson,
-    "",
-    "98a92bccb738d1e440cb4d4b17967784b69ce728edcc841110094f713593a252",
-    AllStructs
-  )
+    '',
+    '98a92bccb738d1e440cb4d4b17967784b69ce728edcc841110094f713593a252',
+    AllStructs,
+  ),
 );
 
 // Use this class to interact with the blockchain
@@ -178,49 +167,43 @@ export class DIAOracleBaseTestInstance extends ContractInstance {
 
   subscribeAdminChangedEvent(
     options: EventSubscribeOptions<DIAOracleBaseTestTypes.AdminChangedEvent>,
-    fromCount?: number
+    fromCount?: number,
   ): EventSubscription {
     return subscribeContractEvent(
       DIAOracleBaseTest.contract,
       this,
       options,
-      "AdminChanged",
-      fromCount
+      'AdminChanged',
+      fromCount,
     );
   }
 
   methods = {
     getAdmin: async (
-      params?: DIAOracleBaseTestTypes.CallMethodParams<"getAdmin">
-    ): Promise<DIAOracleBaseTestTypes.CallMethodResult<"getAdmin">> => {
+      params?: DIAOracleBaseTestTypes.CallMethodParams<'getAdmin'>,
+    ): Promise<DIAOracleBaseTestTypes.CallMethodResult<'getAdmin'>> => {
       return callMethod(
         DIAOracleBaseTest,
         this,
-        "getAdmin",
+        'getAdmin',
         params === undefined ? {} : params,
-        getContractByCodeHash
+        getContractByCodeHash,
       );
     },
     changeAdmin: async (
-      params: DIAOracleBaseTestTypes.CallMethodParams<"changeAdmin">
-    ): Promise<DIAOracleBaseTestTypes.CallMethodResult<"changeAdmin">> => {
-      return callMethod(
-        DIAOracleBaseTest,
-        this,
-        "changeAdmin",
-        params,
-        getContractByCodeHash
-      );
+      params: DIAOracleBaseTestTypes.CallMethodParams<'changeAdmin'>,
+    ): Promise<DIAOracleBaseTestTypes.CallMethodResult<'changeAdmin'>> => {
+      return callMethod(DIAOracleBaseTest, this, 'changeAdmin', params, getContractByCodeHash);
     },
     protected: async (
-      params?: DIAOracleBaseTestTypes.CallMethodParams<"protected">
-    ): Promise<DIAOracleBaseTestTypes.CallMethodResult<"protected">> => {
+      params?: DIAOracleBaseTestTypes.CallMethodParams<'protected'>,
+    ): Promise<DIAOracleBaseTestTypes.CallMethodResult<'protected'>> => {
       return callMethod(
         DIAOracleBaseTest,
         this,
-        "protected",
+        'protected',
         params === undefined ? {} : params,
-        getContractByCodeHash
+        getContractByCodeHash,
       );
     },
   };
@@ -229,32 +212,30 @@ export class DIAOracleBaseTestInstance extends ContractInstance {
 
   transact = {
     getAdmin: async (
-      params: DIAOracleBaseTestTypes.SignExecuteMethodParams<"getAdmin">
-    ): Promise<DIAOracleBaseTestTypes.SignExecuteMethodResult<"getAdmin">> => {
-      return signExecuteMethod(DIAOracleBaseTest, this, "getAdmin", params);
+      params: DIAOracleBaseTestTypes.SignExecuteMethodParams<'getAdmin'>,
+    ): Promise<DIAOracleBaseTestTypes.SignExecuteMethodResult<'getAdmin'>> => {
+      return signExecuteMethod(DIAOracleBaseTest, this, 'getAdmin', params);
     },
     changeAdmin: async (
-      params: DIAOracleBaseTestTypes.SignExecuteMethodParams<"changeAdmin">
-    ): Promise<
-      DIAOracleBaseTestTypes.SignExecuteMethodResult<"changeAdmin">
-    > => {
-      return signExecuteMethod(DIAOracleBaseTest, this, "changeAdmin", params);
+      params: DIAOracleBaseTestTypes.SignExecuteMethodParams<'changeAdmin'>,
+    ): Promise<DIAOracleBaseTestTypes.SignExecuteMethodResult<'changeAdmin'>> => {
+      return signExecuteMethod(DIAOracleBaseTest, this, 'changeAdmin', params);
     },
     protected: async (
-      params: DIAOracleBaseTestTypes.SignExecuteMethodParams<"protected">
-    ): Promise<DIAOracleBaseTestTypes.SignExecuteMethodResult<"protected">> => {
-      return signExecuteMethod(DIAOracleBaseTest, this, "protected", params);
+      params: DIAOracleBaseTestTypes.SignExecuteMethodParams<'protected'>,
+    ): Promise<DIAOracleBaseTestTypes.SignExecuteMethodResult<'protected'>> => {
+      return signExecuteMethod(DIAOracleBaseTest, this, 'protected', params);
     },
   };
 
   async multicall<Calls extends DIAOracleBaseTestTypes.MultiCallParams>(
-    calls: Calls
+    calls: Calls,
   ): Promise<DIAOracleBaseTestTypes.MultiCallResults<Calls>> {
     return (await multicallMethods(
       DIAOracleBaseTest,
       this,
       calls,
-      getContractByCodeHash
+      getContractByCodeHash,
     )) as DIAOracleBaseTestTypes.MultiCallResults<Calls>;
   }
 }
