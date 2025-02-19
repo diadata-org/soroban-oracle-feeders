@@ -5,7 +5,6 @@ import {
   BufferHelper,
   Wallet,
   TransactionFactory,
-  OPNetLimitedProvider,
 } from '@btc-vision/transaction';
 import { Network, networks } from 'bitcoinjs-lib';
 import crypto from 'crypto';
@@ -78,7 +77,6 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const priceBatches = splitIntoFixedBatches(prices, config.opnet.maxBatchSize);
 
   const maxRetries = config.opnet.maxRetryAttempts;
-  let useBackup = false;
 
   for (let batchIndex = 0; batchIndex < keyBatches.length; batchIndex++) {
     const keyBatch = keyBatches[batchIndex];
@@ -88,9 +86,6 @@ export async function updateOracle(keys: string[], prices: number[]) {
 
     while (attempt < maxRetries) {
       try {
-        const currentProviderUrl =
-          useBackup && backupProvider ? config.opnet.backupRpcUrl! : config.opnet.rpcUrl;
-
         const writer = new BinaryWriter();
         const bitcoinAbiCoder = new ABICoder();
         writer.writeSelector(Number('0x' + bitcoinAbiCoder.encodeSelector('setMultipleValues')));
@@ -118,9 +113,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
         const transactionFactory = new TransactionFactory();
         const signedTx = await transactionFactory.signInteraction(interactionParameters);
 
-        const limitedProvider = new OPNetLimitedProvider(currentProviderUrl);
-
-        const firstTxBroadcast = await limitedProvider.broadcastTransaction(
+        const firstTxBroadcast = await provider.sendRawTransaction(
           signedTx.fundingTransaction,
           false,
         );
@@ -128,13 +121,15 @@ export async function updateOracle(keys: string[], prices: number[]) {
           throw new Error('First transaction broadcast failed.');
         }
 
-        const secondTxBroadcast = await limitedProvider.broadcastTransaction(
+        const secondTxBroadcast = await provider.sendRawTransaction(
           signedTx.interactionTransaction,
           false,
         );
         if (!secondTxBroadcast || !secondTxBroadcast.success) {
           throw new Error('Second transaction broadcast failed.');
         }
+
+        await waitForTransaction(secondTxBroadcast.result || '');
         console.log(`Batch ${batchIndex} update successful.`);
         break;
       } catch (error) {
@@ -144,7 +139,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
         // Switch to the backup node on the first failure if available
         if (attempt === 1 && backupProvider) {
           console.error('Switching to backup provider.');
-          useBackup = true;
+          provider = new JSONRpcProvider(config.opnet.backupRpcUrl ?? '', network);
         }
 
         if (attempt >= maxRetries) {
@@ -170,4 +165,22 @@ async function getPreimage() {
     }
   }
   return preimage;
+}
+
+async function waitForTransaction(txHash: string) {
+  let attempts = 0;
+  const maxAttempts = 120; // 10 minutes max wait time
+
+  while (attempts < maxAttempts) {
+    try {
+      const txResult = await provider.getTransaction(txHash);
+      if (txResult && !('error' in txResult)) {
+        console.log('Transaction confirmed:', txResult.hash);
+        return txResult.hash;
+      }
+    } catch {}
+
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    attempts++;
+  }
 }
