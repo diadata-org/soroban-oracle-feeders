@@ -113,7 +113,7 @@ async function update(published: Map<string, number>, prices: Map<string, number
       case ChainName.Stacks:
         updateStacksOracle(keys, values);
         break;
-      case ChainName.OPNET:
+      case ChainName.Opnet:
         await updateOpNetOracle(keys, values);
         break;
     }

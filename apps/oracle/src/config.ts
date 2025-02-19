@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { TransactionBuilder } from '@btc-vision/transaction';
 import { GqlParams } from './validation';
 
 dotenv.config();
@@ -116,7 +117,8 @@ export default {
     maxBatchSize: 10, // max number of prices to update in a single transaction
     maxRetryAttempts: 3,
     feeRate: parseInt(process.env.OPNET_FEE_RATE || '100', 10),
-    priorityFee: BigInt(process.env.OPNET_PRIORITY_FEE || '330'),
+    priorityFee: BigInt(process.env.OPNET_PRIORITY_FEE || TransactionBuilder.MINIMUM_DUST),
+    gasSatFee: BigInt(process.env.OPNET_GAS_SAT_FEE || 330n),
   },
 
   chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.Soroban,

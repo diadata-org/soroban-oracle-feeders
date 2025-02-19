@@ -1,7 +1,4 @@
-import {
-  JSONRpcProvider,
-  getContract,
-} from 'opnet';
+import { JSONRpcProvider, getContract } from 'opnet';
 import { Wallet, TransactionFactory, OPNetLimitedProvider } from '@btc-vision/transaction';
 import config from '../src/config';
 import { updateOracle, init } from '../src/oracles/opnet';
@@ -19,7 +16,8 @@ jest.mock('opnet', () => ({
 
 jest.mock('@btc-vision/transaction', () => {
   const mockSignInteraction = jest.fn().mockResolvedValue(['signedTx1', 'signedTx2']);
-  const mockBroadcastTransaction = jest.fn()
+  const mockBroadcastTransaction = jest
+    .fn()
     .mockResolvedValueOnce({ success: true }) // Mock first transaction success
     .mockResolvedValueOnce({ success: true }); // Mock second transaction success
 
@@ -109,8 +107,12 @@ describe('OpNet Oracle - updateOracle', () => {
       getUTXOs: jest.fn().mockResolvedValue(mockUTXOs),
     };
 
-    const transactionFactory = new (TransactionFactory as jest.MockedClass<typeof TransactionFactory>)();
-    const limitedProvider = new (OPNetLimitedProvider as jest.MockedClass<typeof OPNetLimitedProvider>)(config.opnet.rpcUrl);
+    const transactionFactory = new (TransactionFactory as jest.MockedClass<
+      typeof TransactionFactory
+    >)();
+    const limitedProvider = new (OPNetLimitedProvider as jest.MockedClass<
+      typeof OPNetLimitedProvider
+    >)(config.opnet.rpcUrl);
 
     await updateOracle(keys, prices);
 
@@ -137,7 +139,7 @@ describe('OpNet Oracle - updateOracle', () => {
     limitedProvider.broadcastTransaction
       .mockRejectedValueOnce(new Error('Transaction failed')) // First transaction fails
       .mockResolvedValueOnce({ success: true }) // Retry succeeds
-      .mockResolvedValueOnce({ success: true }) // Mock second broadcast success
+      .mockResolvedValueOnce({ success: true }); // Mock second broadcast success
 
     await updateOracle(keys, prices);
 
@@ -160,6 +162,8 @@ describe('OpNet Oracle - updateOracle', () => {
     await expect(updateOracle(keys, prices)).rejects.toThrow('Transaction failed');
 
     // Ensure it tried max retries
-    expect(limitedProvider.broadcastTransaction).toHaveBeenCalledTimes(config.opnet.maxRetryAttempts);
+    expect(limitedProvider.broadcastTransaction).toHaveBeenCalledTimes(
+      config.opnet.maxRetryAttempts,
+    );
   });
 });
