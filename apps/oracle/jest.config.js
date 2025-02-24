@@ -1,10 +1,10 @@
 module.exports = {
-  preset: 'ts-jest',
+  preset: 'ts-jest/presets/js-with-ts-esm',
   testEnvironment: 'node',
-  testMatch: ['**/test/**/*.test.ts'], // Make sure this is specific to your intended test files
+  testMatch: ['**/test/**/*.test.ts'], // Adjust based on your tests
   moduleFileExtensions: ['ts', 'tsx', 'js', 'json', 'node'],
   moduleNameMapper: {
     '^axios$': require.resolve('axios'),
   },
-  transformIgnorePatterns: ['/node_modules/(?!(axios|graphql-request)/)'],
+  transformIgnorePatterns: ['/node_modules/(?!(axios|graphql-request|opnet|@btc-vision|chalk|supports-color)/)'],
 };

@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { TransactionBuilder } from '@btc-vision/transaction';
 import { GqlParams } from './validation';
 
 dotenv.config();
@@ -67,6 +68,7 @@ export enum ChainName {
   Soroban = 'soroban',
   Alephium = 'alephium',
   Stacks = 'stacks',
+  Opnet = 'opnet',
 }
 
 export default {
@@ -105,6 +107,18 @@ export default {
     feeRate: BigInt(process.env.STACKS_FEE_RATE || '100'),
     maxBatchSize: 10,
     maxRetryAttempts: 3,
+  },
+  opnet: {
+    rpcUrl: process.env.OPNET_RPC_URL || 'https://regtest.opnet.org',
+    backupRpcUrl: process.env.OPNET_BACKUP_RPC_URL,
+    secretKey:
+      process.env.OPNET_PRIVATE_KEY || 'cShTHPAqa5rX2p9GxN6QvwsFMnnhHLUx2WRE8ztNTWxqwBGWycH8',
+    contract: process.env.OPNET_CONTRACT || 'bcrt1q39y3gw0zxaq0hgkr0x3m80tz504p5ta5l8j7y4',
+    maxBatchSize: 10, // max number of prices to update in a single transaction
+    maxRetryAttempts: 3,
+    feeRate: parseInt(process.env.OPNET_FEE_RATE || '100', 10),
+    priorityFee: BigInt(process.env.OPNET_PRIORITY_FEE || TransactionBuilder.MINIMUM_DUST),
+    gasSatFee: BigInt(process.env.OPNET_GAS_SAT_FEE || 330n),
   },
 
   chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.Soroban,
