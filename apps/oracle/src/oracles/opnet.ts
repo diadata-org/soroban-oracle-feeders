@@ -1,4 +1,4 @@
-import { JSONRpcProvider, getContract, OP_NET_ABI, IOP_NETContract } from 'opnet';
+import { JSONRpcProvider, getContract, OP_NET_ABI, IOP_NETContract, CallResult } from 'opnet';
 import {
   BinaryWriter,
   ABICoder,
@@ -96,7 +96,18 @@ export async function updateOracle(keys: string[], prices: number[]) {
           writeU128(writer, BigInt(Date.now()));
         });
 
-        const calldata = writer.getBuffer() as Buffer;
+        const calldata = Buffer.from(writer.getBuffer());
+        const simulation = (await provider.call(
+          contract.address,
+          calldata,
+          wallet.address,
+        )) as CallResult;
+
+        const gasParams = await provider.gasParameters();
+
+        const gas = simulation.estimatedGas ?? 330n;
+        const exactGas = ((gas / 1000000n) * gasParams.gasPerSat) / 1000000n;
+        const extraGas = (exactGas * 50n) / 100n;
 
         const interactionParameters = {
           from: wallet.p2tr,
@@ -106,7 +117,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
           network, // The BitcoinJS network
           feeRate: config.opnet.feeRate, // Fee rate in satoshis per byte
           priorityFee: config.opnet.priorityFee, // Priority fee for faster transaction
-          gasSatFee: config.opnet.gasSatFee,
+          gasSatFee: max(exactGas + extraGas, 330n),
           calldata, // The calldata for the contract interaction
           preimage,
         };
@@ -183,4 +194,8 @@ async function waitForTransaction(txHash: string) {
     await new Promise((resolve) => setTimeout(resolve, 5000));
     attempts++;
   }
+}
+
+function max(a: bigint, b: bigint) {
+  return a > b ? a : b;
 }
