@@ -110,6 +110,7 @@ export default {
   },
   opnet: {
     rpcUrl: process.env.OPNET_RPC_URL || 'https://regtest.opnet.org',
+    network: process.env.OPNET_NETWORK || '',
     backupRpcUrl: process.env.OPNET_BACKUP_RPC_URL,
     secretKey:
       process.env.OPNET_PRIVATE_KEY || 'cShTHPAqa5rX2p9GxN6QvwsFMnnhHLUx2WRE8ztNTWxqwBGWycH8',

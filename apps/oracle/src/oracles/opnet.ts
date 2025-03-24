@@ -5,6 +5,7 @@ import {
   BufferHelper,
   Wallet,
   TransactionFactory,
+  OPNetNetwork,
 } from '@btc-vision/transaction';
 import { Network, networks } from 'bitcoinjs-lib';
 import crypto from 'crypto';
@@ -22,19 +23,31 @@ if (config.chainName === ChainName.Opnet) {
 }
 
 export async function init() {
-  const { hostname } = new URL(config.opnet.rpcUrl);
-  switch (hostname) {
-    case 'api.opnet.org':
+  switch (config.opnet.network) {
+    case OPNetNetwork.Mainnet:
       network = networks.bitcoin;
       break;
-    case 'testnet.opnet.org':
+    case OPNetNetwork.Testnet:
       network = networks.testnet;
       break;
-    case 'regtest.opnet.org':
+    case OPNetNetwork.Regtest:
       network = networks.regtest;
       break;
     default:
-      throw new Error('Unsupported network type.');
+      const { hostname } = new URL(config.opnet.rpcUrl);
+      switch (hostname) {
+        case 'api.opnet.org':
+          network = networks.bitcoin;
+          break;
+        case 'testnet.opnet.org':
+          network = networks.testnet;
+          break;
+        case 'regtest.opnet.org':
+          network = networks.regtest;
+          break;
+        default:
+          throw new Error('Unsupported network type.');
+      }
   }
 
   provider = new JSONRpcProvider(config.opnet.rpcUrl, network);

@@ -37,6 +37,7 @@ OPNET_RPC_URL=""
 OPNET_BACKUP_RPC_URL=""
 OPNET_PRIVATE_KEY=""
 OPNET_CONTRACT=""
+OPNET_NETWORK="regtest"
 
 # if differs from default
 OPNET_FEE_RATE=""
