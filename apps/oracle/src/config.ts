@@ -118,7 +118,6 @@ export default {
     maxRetryAttempts: 3,
     feeRate: parseInt(process.env.OPNET_FEE_RATE || '100', 10),
     priorityFee: BigInt(process.env.OPNET_PRIORITY_FEE || TransactionBuilder.MINIMUM_DUST),
-    gasSatFee: BigInt(process.env.OPNET_GAS_SAT_FEE || 330n),
   },
 
   chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.Soroban,
