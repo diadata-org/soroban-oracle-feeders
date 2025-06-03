@@ -69,6 +69,7 @@ export enum ChainName {
   Alephium = 'alephium',
   Stacks = 'stacks',
   Opnet = 'opnet',
+  Midnight = 'midnight',
 }
 
 export default {
@@ -119,6 +120,17 @@ export default {
     maxRetryAttempts: 3,
     feeRate: parseInt(process.env.OPNET_FEE_RATE || '100', 10),
     priorityFee: BigInt(process.env.OPNET_PRIORITY_FEE || TransactionBuilder.MINIMUM_DUST),
+  },
+  midnight: {
+    network: process.env.MIDNIGHT_NETWORK || '2',
+    maxRetryAttempts: 3,
+    maxBatchSize: 10, // max number of prices to update in a single transaction
+    secretKey: process.env.MIDNIGHT_PRIVATE_KEY,
+    contractAddress: process.env.MIDNIGHT_CONTRACT_ADDRESS,  //counter contract for tests
+    indexer: process.env.MIDNIGHT_INDEXER || 'https://indexer.testnet-02.midnight.network/api/v1/graphql',
+    indexerWS: process.env.MIDNIGHT_INDEXER_WS || 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws',
+    proofServer: process.env.MIDNIGHT_PROOF_SERVER || 'http://127.0.0.1:6300',
+    node: process.env.MIDNIGHT_NODE || 'https://rpc.testnet-02.midnight.network',
   },
 
   chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.Soroban,

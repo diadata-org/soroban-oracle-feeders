@@ -6,7 +6,7 @@ This app fetches asset data from DIA API and stores it in the key/value oracle d
 
 Sample environment configuration can be found in `.env.example`
 
-In order to select the chain for this oracle data feeder, use the `CHAIN_NAME` environment variable. Available chains are `"kadena"`, `"soroban"`, `"alephium"`, `"stacks"`, `"opnet"`
+In order to select the chain for this oracle data feeder, use the `CHAIN_NAME` environment variable. Available chains are `"kadena"`, `"soroban"`, `"alephium"`, `"stacks"`, `"opnet"`, `"midnight"`
 
 ```properties
 CHAIN_NAME=""
@@ -42,6 +42,16 @@ OPNET_NETWORK="regtest"
 # if differs from default
 OPNET_FEE_RATE=""
 OPNET_PRIORITY_FEE=""
+
+MIDNIGHT_NETWORK="2" 
+MIDNIGHT_PRIVATE_KEY=""
+MIDNIGHT_CONTRACT_ADDRESS=""
+MIDNIGHT_INDEXER="https://indexer.testnet-02.midnight.network/api/v1/graphql"
+MIDNIGHT_INDEXER_WS="wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws"
+# default proof server port is 6300
+MIDNIGHT_PROOF_SERVER="http://127.0.0.1:6300"
+MIDNIGHT_NODE="https://rpc.testnet-02.midnight.network"
+
 
 FREQUENCY_SECONDS="120"
 MANDATORY_FREQUENCY_SECONDS="0"
