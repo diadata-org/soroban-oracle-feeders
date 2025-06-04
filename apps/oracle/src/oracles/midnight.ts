@@ -1,13 +1,11 @@
-import { type Wallet } from '@midnight-ntwrk/wallet-api';
-import {  getZswapNetworkId , getLedgerNetworkId} from '@midnight-ntwrk/midnight-js-network-id';
-import { type Resource, WalletBuilder } from '@midnight-ntwrk/wallet';
-import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
-import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
+import { Wallet } from '@midnight-ntwrk/wallet-api';
+import { type CoinInfo, nativeToken, Transaction, type TransactionId } from '@midnight-ntwrk/ledger';
+import { Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
+import { type Resource } from '@midnight-ntwrk/wallet';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
-import { Transaction as ZswapTransaction, NetworkId } from '@midnight-ntwrk/zswap';
+import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
+import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
-import { type CoinInfo, Transaction, type TransactionId, nativeToken } from '@midnight-ntwrk/ledger';
-import * as Rx from 'rxjs';
 
 import {
   type BalancedTransaction,
@@ -18,129 +16,98 @@ import {
   type WalletProvider,
 } from '@midnight-ntwrk/midnight-js-types';
 
+import type { ImpureCircuitId, MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
+import type { DeployedContract, FoundContract } from '@midnight-ntwrk/midnight-js-contracts';
+
+// Import the Midnight Contract.
+// Here it is importing the Counter Contract for example
+import { Counter, type CounterPrivateState, witnesses } from '@repo/common';
+
+import * as Rx from 'rxjs';
+
 import config, { ChainName } from '../config';
 import { splitIntoFixedBatches } from '../utils';
 
+/**************************************************** */
+/************  Specific to Counter Contract  ************/
+
 const CounterPrivateStateId = 'counterPrivateState';
 
-import { Counter, type CounterPrivateState, witnesses } from '../../dist/index';
+const contractConfig = {
+  privateStateStoreName: 'counter-private-state',
+  zkConfigPath: 'a/a/Users/luizsoares/protofire/soroban-oracle-feeders/apps/oracle/dist/managed/counter'
+};
 
-import type { ImpureCircuitId, MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
-import type { DeployedContract, FoundContract } from '@midnight-ntwrk/midnight-js-contracts';
-import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
+const counterContractInstance: CounterContract = new Counter.Contract(witnesses);
+type CounterCircuits = ImpureCircuitId<Counter.Contract<CounterPrivateState>>;
+type CounterProviders = MidnightProviders<CounterCircuits, typeof CounterPrivateStateId, CounterPrivateState>;
+type CounterContract = Counter.Contract<CounterPrivateState>;
+type DeployedCounterContract = DeployedContract<CounterContract> | FoundContract<CounterContract>;
 
-export type CounterCircuits = ImpureCircuitId<Counter.Contract<CounterPrivateState>>;
-export type CounterProviders = MidnightProviders<CounterCircuits, typeof CounterPrivateStateId, CounterPrivateState>;
-export type CounterContract = Counter.Contract<CounterPrivateState>;
-export type DeployedCounterContract = DeployedContract<CounterContract> | FoundContract<CounterContract>;
-export const counterContractInstance: CounterContract = new Counter.Contract(witnesses);
+/**************************************************** */
+/************  END Specific to Counter Contract  ************/
 
-const buildWallet = async (): Promise<Wallet & Resource> => {
-  console.log('Building wallet...');
-  const wallet = await WalletBuilder.build(
-    config.midnight.indexer,
-    config.midnight.indexerWS,
-    config.midnight.proofServer,
-    config.midnight.node,
-    config.midnight.secretKey || '',
-    NetworkId.TestNet,
-    'info',
-  );
-
-  console.log('Wallet built successfully');
+const buildWalletAndWaitForFunds = async (): Promise<Wallet & Resource> => {
   
-  wallet.start();
-  console.log('Wallet started successfully');
-  const state = await Rx.firstValueFrom(wallet.state());
-  let balance = state.balances[nativeToken()];
-  console.log('Wallet state:', state);
-  console.log('Balance:', balance);
-  console.info(`Your wallet address is: ${state.address}`);
-  if (balance === undefined || balance === 0n) {
-    console.info(`Your wallet balance is: 0`);
-    console.info(`Waiting to receive tokens...`);
-    balance = await waitForFunds(wallet);
-  }
-  return wallet;
+  return (async () => {
+    
+    const { getWallet } = require('./wallet-wrapper');
+    const mod = await getWallet();
+    let wallet: Wallet & Resource;
+    wallet = await mod.WalletBuilder.build(
+      config.midnight.indexer,
+      config.midnight.indexerWS,
+      config.midnight.proofServer,
+      config.midnight.node,
+      config.midnight.secretKey || '',
+      parseInt(config.midnight.network, 10),
+      'info'
+    );
+
+    wallet.start();
+    console.log("Wallet started")
+    const state = await Rx.firstValueFrom(wallet.state());
+    console.log(`Your wallet address is: ${state.address}`);
+    let balance = state.balances[nativeToken()];
+    console.log("Balance: ",balance)
+    if (balance === undefined || balance === 0n) {
+      console.log("Waiting for funds")
+      balance = await waitForFunds(wallet);
+      console.log("Funds received")
+    }
+    return wallet;
+  })();
 };
 
-export const createWalletAndMidnightProvider = async (wallet: Wallet): Promise<WalletProvider & MidnightProvider> => {
-  const state = await Rx.firstValueFrom(wallet.state());
-  console.log('getLedgerNetworkId', getLedgerNetworkId());
-  console.log('getZswapNetworkId', getZswapNetworkId());
-  return {
-    coinPublicKey: state.coinPublicKey,
-    encryptionPublicKey: state.encryptionPublicKey,
-    balanceTx(tx: UnbalancedTransaction, newCoins: CoinInfo[]): Promise<BalancedTransaction> {
-      return wallet
-        .balanceTransaction(
-          ZswapTransaction.deserialize(tx.serialize(getLedgerNetworkId()), getZswapNetworkId()),
-          newCoins,
-        )
-        .then((tx) => wallet.proveTransaction(tx))
-        .then((zswapTx) => Transaction.deserialize(zswapTx.serialize(getZswapNetworkId()), getLedgerNetworkId()))
-        .then(createBalancedTx);
-    },
-    submitTx(tx: BalancedTransaction): Promise<TransactionId> {
-      return wallet.submitTransaction(tx);
-    },
-  };
-};
-
-const configureProviders = async (wallet: Wallet & Resource) => {
-  const walletAndMidnightProvider = await createWalletAndMidnightProvider(wallet);
-  return {
-    privateStateProvider: levelPrivateStateProvider<typeof CounterPrivateStateId>({
-      privateStateStoreName: 'counter-private-state',
-    }),
-    publicDataProvider: indexerPublicDataProvider(config.midnight.indexer, config.midnight.indexerWS),
-    zkConfigProvider: new NodeZkConfigProvider<'increment'>("/Users/luizsoares/protofire/soroban-oracle-feeders/apps/oracle/dist/managed/counter"),
-    proofProvider: httpClientProofProvider(config.midnight.proofServer),
-    walletProvider: walletAndMidnightProvider,
-    midnightProvider: walletAndMidnightProvider,
-  };
-};
-
-export const joinContract = async (
-  providers: CounterProviders,
-  contractAddress: string,
-): Promise<DeployedCounterContract> => {
-  
-  try {
-    const counterContract = await findDeployedContract(providers, {
-      contractAddress,
-      contract: counterContractInstance,
-      privateStateId: 'counterPrivateState',
-      initialPrivateState: { privateCounter: 0 },
-    });
-    return counterContract;
-  } catch (error) {
-    console.error('Error joining contract:', error);
-    throw error;
-  }
-};
-
-let counterContract: DeployedCounterContract;
 let wallet: Wallet & Resource;
-let providers: CounterProviders;
+let counterContract: DeployedCounterContract;
 
-if (config.chainName === ChainName.Midnight) {
-  init().catch(error => {
-    console.error('Failed to initialize Midnight Oracle:', error);
-    process.exit(1);
+const joinContract = async (
+  providers: CounterProviders
+): Promise<DeployedCounterContract> => {
+  console.log(" **** config.midnight.contractAddress", config.midnight.contractAddress)
+  const counterContract = await findDeployedContract(providers, {
+    contractAddress: config.midnight.contractAddress || '0200bda5903157a289a450f21f5902450e195fb319d8818cbb79bffc561286c01551',
+    contract: counterContractInstance,
+    privateStateId: 'counterPrivateState',
+    initialPrivateState: { privateCounter: 0 },
   });
-}
+  console.log(`Joined contract at address: ${counterContract.deployTxData.public.contractAddress}`);
+  return counterContract;
+};
+
 
 export async function init() {
-  debugger; // Breakpoint 5: Start of initialization
   console.log('Initializing Midnight Oracle');
-  // Prepare wallet that will be used to send the transaction
-  wallet = await buildWallet();
-   
-  providers = await configureProviders(wallet);
-  
-  // deployed contract
-  counterContract = await joinContract(providers, config.midnight.contractAddress || '');
+  // initialize the wallet
+  wallet = await buildWalletAndWaitForFunds();
+
+  // join contract
+  if (wallet !== null) {
+    const providers = await configureProviders(wallet);
+    counterContract = await joinContract(providers)
+    console.log(counterContract)
+  }
 }
 
 /**
@@ -151,15 +118,8 @@ export async function init() {
  */
 export async function updateOracle(keys: string[], prices: number[]) {
   console.log('Updating Midnight oracle with:', keys, prices);
-  console.log(' ** Incrementing...', providers);
-  console.info('Incrementing...');
-  console.log(counterContract);
-  const finalizedTxData = await counterContract.callTx.increment();
-  console.log('Incremented successfully');
-  console.log(finalizedTxData);
-  console.info(`Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`);
-  console.info(finalizedTxData.public);
 
+  console.log(" **** counterContract", counterContract)
   const maxRetries = config.midnight.maxRetryAttempts;
 
   // Split into batches for large updates
@@ -176,7 +136,9 @@ export async function updateOracle(keys: string[], prices: number[]) {
       try {
 
         // prepare price data
-
+        const finalizedTxData = await counterContract.callTx.increment();
+        console.log(`Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`);
+  
         // send raw transaction
 
         //await waitForTransaction(secondTxBroadcast.result || '');
@@ -197,21 +159,71 @@ export async function updateOracle(keys: string[], prices: number[]) {
   console.log('Midnight Oracle updated.');
 }
 
-export const waitForFunds = (wallet: Wallet) =>
+const waitForFunds = (wallet: Wallet) =>
   Rx.firstValueFrom(
     wallet.state().pipe(
-      Rx.throttleTime(1_000),
+      Rx.throttleTime(10_000),
+      Rx.tap((state) => {
+        const applyGap = state.syncProgress?.lag.applyGap ?? 0n;
+        const sourceGap = state.syncProgress?.lag.sourceGap ?? 0n;
+        console.log(
+          `Waiting for funds. Backend lag: ${sourceGap}, wallet lag: ${applyGap}, transactions=${state.transactionHistory.length}`,
+        );
+      }),
       Rx.filter((state) => {
-        console.log(' ** waitForFunds', state);
         // Let's allow progress only if wallet is synced
-        const st = state.syncProgress?.synced;
-        console.log(' ** waitForFunds', st);
-        if(st){
-          return true;
-        }
-        return false;
+        return state.syncProgress?.synced === true;
       }),
       Rx.map((s) => s.balances[nativeToken()] ?? 0n),
       Rx.filter((balance) => balance > 0n),
     ),
   );
+
+if (config.chainName === ChainName.Midnight) {
+  init().catch(error => {
+    console.error('Failed to initialize Midnight Oracle:', error);
+    process.exit(1);
+  });
+}
+
+
+const configureProviders = async (wallet: Wallet & Resource) => {
+  const walletAndMidnightProvider = await createWalletAndMidnightProvider(wallet);
+  const privateStateProvider = levelPrivateStateProvider<typeof CounterPrivateStateId>({
+    privateStateStoreName: contractConfig.privateStateStoreName,
+  });
+
+  const { getIndexerPublicDataProvider } = require('./wallet-wrapper');
+  const mod = await getIndexerPublicDataProvider();
+  const publicDataProvider = mod.indexerPublicDataProvider(config.midnight.indexer, config.midnight.indexerWS);
+
+  return {
+    privateStateProvider: privateStateProvider,
+    publicDataProvider: publicDataProvider,
+    zkConfigProvider: new NodeZkConfigProvider<'increment'>(contractConfig.zkConfigPath),
+    proofProvider: httpClientProofProvider(config.midnight.proofServer),
+    walletProvider: walletAndMidnightProvider,
+    midnightProvider: walletAndMidnightProvider,
+  };
+}
+
+export const createWalletAndMidnightProvider = async (wallet: Wallet): Promise<WalletProvider & MidnightProvider> => {
+  const state = await Rx.firstValueFrom(wallet.state());
+  return {
+    coinPublicKey: state.coinPublicKey,
+    encryptionPublicKey: state.encryptionPublicKey,
+    balanceTx(tx: UnbalancedTransaction, newCoins: CoinInfo[]): Promise<BalancedTransaction> {
+      return wallet
+        .balanceTransaction(
+          ZswapTransaction.deserialize(tx.serialize(parseInt(config.midnight.network, 10)), parseInt(config.midnight.network, 10)),
+          newCoins,
+        )
+        .then((tx) => wallet.proveTransaction(tx))
+        .then((zswapTx) => Transaction.deserialize(zswapTx.serialize(parseInt(config.midnight.network, 10)), parseInt(config.midnight.network, 10)))
+        .then(createBalancedTx);
+    },
+    submitTx(tx: BalancedTransaction): Promise<TransactionId> {
+      return wallet.submitTransaction(tx);
+    },
+  };
+};

@@ -3,7 +3,9 @@
   "compilerOptions": {
     "declaration": true,
     "baseUrl": ".",
-    "outDir": "build"
+    "outDir": "build",
+    "allowJs": true,
+    "esModuleInterop": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
