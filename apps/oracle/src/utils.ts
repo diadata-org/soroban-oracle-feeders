@@ -21,3 +21,20 @@ export const fillArray = <T>(
   }
   return outputArray as FixedLengthArray<T, 10>; // limitation on array size due to fixed length of Contract method
 };
+
+
+/* Midnight types */
+
+import { Counter, type CounterPrivateState } from '@repo/common';
+import type { ImpureCircuitId, MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
+import type { DeployedContract, FoundContract } from '@midnight-ntwrk/midnight-js-contracts';
+
+export type CounterCircuits = ImpureCircuitId<Counter.Contract<CounterPrivateState>>;
+
+export const CounterPrivateStateId = 'counterPrivateState';
+
+export type CounterProviders = MidnightProviders<CounterCircuits, typeof CounterPrivateStateId, CounterPrivateState>;
+
+export type CounterContract = Counter.Contract<CounterPrivateState>;
+
+export type DeployedCounterContract = DeployedContract<CounterContract> | FoundContract<CounterContract>;
