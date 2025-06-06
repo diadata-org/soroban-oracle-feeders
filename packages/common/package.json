@@ -9,7 +9,7 @@
     "build/**"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && mkdir -p build/midnight/managed/counter && cp -r src/midnight/managed/counter/* build/midnight/managed/counter/",
     "clean": "rimraf build",
     "dev": "tsc -w",
     "test": "jest"

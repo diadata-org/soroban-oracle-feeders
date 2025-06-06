@@ -1,20 +1,87 @@
 import config, { ChainName } from '../config';
 import { splitIntoFixedBatches } from '../utils';
 
-/*
-let provider: JSONRpcProvider;
-let contract: IOP_NETContract;
-let wallet: Wallet;
-*/
+/** Midnight library imports */
+import { Wallet } from '@midnight-ntwrk/wallet-api';
+import { WalletBuilder, type Resource } from '@midnight-ntwrk/wallet';
+import { getLedgerNetworkId, getZswapNetworkId, NetworkId, setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import { nativeToken } from '@midnight-ntwrk/zswap';
+
+import * as Rx from 'rxjs';
+
+
+let wallet: Wallet & Resource;
+
+/**
+ * Builds a wallet from seed and waits for funds.
+ * @returns A promise that resolves to the wallet.
+ */
+const buildWalletAndWaitForFunds = async (): Promise<Wallet & Resource> => {
+  setNetworkId(NetworkId.TestNet);
+  return (async () => {
+    
+    wallet = await WalletBuilder.build(
+      config.midnight.indexer,
+      config.midnight.indexerWS,
+      config.midnight.proofServer,
+      config.midnight.node,
+      config.midnight.secretKey || '',
+      getZswapNetworkId(),
+      'info'
+    );
+    wallet.start();
+
+    wallet.start();
+    console.log("Wallet started")
+    const state = await Rx.firstValueFrom(wallet.state());
+    console.log(`Your wallet address is: ${state.address}`);
+    let balance = state.balances[nativeToken()];
+    console.log("Balance: ",balance)
+    if (balance === undefined || balance === 0n) {
+      console.log("Waiting for funds")
+      balance = await waitForFunds(wallet);
+      console.log("Funds received")
+    }
+    return wallet;
+  })();
+};
+
+const waitForFunds = (wallet: Wallet) =>
+  
+  Rx.firstValueFrom(
+    wallet.state().pipe(
+      Rx.throttleTime(10_000),
+      Rx.tap((state) => {
+        const applyGap = state.syncProgress?.lag.applyGap ?? 0n;
+        const sourceGap = state.syncProgress?.lag.sourceGap ?? 0n;
+        console.log(
+          `Waiting for funds. Backend lag: ${sourceGap}, wallet lag: ${applyGap}, transactions=${state.transactionHistory.length}`,
+        );
+      }),
+      Rx.filter((state) => {
+        // Let's allow progress only if wallet is synced
+        return state.syncProgress?.synced === true;
+      }),
+      Rx.map((s) => s.balances[nativeToken()] ?? 0n),
+      Rx.filter((balance) => balance > 0n),
+    ),
+  );
 
 if (config.chainName === ChainName.Midnight) {
+  setNetworkId(NetworkId.TestNet);
   init();
 }
 
 export async function init() {
 
 	console.log('Initializing Midnight Oracle');
-	// setup wallet
+	console.log(getLedgerNetworkId())
+  // setup wallet
+	wallet = await buildWalletAndWaitForFunds();
+
+
+  // initialize the wallet
+  //wallet = await buildWalletAndWaitForFunds();
 
 	// setup provider
 

@@ -4,6 +4,7 @@
   "license": "UNLICENSED",
   "private": true,
   "main": "build/index.js",
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "clean": "rimraf build",
@@ -39,7 +40,18 @@
     "ts-jest": "^29.2.4",
     "tsx": "^4.19.1",
     "turbo": "^2.0.6",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "@midnight-ntwrk/compact-runtime": "^0.8.1",
+    "@midnight-ntwrk/ledger": "^4.0.0",
+    "@midnight-ntwrk/midnight-js-contracts": "2.0.1",
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "2.0.1",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "2.0.1",
+    "@midnight-ntwrk/midnight-js-level-private-state-provider": "2.0.1",
+    "@midnight-ntwrk/midnight-js-node-zk-config-provider": "2.0.1",
+    "@midnight-ntwrk/midnight-js-types": "2.0.1",
+    "@midnight-ntwrk/wallet": "5.0.0",
+    "@midnight-ntwrk/wallet-api": "5.0.0",
+    "@midnight-ntwrk/zswap": "^4.0.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
