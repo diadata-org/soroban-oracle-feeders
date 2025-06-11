@@ -27,7 +27,7 @@ export function init() {
   oracle = DIAOracle.at(alephium.contract);
 }
 
-export async function updateOracle(keys: string[], prices: number[]) {
+export async function update(keys: string[], prices: number[]) {
   console.log('Updating oracle with:', keys, prices);
 
   const keyBatches = splitIntoFixedBatches(keys, alephium.maxBatchSize);

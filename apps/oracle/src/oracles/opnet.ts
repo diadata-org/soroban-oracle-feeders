@@ -79,7 +79,7 @@ export function writeU128(writer: BinaryWriter, value: bigint) {
  * @param keys - Array of keys (symbols, asset names, etc.)
  * @param prices - Array of corresponding prices
  */
-export async function updateOracle(keys: string[], prices: number[]) {
+export async function update(keys: string[], prices: number[]) {
   console.log('Updating OpNet oracle with:', keys, prices);
 
   const utxos = await provider.utxoManager.getUTXOs({

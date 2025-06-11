@@ -39,7 +39,7 @@ export function init() {
   }
 }
 
-export async function updateOracle(keys: string[], prices: number[]) {
+export async function update(keys: string[], prices: number[]) {
   const date = Date.now();
 
   // Split keys and prices into batches

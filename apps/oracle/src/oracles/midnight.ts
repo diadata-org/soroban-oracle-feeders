@@ -202,7 +202,7 @@ export async function init() {
  * @param keys - Array of keys (symbols, asset names, etc.)
  * @param prices - Array of corresponding prices
  */
-export async function updateOracle(keys: string[], prices: number[]) {
+export async function update(keys: string[], prices: number[]) {
   console.log('Updating Midnight oracle with:', keys, prices);
 
   // Split into batches for large updates

@@ -4,17 +4,19 @@ import { getAssetPrices } from './api';
 import type { Asset } from './assets';
 import config, { ChainName } from './config';
 import { getCmcPrice, getCoingeckoPrice } from './guardian';
-import {
-  extendOracleTtl,
-  restoreOracle,
-  updateOracle as updateSorobanOracle,
-} from './oracles/soroban';
-import { updateOracle as updateKadenaOracle } from './oracles/kadena';
-import { updateOracle as updateAlephiumOracle } from './oracles/alephium';
-import { updateOracle as updateStacksOracle } from './oracles/stacks';
-import { updateOracle as updateOpNetOracle } from './oracles/opnet';
-import { updateOracle as updateMidnightOracle } from './oracles/midnight';
+import { alephium, kadena, midnight, opnet, soroban, stacks } from './oracles';
 import { setupNock } from '../test/setupNock';
+
+type OracleUpdateFn = (keys: string[], values: number[]) => Promise<void>;
+
+const oracleUpdateMap: Record<ChainName, OracleUpdateFn> = {
+  [ChainName.Alephium]: alephium.update,
+  [ChainName.Kadena]: kadena.update,
+  [ChainName.Midnight]: midnight.update,
+  [ChainName.Opnet]: opnet.update,
+  [ChainName.Soroban]: soroban.update,
+  [ChainName.Stacks]: stacks.update,
+};
 
 export function checkDeviation(oldPrice: number, newPrice: number) {
   const deviation = config.deviationPermille / 1000;
@@ -102,26 +104,8 @@ export async function update(published: Map<string, number>, prices: Map<string,
       values.push(value);
     }
 
-    switch (config.chain.name) {
-      case ChainName.Kadena:
-        await updateKadenaOracle(keys, values);
-        break;
-      case ChainName.Soroban:
-        await updateSorobanOracle(keys, values);
-        break;
-      case ChainName.Alephium:
-        await updateAlephiumOracle(keys, values);
-        break;
-      case ChainName.Stacks:
-        updateStacksOracle(keys, values);
-        break;
-      case ChainName.Opnet:
-        await updateOpNetOracle(keys, values);
-        break;
-      case ChainName.Midnight:
-        await updateMidnightOracle(keys, values);
-        break;
-    }
+    const updateOracle = oracleUpdateMap[config.chain.name];
+    await updateOracle(keys, values);
     console.log(Object.fromEntries(priceCollector));
   } else {
     console.log('No update necessary');
@@ -140,9 +124,9 @@ async function main() {
 
   if (config.chain.name === ChainName.Soroban) {
     // soroban specific
-    await restoreOracle();
-    await extendOracleTtl();
-    setInterval(() => queue(extendOracleTtl), config.chain.soroban.lifetimeInterval);
+    await soroban.restoreContract();
+    await soroban.extendContractTtl();
+    setInterval(() => queue(soroban.extendContractTtl), config.chain.soroban.lifetimeInterval);
   }
 
   let published = new Map<string, number>();

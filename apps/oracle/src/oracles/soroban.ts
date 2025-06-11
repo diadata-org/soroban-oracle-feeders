@@ -24,17 +24,17 @@ export function init() {
   contract = new Contract(soroban.contractId);
 }
 
-export function restoreOracle() {
+export function restoreContract() {
   return restoreInstance(server, keypair, contract);
 }
 
-export function extendOracleTtl() {
+export function extendContractTtl() {
   const extendTo = DAY_IN_LEDGERS * 30;
   const threshold = extendTo - DAY_IN_LEDGERS;
   return extendInstanceTtl({ server, source: keypair, contract, threshold, extendTo });
 }
 
-export async function updateOracle(keys: string[], prices: number[]) {
+export async function update(keys: string[], prices: number[]) {
   const account = await server.getAccount(keypair.publicKey());
 
   const timestamp = Math.floor(Date.now() / 1000);

@@ -13,7 +13,7 @@ const keyPair: IKeyPair = {
 
 const hostUrl = `${kadena.rpcUrl}/chainweb/0.0/${kadena.networkId}/chain/${kadena.chainId}/pact`;
 
-export async function updateOracle(keys: string[], prices: number[]) {
+export async function update(keys: string[], prices: number[]) {
   console.log('Updating oracle with:', keys, prices);
 
   const client = createClient(hostUrl);
