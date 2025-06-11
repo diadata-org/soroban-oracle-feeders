@@ -8,30 +8,32 @@ let nodeProvider: NodeProvider;
 let wallet: PrivateKeyWallet;
 let oracle: DIAOracleInstance;
 
-if (config.chainName === ChainName.Alephium) {
+if (config.chain.name === ChainName.Alephium) {
   init();
 }
 
+const { alephium } = config.chain;
+
 export function init() {
-  nodeProvider = new NodeProvider(config.alephium.rpcUrl);
+  nodeProvider = new NodeProvider(alephium.rpcUrl);
   web3.setCurrentNodeProvider(nodeProvider);
 
   wallet = new PrivateKeyWallet({
-    privateKey: config.alephium.secretKey,
+    privateKey: alephium.secretKey,
     keyType: undefined,
     nodeProvider: nodeProvider,
   });
 
-  oracle = DIAOracle.at(config.alephium.contract);
+  oracle = DIAOracle.at(alephium.contract);
 }
 
 export async function updateOracle(keys: string[], prices: number[]) {
   console.log('Updating oracle with:', keys, prices);
 
-  const keyBatches = splitIntoFixedBatches(keys, config.alephium.maxBatchSize);
-  const priceBatches = splitIntoFixedBatches(prices, config.alephium.maxBatchSize);
+  const keyBatches = splitIntoFixedBatches(keys, alephium.maxBatchSize);
+  const priceBatches = splitIntoFixedBatches(prices, alephium.maxBatchSize);
 
-  const maxRetries = config.alephium.maxRetryAttempts;
+  const maxRetries = alephium.maxRetryAttempts;
 
   for (const ketBatchIndex in keyBatches) {
     const keyBatch = keyBatches[ketBatchIndex];
@@ -45,15 +47,15 @@ export async function updateOracle(keys: string[], prices: number[]) {
           args: {
             keys: fillArray(
               keyBatch.map((key) => stringToHex(key)),
-              config.alephium.maxBatchSize,
+              alephium.maxBatchSize,
               stringToHex(''),
             ),
             values: fillArray(
               priceBatch.map((price) => BigInt(Math.floor(price * 100_000_000))),
-              config.alephium.maxBatchSize,
+              alephium.maxBatchSize,
               0n,
             ),
-            timestamps: fillArray([], config.alephium.maxBatchSize, BigInt(Date.now())),
+            timestamps: fillArray([], alephium.maxBatchSize, BigInt(Date.now())),
             batchSize: BigInt(keyBatch.length),
           },
           signer: wallet,

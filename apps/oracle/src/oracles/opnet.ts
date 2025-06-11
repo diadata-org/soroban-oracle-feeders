@@ -12,18 +12,20 @@ import crypto from 'crypto';
 import config, { ChainName } from '../config';
 import { splitIntoFixedBatches } from '../utils';
 
+const { opnet } = config.chain;
+
 let provider: JSONRpcProvider;
 let backupProvider: JSONRpcProvider | undefined;
 let contract: IOP_NETContract;
 let network: Network;
 let wallet: Wallet;
 
-if (config.chainName === ChainName.Opnet) {
+if (config.chain.name === ChainName.Opnet) {
   init();
 }
 
 export async function init() {
-  switch (config.opnet.network) {
+  switch (opnet.network) {
     case OPNetNetwork.Mainnet:
       network = networks.bitcoin;
       break;
@@ -34,7 +36,7 @@ export async function init() {
       network = networks.regtest;
       break;
     default:
-      const { hostname } = new URL(config.opnet.rpcUrl);
+      const { hostname } = new URL(opnet.rpcUrl);
       switch (hostname) {
         case 'api.opnet.org':
           network = networks.bitcoin;
@@ -50,14 +52,14 @@ export async function init() {
       }
   }
 
-  provider = new JSONRpcProvider(config.opnet.rpcUrl, network);
-  if (config.opnet.backupRpcUrl) {
-    backupProvider = new JSONRpcProvider(config.opnet.backupRpcUrl, network);
+  provider = new JSONRpcProvider(opnet.rpcUrl, network);
+  if (opnet.backupRpcUrl) {
+    backupProvider = new JSONRpcProvider(opnet.backupRpcUrl, network);
   }
 
-  wallet = Wallet.fromWif(config.opnet.secretKey, network);
+  wallet = Wallet.fromWif(opnet.secretKey, network);
   contract = getContract<IOP_NETContract>(
-    config.opnet.contract,
+    opnet.contract,
     OP_NET_ABI,
     provider,
     network,
@@ -86,10 +88,10 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const preimage = await getPreimage();
 
   // Split into batches for large updates
-  const keyBatches = splitIntoFixedBatches(keys, config.opnet.maxBatchSize);
-  const priceBatches = splitIntoFixedBatches(prices, config.opnet.maxBatchSize);
+  const keyBatches = splitIntoFixedBatches(keys, opnet.maxBatchSize);
+  const priceBatches = splitIntoFixedBatches(prices, opnet.maxBatchSize);
 
-  const maxRetries = config.opnet.maxRetryAttempts;
+  const maxRetries = opnet.maxRetryAttempts;
 
   for (let batchIndex = 0; batchIndex < keyBatches.length; batchIndex++) {
     const keyBatch = keyBatches[batchIndex];
@@ -128,8 +130,8 @@ export async function updateOracle(keys: string[], prices: number[]) {
           utxos, // UTXOs to fund the transaction
           signer: wallet.keypair, // Wallet's keypair for signing the transaction
           network, // The BitcoinJS network
-          feeRate: config.opnet.feeRate, // Fee rate in satoshis per byte
-          priorityFee: config.opnet.priorityFee, // Priority fee for faster transaction
+          feeRate: opnet.feeRate, // Fee rate in satoshis per byte
+          priorityFee: opnet.priorityFee, // Priority fee for faster transaction
           gasSatFee: max(exactGas + extraGas, 330n),
           calldata, // The calldata for the contract interaction
           preimage,
@@ -163,7 +165,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
         // Switch to the backup node on the first failure if available
         if (attempt === 1 && backupProvider) {
           console.error('Switching to backup provider.');
-          provider = new JSONRpcProvider(config.opnet.backupRpcUrl ?? '', network);
+          provider = new JSONRpcProvider(opnet.backupRpcUrl ?? '', network);
         }
 
         if (attempt >= maxRetries) {

@@ -8,18 +8,20 @@ import {
 } from '@repo/common';
 import config, { ChainName } from '../config';
 
+const { soroban } = config.chain;
+
 let server: rpc.Server;
 let keypair: Keypair;
 let contract: Contract;
 
-if (config.chainName === ChainName.Soroban) {
+if (config.chain.name === ChainName.Soroban) {
   init();
 }
 
 export function init() {
-  server = new rpc.Server(config.soroban.rpcUrl, { allowHttp: true });
-  keypair = Keypair.fromSecret(config.soroban.secretKey);
-  contract = new Contract(config.soroban.contractId);
+  server = new rpc.Server(soroban.rpcUrl, { allowHttp: true });
+  keypair = Keypair.fromSecret(soroban.secretKey);
+  contract = new Contract(soroban.contractId);
 }
 
 export function restoreOracle() {
@@ -44,7 +46,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
     nativeToScVal(values, { type: 'u128' }),
   );
 
-  const maxRetries = config.soroban.maxRetryAttempts;
+  const maxRetries = soroban.maxRetryAttempts;
   let attempt = 0;
 
   while (attempt < maxRetries) {
