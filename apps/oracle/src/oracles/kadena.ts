@@ -4,14 +4,16 @@ import { submitKadenaTx } from '@repo/common';
 import config from '../config';
 import { splitIntoFixedBatches } from '../utils';
 
+const { kadena } = config.chain;
+
 const keyPair: IKeyPair = {
-  publicKey: config.kadena.publicKey,
-  secretKey: config.kadena.secretKey,
+  publicKey: kadena.publicKey,
+  secretKey: kadena.secretKey,
 };
 
-const hostUrl = `${config.kadena.rpcUrl}/chainweb/0.0/${config.kadena.networkId}/chain/${config.kadena.chainId}/pact`;
+const hostUrl = `${kadena.rpcUrl}/chainweb/0.0/${kadena.networkId}/chain/${kadena.chainId}/pact`;
 
-export async function updateOracle(keys: string[], prices: number[]) {
+export async function update(keys: string[], prices: number[]) {
   console.log('Updating oracle with:', keys, prices);
 
   const client = createClient(hostUrl);
@@ -20,25 +22,25 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const isoDate = `${new Date().toISOString().split('.')[0]}Z`;
   const dates = prices.map(() => isoDate);
 
-  const keysBatches = splitIntoFixedBatches(keys, config.kadena.maxAssetsPerTx);
-  const datesBatches = splitIntoFixedBatches(dates, config.kadena.maxAssetsPerTx);
-  const pricesBatches = splitIntoFixedBatches(prices, config.kadena.maxAssetsPerTx);
+  const keysBatches = splitIntoFixedBatches(keys, kadena.maxAssetsPerTx);
+  const datesBatches = splitIntoFixedBatches(dates, kadena.maxAssetsPerTx);
+  const pricesBatches = splitIntoFixedBatches(prices, kadena.maxAssetsPerTx);
 
-  const maxRetries = config.kadena.maxRetryAttempts;
+  const maxRetries = kadena.maxRetryAttempts;
 
   for (let i = 0; i < keysBatches.length; i++) {
     const formattedString =
       '[' + datesBatches[i].map((date) => `(time "${date}")`).join(', ') + ']';
     const unsignedTransaction = Pact.builder
       .execution(
-        `(${config.kadena.contract}.set-multiple-values ${JSON.stringify(keysBatches[i])} ${formattedString} ${JSON.stringify(pricesBatches[i])})`,
+        `(${kadena.contract}.set-multiple-values ${JSON.stringify(keysBatches[i])} ${formattedString} ${JSON.stringify(pricesBatches[i])})`,
       )
       .addSigner(keyPair.publicKey)
       .setMeta({
-        chainId: config.kadena.chainId as ChainId,
+        chainId: kadena.chainId as ChainId,
         senderAccount: `k:${keyPair.publicKey}`,
       })
-      .setNetworkId(config.kadena.networkId)
+      .setNetworkId(kadena.networkId)
       .createTransaction();
 
     const signedTx = await signWithKeypair(unsignedTransaction);

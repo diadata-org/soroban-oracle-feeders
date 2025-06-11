@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { request } from 'graphql-request';
 import * as apiModule from '../src/api';
+import { getAssetQuotation, getGraphqlAssetQuotation } from '../src/api/dia';
+import { AssetSource, type Asset } from '../src/assets';
 import config from '../src/config';
 import { Quotation, GraphqlQuotations, GqlParams } from '../src/validation'; // Adjust path as needed
 
@@ -20,9 +22,23 @@ describe('API Module', () => {
     ],
   };
 
-  const mockAssets: apiModule.Asset[] = [
-    { network: 'eth', address: '0x123', symbol: 'ETH', gqlParams: mockGqlParams },
-    { network: 'bsc', address: '0x456', symbol: 'BNB', gqlParams: mockGqlParams },
+  const mockAssets: Asset[] = [
+    {
+      network: 'eth',
+      address: '0x123',
+      symbol: 'ETH',
+      luminaKey: 'ETH/USD',
+      gqlParams: mockGqlParams,
+      allowedDeviation: 0.0,
+    },
+    {
+      network: 'bsc',
+      address: '0x456',
+      symbol: 'BNB',
+      luminaKey: 'BNB/USD',
+      gqlParams: mockGqlParams,
+      allowedDeviation: 0.0,
+    },
   ];
 
   beforeEach(() => {
@@ -31,7 +47,7 @@ describe('API Module', () => {
 
   describe('getAssetPrices', () => {
     it('should fetch prices using HTTP API when config.api.useGql is false', async () => {
-      (config.api.useGql as any) = false;
+      (config.assets.source as any) = AssetSource.Rest;
 
       const mockQuotation: Quotation = {
         Symbol: 'ETH',
@@ -56,7 +72,7 @@ describe('API Module', () => {
     });
 
     it('should fetch prices using GraphQL API when config.api.useGql is true', async () => {
-      (config.api.useGql as any) = true;
+      (config.assets.source as any) = AssetSource.Gql;
 
       const mockGraphqlQuotations: GraphqlQuotations = {
         GetFeed: [{ Value: 2000 }],
@@ -73,7 +89,7 @@ describe('API Module', () => {
     });
 
     it('should handle errors in fetching prices gracefully', async () => {
-      (config.api.useGql as any) = false;
+      (config.assets.source as any) = AssetSource.Rest;
 
       const mockQuotation: Quotation = {
         Symbol: 'ETH',
@@ -110,7 +126,7 @@ describe('API Module', () => {
 
       (axios.get as jest.Mock).mockResolvedValue({ data: mockQuotation });
 
-      const price = await apiModule.getAssetQuotation('eth', '0x123');
+      const price = await getAssetQuotation('eth', '0x123');
 
       expect(price).toBe(2000);
       expect(axios.get).toHaveBeenCalledWith(`${config.api.http.url}/eth/0x123`);
@@ -119,7 +135,7 @@ describe('API Module', () => {
     it('should throw an error if the API response is invalid', async () => {
       (axios.get as jest.Mock).mockResolvedValue({ data: {} });
 
-      await expect(apiModule.getAssetQuotation('eth', '0x123')).rejects.toThrow();
+      await expect(getAssetQuotation('eth', '0x123')).rejects.toThrow();
     });
   });
 
@@ -131,7 +147,7 @@ describe('API Module', () => {
 
       (request as jest.Mock).mockResolvedValue(mockGraphqlQuotations);
 
-      const price = await apiModule.getGraphqlAssetQuotation('eth', '0x123', {
+      const price = await getGraphqlAssetQuotation('eth', '0x123', {
         FeedSelection: [],
       });
 
@@ -143,7 +159,7 @@ describe('API Module', () => {
       (request as jest.Mock).mockResolvedValue({ GetFeed: [] });
 
       await expect(
-        apiModule.getGraphqlAssetQuotation('eth', '0x123', { FeedSelection: [] }),
+        getGraphqlAssetQuotation('eth', '0x123', { FeedSelection: [] }),
       ).rejects.toThrow('No results');
     });
   });

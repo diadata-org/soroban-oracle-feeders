@@ -113,6 +113,6 @@ describe('Alephium Oracle - updateOracle', () => {
 
     await expect(updateOracle(keys, prices)).rejects.toThrow('Transaction failed');
 
-    expect(transactMock).toHaveBeenCalledTimes(config.alephium.maxRetryAttempts);
+    expect(transactMock).toHaveBeenCalledTimes(config.chain.alephium.maxRetryAttempts);
   });
 });

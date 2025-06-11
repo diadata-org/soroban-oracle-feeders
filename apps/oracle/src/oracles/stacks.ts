@@ -16,36 +16,38 @@ import type { TransactionResults } from '@stacks/stacks-blockchain-api-types';
 import config, { ChainName } from '../config';
 import { splitIntoFixedBatches } from '../utils';
 
+const { stacks } = config.chain;
+
 let network: StacksMainnet;
 let backupNetwork: StacksMainnet | undefined;
 
-const setNetwork = (url?: string): StacksMainnet => {
+function setNetwork(url?: string): StacksMainnet {
   if (!url) return new StacksDevnet();
   if (url.includes('testnet')) return new StacksTestnet({ url });
   return new StacksMainnet({ url });
-};
+}
 
-if (config.chainName === ChainName.Stacks) {
+if (config.chain.name === ChainName.Stacks) {
   init();
 }
 
 export function init() {
-  network = setNetwork(config.stacks.rpcUrl);
+  network = setNetwork(stacks.rpcUrl);
 
-  if (config.stacks.backupRpcUrl) {
-    backupNetwork = setNetwork(config.stacks.backupRpcUrl);
+  if (stacks.backupRpcUrl) {
+    backupNetwork = setNetwork(stacks.backupRpcUrl);
   }
 }
 
-export async function updateOracle(keys: string[], prices: number[]) {
+export async function update(keys: string[], prices: number[]) {
   const date = Date.now();
 
   // Split keys and prices into batches
-  const keyBatches = splitIntoFixedBatches(keys, config.stacks.maxBatchSize);
-  const priceBatches = splitIntoFixedBatches(prices, config.stacks.maxBatchSize);
+  const keyBatches = splitIntoFixedBatches(keys, stacks.maxBatchSize);
+  const priceBatches = splitIntoFixedBatches(prices, stacks.maxBatchSize);
 
   const version = network.isMainnet() ? TransactionVersion.Mainnet : TransactionVersion.Testnet;
-  const address = getAddressFromPrivateKey(config.stacks.secretKey, version);
+  const address = getAddressFromPrivateKey(stacks.secretKey, version);
 
   let nonce = await getAccountNonce(address);
   let useBackup = false;
@@ -63,16 +65,16 @@ export async function updateOracle(keys: string[], prices: number[]) {
     const values = listCV(entries.map(tupleCV));
 
     let attempt = 0;
-    const maxRetries = config.stacks.maxRetryAttempts;
+    const maxRetries = stacks.maxRetryAttempts;
 
     while (attempt < maxRetries) {
       try {
         const batchTxOptions = {
-          contractAddress: config.stacks.contract,
-          contractName: config.stacks.contractName,
+          contractAddress: stacks.contract,
+          contractName: stacks.contractName,
           functionName: 'set-multiple-values',
           functionArgs: [values],
-          senderKey: config.stacks.secretKey,
+          senderKey: stacks.secretKey,
           network: useBackup && backupNetwork ? backupNetwork : network, // Use backup if needed
           anchorMode: AnchorMode.Any,
           nonce,
@@ -81,7 +83,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
         const contractCall = await makeContractCall(batchTxOptions);
         const estimatedFee = await estimateContractFunctionCall(contractCall);
 
-        let fee = (estimatedFee * config.stacks.feeRate) / 100n;
+        let fee = (estimatedFee * stacks.feeRate) / 100n;
         if (attempt > 0) {
           const rate = 100n + BigInt(attempt) * 10n;
           fee = (fee * rate) / 100n;
@@ -129,7 +131,7 @@ async function getAccountNonce(address: string) {
   query.set('order', 'desc');
   query.set('unanchored', 'false');
 
-  const res = await axios(`${config.stacks.rpcUrl}/extended/v1/tx?${query}`);
+  const res = await axios(`${stacks.rpcUrl}/extended/v1/tx?${query}`);
   const body = res.data as TransactionResults;
 
   if (body.total) {
