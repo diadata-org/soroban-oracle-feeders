@@ -1,0 +1,152 @@
+{
+  "circuits": [
+    {
+      "name": "get_value",
+      "pure": false,
+      "arguments": [
+        {
+          "name": "key",
+          "type": {
+            "type-name": "Opaque",
+            "tsType": "string"
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Struct",
+        "name": "OracleValue",
+        "elements": [
+          {
+            "name": "value",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 340282366920938463463374607431768211455
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 340282366920938463463374607431768211455
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "set_value",
+      "pure": false,
+      "arguments": [
+        {
+          "name": "key",
+          "type": {
+            "type-name": "Opaque",
+            "tsType": "string"
+          }
+        },
+        {
+          "name": "value",
+          "type": {
+            "type-name": "Struct",
+            "name": "OracleValue",
+            "elements": [
+              {
+                "name": "value",
+                "type": {
+                  "type-name": "Uint",
+                  "maxval": 340282366920938463463374607431768211455
+                }
+              },
+              {
+                "name": "timestamp",
+                "type": {
+                  "type-name": "Uint",
+                  "maxval": 340282366920938463463374607431768211455
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "set_multiple_values",
+      "pure": false,
+      "arguments": [
+        {
+          "name": "batch",
+          "type": {
+            "type-name": "Vector",
+            "length": 10,
+            "type": {
+              "type-name": "Tuple",
+              "types": [
+                {
+                  "type-name": "Opaque",
+                  "tsType": "string"
+                },
+                {
+                  "type-name": "Struct",
+                  "name": "OracleValue",
+                  "elements": [
+                    {
+                      "name": "value",
+                      "type": {
+                        "type-name": "Uint",
+                        "maxval": 340282366920938463463374607431768211455
+                      }
+                    },
+                    {
+                      "name": "timestamp",
+                      "type": {
+                        "type-name": "Uint",
+                        "maxval": 340282366920938463463374607431768211455
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "change_oracle_updater",
+      "pure": false,
+      "arguments": [
+        {
+          "name": "new_oracle_updater",
+          "type": {
+            "type-name": "Struct",
+            "name": "ZswapCoinPublicKey",
+            "elements": [
+              {
+                "name": "bytes",
+                "type": {
+                  "type-name": "Bytes",
+                  "length": 32
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    }
+  ]
+}

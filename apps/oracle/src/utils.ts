@@ -1,6 +1,3 @@
-import { Counter, type CounterPrivateState } from '@repo/common';
-import type { ImpureCircuitId, MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
-import type { DeployedContract, FoundContract } from '@midnight-ntwrk/midnight-js-contracts';
 import { getAddress, isAddress, zeroAddress } from 'viem';
 
 export function splitIntoFixedBatches<T>(items: T[], batchSize: number): T[][] {
@@ -34,20 +31,13 @@ export function parseAddress(value?: string) {
   return getAddress(value);
 }
 
-/* Midnight types */
+/* Midnight Oracletypes */
+import { Oracle, type OraclePrivateState } from '@repo/common'; // Compiled from @repo/common
 
-export type CounterCircuits = ImpureCircuitId<Counter.Contract<CounterPrivateState>>;
-
-export const CounterPrivateStateId = 'counterPrivateState';
-
-export type CounterProviders = MidnightProviders<
-  CounterCircuits,
-  typeof CounterPrivateStateId,
-  CounterPrivateState
->;
-
-export type CounterContract = Counter.Contract<CounterPrivateState>;
-
-export type DeployedCounterContract =
-  | DeployedContract<CounterContract>
-  | FoundContract<CounterContract>;
+import type { ImpureCircuitId, MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
+import type { DeployedContract, FoundContract } from '@midnight-ntwrk/midnight-js-contracts';
+export type OracleCircuits = ImpureCircuitId<Oracle.Contract<OraclePrivateState>>;
+export const OraclePrivateStateId = 'oraclePrivateState';
+export type OracleProviders = MidnightProviders<OracleCircuits, typeof OraclePrivateStateId, OraclePrivateState>;
+export type OracleContract = Oracle.Contract<OraclePrivateState>;
+export type DeployedOracleContract = DeployedContract<OracleContract> | FoundContract<OracleContract>;
