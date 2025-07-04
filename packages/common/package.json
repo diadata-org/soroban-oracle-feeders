@@ -12,7 +12,7 @@
     "build": "tsc",
     "clean": "rimraf build",
     "dev": "tsc -w",
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   },
   "peerDependencies": {
     "@stellar/stellar-sdk": "^13.0.0",

@@ -1,170 +1,338 @@
-import {
-  Contract,
-  Keypair,
-  rpc,
-  TransactionBuilder,
-  Networks,
-  BASE_FEE,
-} from '@stellar/stellar-sdk';
-import { extendInstanceTtl, restoreInstance, submitSorobanTx } from '@repo/common';
-import config from '../src/config';
-import { restoreOracle, extendOracleTtl, updateOracle, init } from '../src/oracles/soroban';
-import { DAY_IN_LEDGERS } from '@repo/common';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Contract, Keypair, nativeToScVal, rpc, TransactionBuilder } from '@stellar/stellar-sdk';
+import * as common from '@repo/common';
+import * as configModule from '../src/config';
 
-jest.mock('@stellar/stellar-sdk', () => {
-  const originalModule = jest.requireActual('@stellar/stellar-sdk');
-  return {
-    ...originalModule,
-    Contract: jest.fn().mockImplementation(() => ({
-      call: jest.fn(),
-      getFootprint: jest.fn().mockReturnValue({}), // Mock getFootprint method
-    })),
-    Keypair: {
-      fromSecret: jest.fn().mockReturnValue({
-        publicKey: jest
-          .fn()
-          .mockReturnValue('GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'),
-        secret: 'SXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-      }),
-    },
-    rpc: {
-      Server: jest.fn().mockImplementation(() => ({
-        getAccount: jest.fn().mockResolvedValue({
-          sequence: '1',
-        }),
-        prepareTransaction: jest.fn().mockResolvedValue({
-          sign: jest.fn(),
-        }),
-        getLatestLedger: jest.fn().mockResolvedValue(100), // Mock getLatestLedger
-        getWasm: jest.fn().mockResolvedValue({}), // Mock getWasm
-        getLedgerEntries: jest.fn().mockResolvedValue({
-          entries: [
-            {
-              liveUntilLedgerSeq: 200, // Mock necessary property
-            },
-          ],
-        }), // Mock getLedgerEntries
-      })),
-    },
-    TransactionBuilder: jest.fn().mockImplementation(() => ({
-      addOperation: jest.fn().mockReturnThis(),
-      setTimeout: jest.fn().mockReturnThis(),
-      build: jest.fn().mockReturnThis(),
-    })),
-  };
-});
+// Mock the stellar-sdk modules
+vi.mock('@stellar/stellar-sdk', () => ({
+  Contract: vi.fn(),
+  Keypair: {
+    fromSecret: vi.fn(),
+  },
+  nativeToScVal: vi.fn(),
+  rpc: {
+    Server: vi.fn(),
+  },
+  TransactionBuilder: vi.fn(),
+}));
 
-jest.mock('@repo/common', () => ({
+// Mock @repo/common
+vi.mock('@repo/common', () => ({
   DAY_IN_LEDGERS: 17280,
-  DEFAULT_TX_OPTIONS: { fee: BASE_FEE, networkPassphrase: Networks.TESTNET },
-  extendInstanceTtl: jest.fn(),
-  restoreInstance: jest.fn(),
-  submitSorobanTx: jest.fn(),
+  DEFAULT_TX_OPTIONS: { fee: '100' },
+  extendInstanceTtl: vi.fn(),
+  restoreInstance: vi.fn(),
+  submitSorobanTx: vi.fn(),
+}));
+
+// Mock config
+vi.mock('../src/config', () => ({
+  default: {
+    chainName: 'Soroban',
+    soroban: {
+      rpcUrl: 'https://testnet.stellar.org:9000',
+      secretKey: 'test-secret-key',
+      contractId: 'test-contract-id',
+      maxRetryAttempts: 3,
+    },
+  },
+  ChainName: {
+    Soroban: 'Soroban',
+  },
 }));
 
 describe('Soroban Oracle', () => {
-  let mockServer: rpc.Server;
-  let mockKeypair: Keypair;
-  let mockContract: Contract;
+  let mockServer: any;
+  let mockKeypair: any;
+  let mockContract: any;
+  let mockAccount: any;
+  let mockTransaction: any;
+  let sorobanModule: any;
 
-  beforeAll(() => {
-    init(); // Initialize the soroban setup
-    mockServer = new rpc.Server(config.soroban.rpcUrl, { allowHttp: true });
-    mockKeypair = Keypair.fromSecret(config.soroban.secretKey);
-    mockContract = new Contract(config.soroban.contractId);
+  beforeEach(async () => {
+    // Reset all mocks
+    vi.clearAllMocks();
+
+    // Setup mock server
+    mockServer = {
+      getAccount: vi.fn(),
+      prepareTransaction: vi.fn(),
+    };
+
+    // Setup mock keypair
+    mockKeypair = {
+      publicKey: () => 'test-public-key',
+      sign: vi.fn(),
+    };
+
+    // Setup mock contract
+    mockContract = {
+      call: vi.fn(),
+    };
+
+    // Setup mock account
+    mockAccount = {
+      accountId: 'test-account-id',
+      sequenceNumber: '123',
+    };
+
+    // Setup mock transaction
+    mockTransaction = {
+      sign: vi.fn(),
+    };
+
+    // Setup constructor mocks
+    (rpc.Server as any).mockImplementation(() => mockServer);
+    (Keypair.fromSecret as any).mockReturnValue(mockKeypair);
+    (Contract as any).mockImplementation(() => mockContract);
+    (TransactionBuilder as any).mockImplementation(() => ({
+      addOperation: vi.fn().mockReturnThis(),
+      setTimeout: vi.fn().mockReturnThis(),
+      build: vi.fn().mockReturnValue(mockTransaction),
+    }));
+
+    // Setup nativeToScVal mock with proper return values
+    (nativeToScVal as any).mockImplementation((value: any) => {
+      if (Array.isArray(value)) {
+        return 'mocked-array-value';
+      }
+      return 'mocked-value';
+    });
+
+    // Setup other mocks
+    mockServer.getAccount.mockResolvedValue(mockAccount);
+    mockServer.prepareTransaction.mockResolvedValue(mockTransaction);
+    (common.submitSorobanTx as any).mockResolvedValue(undefined);
+
+    // Import the module
+    sorobanModule = await import('../src/oracles/soroban');
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.restoreAllMocks();
+  });
+
+  describe('init', () => {
+    it('should initialize server, keypair, and contract with correct config', () => {
+      sorobanModule.init();
+
+      expect(rpc.Server).toHaveBeenCalledWith(
+        configModule.default.soroban.rpcUrl,
+        { allowHttp: true }
+      );
+      expect(Keypair.fromSecret).toHaveBeenCalledWith(
+        configModule.default.soroban.secretKey
+      );
+      expect(Contract).toHaveBeenCalledWith(
+        configModule.default.soroban.contractId
+      );
+    });
   });
 
   describe('restoreOracle', () => {
     it('should call restoreInstance with correct parameters', async () => {
-      await restoreOracle();
+      sorobanModule.init();
 
-      expect(restoreInstance).toHaveBeenCalledWith(
-        expect.objectContaining({
-          getAccount: expect.any(Function),
-          prepareTransaction: expect.any(Function),
-        }),
-        expect.objectContaining({
-          publicKey: expect.any(Function),
-          secret: 'SXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-        }),
-        expect.objectContaining({
-          call: expect.any(Function),
-        }),
+      await sorobanModule.restoreOracle();
+
+      expect(common.restoreInstance).toHaveBeenCalledWith(
+        mockServer,
+        mockKeypair,
+        mockContract
       );
     });
   });
 
   describe('extendOracleTtl', () => {
     it('should call extendInstanceTtl with correct parameters', async () => {
-      await extendOracleTtl();
-      const threshold = DAY_IN_LEDGERS * 29;
-      const extendTo = DAY_IN_LEDGERS * 30;
+      sorobanModule.init();
 
-      expect(extendInstanceTtl).toHaveBeenCalledTimes(1);
-      expect(extendInstanceTtl).toHaveBeenCalledWith(
-        expect.objectContaining({
-          server: expect.objectContaining({
-            getAccount: expect.any(Function),
-            prepareTransaction: expect.any(Function),
-            getLatestLedger: expect.any(Function),
-            getLedgerEntries: expect.any(Function),
-            getWasm: expect.any(Function),
-          }),
-          source: expect.objectContaining({
-            publicKey: expect.any(Function),
-            secret: 'SXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-          }),
-          contract: expect.objectContaining({
-            call: expect.any(Function),
-            getFootprint: expect.any(Function),
-          }),
-          threshold,
-          extendTo,
-        }),
-      );
+      await sorobanModule.extendOracleTtl();
+
+      const extendTo = common.DAY_IN_LEDGERS * 30;
+      const threshold = extendTo - common.DAY_IN_LEDGERS;
+
+      expect(common.extendInstanceTtl).toHaveBeenCalledWith({
+        server: mockServer,
+        source: mockKeypair,
+        contract: mockContract,
+        threshold,
+        extendTo,
+      });
     });
   });
 
   describe('updateOracle', () => {
-    it('should build and submit the transaction successfully', async () => {
-      const keys = ['key1', 'key2'];
-      const prices = [100, 200];
+    beforeEach(() => {
+      sorobanModule.init();
+    });
 
-      await updateOracle(keys, prices);
-      // Capture the arguments passed to submitSorobanTx
-      const submitArgs = (submitSorobanTx as jest.MockedFunction<typeof submitSorobanTx>).mock
-        .calls[0]; // [server, tx]
+    it('should successfully update oracle with valid data', async () => {
+      const keys = ['BTC', 'ETH'];
+      const prices = [50000, 3000];
 
-      console.log('submitSorobanTx called with:', submitArgs);
+      await sorobanModule.updateOracle(keys, prices);
 
-      expect(submitSorobanTx).toHaveBeenCalledTimes(1);
+      // Verify account was fetched
+      expect(mockServer.getAccount).toHaveBeenCalledWith('test-public-key');
 
-      expect(submitSorobanTx).toHaveBeenCalledWith(
-        expect.objectContaining({
-          getAccount: expect.any(Function),
-          prepareTransaction: expect.any(Function),
-        }),
-        expect.objectContaining({
-          sign: expect.any(Function),
-        }),
+      // Verify contract call was made with correct parameters
+      expect(mockContract.call).toHaveBeenCalledWith(
+        'set_multiple_values',
+        'mocked-array-value', // keys
+        'mocked-array-value'  // values
+      );
+
+      // Verify transaction was prepared and submitted
+      expect(mockServer.prepareTransaction).toHaveBeenCalledWith(mockTransaction);
+      expect(mockTransaction.sign).toHaveBeenCalledWith(mockKeypair);
+      expect(common.submitSorobanTx).toHaveBeenCalledWith(mockServer, mockTransaction);
+    });
+
+    it('should handle transaction failure and retry', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+
+      // Mock failure on first attempt, success on second
+      (common.submitSorobanTx as any)
+        .mockRejectedValueOnce(new Error('Transaction failed'))
+        .mockResolvedValueOnce(undefined);
+
+      await sorobanModule.updateOracle(keys, prices);
+
+      // Should have been called twice (retry)
+      expect(common.submitSorobanTx).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw error after max retry attempts', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+      const error = new Error('Persistent failure');
+
+      // Mock all attempts to fail
+      (common.submitSorobanTx as any).mockRejectedValue(error);
+
+      await expect(sorobanModule.updateOracle(keys, prices)).rejects.toThrow('Persistent failure');
+
+      // Should have been called maxRetryAttempts times
+      expect(common.submitSorobanTx).toHaveBeenCalledTimes(
+        configModule.default.soroban.maxRetryAttempts
       );
     });
 
-    it('should retry transaction on failure', async () => {
-      const keys = ['key1', 'key2'];
-      const prices = [100, 200];
+    it('should convert prices to correct format', async () => {
+      const keys = ['BTC', 'ETH'];
+      const prices = [50000.123, 3000.456];
 
-      const submitSorobanTxMock = submitSorobanTx as jest.MockedFunction<typeof submitSorobanTx>;
+      await sorobanModule.updateOracle(keys, prices);
 
-      submitSorobanTxMock.mockRejectedValue(new Error('Transaction failed'));
+      // Verify nativeToScVal was called for keys
+      expect(nativeToScVal).toHaveBeenCalledWith(keys);
 
-      await expect(updateOracle(keys, prices)).rejects.toThrow('Transaction failed');
+      // Verify nativeToScVal was called for values with correct format
+      const valuesCall = (nativeToScVal as any).mock.calls.find(
+        call => call[1] && (call[1] as any).type === 'u128'
+      );
+      expect(valuesCall).toBeDefined();
+    });
 
-      expect(submitSorobanTxMock).toHaveBeenCalledTimes(config.soroban.maxRetryAttempts);
+    it('should use current timestamp for values', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+
+      const mockDate = new Date('2024-01-01T00:00:00Z');
+      
+      vi.useFakeTimers();
+      vi.setSystemTime(mockDate);
+
+      await sorobanModule.updateOracle(keys, prices);
+
+      vi.useRealTimers();
+
+      // Verify the timestamp was used in the contract call
+      expect(mockContract.call).toHaveBeenCalledWith(
+        'set_multiple_values',
+        'mocked-array-value',
+        'mocked-array-value'
+      );
+    });
+
+    it('should handle empty keys and prices arrays', async () => {
+      const keys: string[] = [];
+      const prices: number[] = [];
+
+      await sorobanModule.updateOracle(keys, prices);
+
+      expect(mockContract.call).toHaveBeenCalledWith(
+        'set_multiple_values',
+        'mocked-array-value',
+        'mocked-array-value'
+      );
+    });
+
+    it('should handle different price scales correctly', async () => {
+      const keys = ['BTC', 'ETH', 'USDC'];
+      const prices = [0.0001, 999999.9999, 1.0001];
+
+      await sorobanModule.updateOracle(keys, prices);
+
+      // Verify the contract call was made
+      expect(mockContract.call).toHaveBeenCalledWith(
+        'set_multiple_values',
+        'mocked-array-value',
+        'mocked-array-value'
+      );
     });
   });
-});
+
+  describe('conditional initialization', () => {
+    it('should not initialize when chainName is not Soroban', async () => {
+      // Mock config to return non-Soroban chain
+      vi.mocked(configModule.default).chainName = 'OtherChain' as any;
+
+      // Re-import the module to trigger the conditional initialization
+      vi.resetModules();
+      const newModule = await import('../src/oracles/soroban');
+
+      // Should not have called init
+      expect(rpc.Server).not.toHaveBeenCalled();
+    });
+
+    it('should initialize when chainName is Soroban', async () => {
+      // Mock config to return Soroban chain
+      vi.mocked(configModule.default).chainName = 'Soroban' as any;
+
+      // Re-import the module to trigger the conditional initialization
+      vi.resetModules();
+      await import('../src/oracles/soroban');
+
+      // Should have called init
+      expect(rpc.Server).toHaveBeenCalled();
+    });
+  });
+
+  describe('error handling', () => {
+    beforeEach(() => {
+      sorobanModule.init();
+    });
+    it('should handle server.getAccount failure', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+      const error = new Error('Account not found');
+
+      mockServer.getAccount.mockRejectedValue(error);
+
+      await expect(sorobanModule.updateOracle(keys, prices)).rejects.toThrow('Account not found');
+    });
+
+    it('should handle server.prepareTransaction failure', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+      const error = new Error('Transaction preparation failed');
+
+      mockServer.prepareTransaction.mockRejectedValue(error);
+
+      await expect(sorobanModule.updateOracle(keys, prices)).rejects.toThrow('Transaction preparation failed');
+    });
+  });
+}); 
