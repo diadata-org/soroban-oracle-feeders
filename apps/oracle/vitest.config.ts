@@ -10,10 +10,16 @@ export default defineConfig({
     exclude: ['node_modules', 'build'],
   },
   resolve: {
-    alias: {
-      '@repo/common': resolve(__dirname, '../packages/common/src'),
-      '@repo/typescript-config': resolve(__dirname, '../packages/typescript-config'),
-    },
+    alias: [
+      {
+        find: '@repo/common',
+        replacement: resolve(__dirname, '../packages/common/src'),
+      },
+      {
+        find: '@repo/typescript-config',
+        replacement: resolve(__dirname, '../packages/typescript-config'),
+      },
+    ],
   },
   esbuild: {
     target: 'node18',
