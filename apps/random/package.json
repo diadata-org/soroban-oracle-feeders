@@ -9,7 +9,10 @@
     "clean": "rimraf build",
     "dev": "ts-node src/index.ts",
     "start": "node .",
-    "test": "jest"
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@alephium/web3": "1.8.0",
@@ -17,16 +20,16 @@
     "@kadena/client": "^1.8.1",
     "@kadena/types": "^0.6.0",
     "@repo/common": "*",
-    "@stellar/stellar-sdk": "^13.0.0",
     "@stacks/auth": "^6.16.1",
     "@stacks/network": "^6.16.0",
     "@stacks/transactions": "^6.16.1",
+    "@stellar/stellar-sdk": "^13.0.0",
     "axios": "^1.6.2",
     "dotenv": "^16.3.1",
     "jest": "^29.7.0",
+    "nock": "^13.5.5",
     "rxjs": "^7.8.1",
     "ts-jest": "^29.2.4",
-    "nock": "^13.5.5",
     "zod": "^3.22.4"
   },
   "devDependencies": {
@@ -36,10 +39,12 @@
     "@types/jest": "^29.5.12",
     "@types/node": "^20.10.5",
     "@types/sinon": "^17.0.3",
+    "@vitest/coverage-v8": "^3.0.0",
     "rimraf": "^5.0.5",
     "sinon": "^18.0.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^3.0.0"
   },
   "packageManager": "yarn@1.22.19",
   "engines": {
