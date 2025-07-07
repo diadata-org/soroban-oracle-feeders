@@ -8,6 +8,110 @@ Sample environment configuration can be found in `.env.example`
 
 In order to select the chain for this oracle data feeder, use the `CHAIN_NAME` environment variable. Available chains are `"kadena"`, `"soroban"`, `"alephium"`, `"stacks"`, `"opnet"`, `"midnight"`
 
+## Midnight Integration
+
+### Testnet Setup
+
+**IMPORTANT**: The Midnight integration is currently configured for **Midnight Testnet**. The Midnight network is still in development, and both the network and libraries may undergo significant changes before mainnet launch.
+
+- **Current Network**: Testnet (NetworkId.TestNet)
+- **Network ID**: 2
+- **Stability**: Expect potential breaking changes and updates
+
+### Prerequisites
+
+#### 1. Proof Server Setup
+
+**CRITICAL**: Before using the Midnight integration, you must have a Proof Server running. The Proof Server is required for generating zero-knowledge proofs that are essential for transaction submission on the Midnight blockchain.
+
+Follow the official Midnight documentation to install and launch the proof server:
+[**Midnight Proof Server Setup Guide**](https://docs.midnight.stakewith.us/developers/proof-server)
+
+The proof server must be running and accessible at the URL specified in your configuration (`MIDNIGHT_PROOF_SERVER` parameter) before the oracle integration can function properly.
+
+#### 2. Wallet Creation and Funding
+
+The Midnight integration requires a funded wallet to operate. Here's how to set it up:
+
+1. **Create a Wallet**: Generate a private key for your Midnight wallet
+2. **Get Testnet DUST Tokens**: You need DUST tokens (Midnight's native token) to pay for transaction fees
+3. **Fund Your Wallet**: Transfer DUST tokens to your wallet address
+
+**Note**: The application will automatically wait for funds if your wallet balance is zero when starting.
+
+### How the Midnight Integration Works
+
+The `midnight.ts` file implements a complete oracle feeder for the Midnight blockchain with the following key components:
+
+#### 1. Wallet Management (`buildWalletAndWaitForFunds`)
+- **Wallet Creation**: Uses Midnight WalletBuilder to create a wallet with:
+  - Indexer endpoints (HTTP and WebSocket)
+  - Proof server URL
+  - Node endpoint
+  - Your secret key
+  - Network ID (TestNet)
+- **State Monitoring**: Continuously monitors wallet state and balance
+- **Funding Detection**: Automatically waits for DUST tokens if wallet is empty
+
+#### 2. Provider Configuration (`configureProviders`)
+Sets up all necessary providers for Midnight blockchain interaction:
+- **Private State Provider**: LevelDB storage for private state data
+- **Public Data Provider**: Midnight indexer connection for public blockchain data
+- **ZK Config Provider**: Zero-knowledge proof configurations
+- **Proof Provider**: HTTP client for proof generation
+- **Wallet Provider**: Wallet-specific functionality
+- **Midnight Provider**: Core blockchain interaction layer
+
+#### 3. Contract Management (`joinContract`)
+- **Contract Discovery**: Locates the deployed oracle contract using the configured address
+- **Contract Joining**: Establishes connection to the oracle contract
+- **State Initialization**: Sets up initial private state for the oracle
+
+#### 4. Price Updates (`update`)
+- **Batch Processing**: Splits price updates into configurable batches (default: 10 items)
+- **Transaction Types**: 
+  - Uses `set_multiple_values` for full batches
+  - Uses `set_value` for individual updates
+- **Error Handling**: Implements retry logic with configurable attempts
+- **Confirmation**: Waits for transaction confirmation on the blockchain
+
+### Configuration Parameters
+
+```properties
+# Midnight Configuration
+CHAIN_NAME="midnight"
+
+# Network Configuration (Testnet)
+MIDNIGHT_NETWORK="2"
+MIDNIGHT_NODE="https://rpc.testnet-02.midnight.network"
+
+# Indexer Configuration
+MIDNIGHT_INDEXER="https://indexer.testnet-02.midnight.network/api/v1/graphql"
+MIDNIGHT_INDEXER_WS="wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws"
+
+# Proof Server (REQUIRED - must be running)
+MIDNIGHT_PROOF_SERVER="http://127.0.0.1:6300"
+
+# Wallet and Contract
+MIDNIGHT_PRIVATE_KEY="your-private-key-here"
+MIDNIGHT_CONTRACT_ADDRESS="deployed-oracle-contract-address"
+
+# Performance Settings
+MIDNIGHT_MAX_BATCH_SIZE="10"
+MIDNIGHT_MAX_RETRY_ATTEMPTS="3"
+```
+
+### Getting Help and Staying Updated
+
+Given the evolving nature of the Midnight network, it's important to stay informed:
+
+- **[Official Midnight Documentation](https://docs.midnight.network/develop/tutorial/)** - Primary source for latest development guides
+- **[Midnight Network Homepage](https://midnight.network/)** - Official website with latest announcements
+- **[Midnight Discord Community](https://discord.com/invite/midnightnetwork)** - Developer community and support
+- **[Midnight Telegram Channel](https://t.me/Midnight_Network_Official)** - Official announcements and updates
+
+**Recommendation**: Join the Discord and Telegram channels to receive timely updates about network changes, library updates, and migration guides.
+
 ```properties
 CHAIN_NAME=""
 
