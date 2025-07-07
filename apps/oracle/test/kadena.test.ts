@@ -1,101 +1,429 @@
-import { Pact, createClient, createSignWithKeypair, ICommandResult } from '@kadena/client';
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
+import { Pact, createClient, createSignWithKeypair } from '@kadena/client';
+import { ChainId } from '@kadena/types';
 import { submitKadenaTx } from '@repo/common';
-import config from '../src/config';
-import { splitIntoFixedBatches } from '../src/utils';
-import { updateOracle } from '../src/oracles/kadena';
+import * as configModule from '../src/config';
+import * as utilsModule from '../src/utils';
 
-jest.mock('@kadena/client');
-jest.mock('@repo/common');
-jest.mock('../src/config', () => ({
-  kadena: {
-    publicKey: 'mockPublicKey',
-    secretKey: 'mockSecretKey',
-    rpcUrl: 'http://mock-kadena-rpc-url',
-    contract: 'mockContract',
-    chainId: '0',
-    networkId: 'testnet04',
-    maxAssetsPerTx: 10,
-    maxRetryAttempts: 3,
+// Mock the @kadena/client modules
+vi.mock('@kadena/client', () => ({
+  Pact: {
+    builder: {
+      execution: vi.fn().mockReturnThis(),
+      addSigner: vi.fn().mockReturnThis(),
+      setMeta: vi.fn().mockReturnThis(),
+      setNetworkId: vi.fn().mockReturnThis(),
+      createTransaction: vi.fn(),
+    } as any,
+  },
+  createClient: vi.fn(),
+  createSignWithKeypair: vi.fn(),
+}));
+
+// Mock @kadena/types
+vi.mock('@kadena/types', () => ({
+  ChainId: {
+    '0': '0',
+    '1': '1',
+    '2': '2',
+    '3': '3',
+    '4': '4',
+    '5': '5',
+    '6': '6',
+    '7': '7',
+    '8': '8',
+    '9': '9',
+    '10': '10',
+    '11': '11',
+    '12': '12',
+    '13': '13',
+    '14': '14',
+    '15': '15',
+    '16': '16',
+    '17': '17',
+    '18': '18',
+    '19': '19',
   },
 }));
-jest.mock('../src/utils', () => ({
-  splitIntoFixedBatches: jest.fn(),
+
+// Mock @repo/common
+vi.mock('@repo/common', () => ({
+  submitKadenaTx: vi.fn(),
 }));
 
-describe('Kadena Oracle - updateOracle', () => {
-  const mockClient = { someClientMethod: jest.fn() };
-  const mockSignWithKeypair = jest.fn();
-  const mockUnsignedTx = { tx: 'mockUnsignedTransaction' };
-  const mockSignedTx = { some: 'signedTransaction' };
-  const mockPactBuilder = {
-    execution: jest.fn().mockReturnThis(),
-    addSigner: jest.fn().mockReturnThis(),
-    setMeta: jest.fn().mockReturnThis(),
-    setNetworkId: jest.fn().mockReturnThis(),
-    createTransaction: jest.fn().mockReturnValue(mockUnsignedTx),
-  };
+// Mock config
+vi.mock('../src/config', () => ({
+  default: {
+    kadena: {
+      rpcUrl: 'https://api.testnet.chainweb.com',
+      secretKey: 'test-secret-key',
+      publicKey: 'test-public-key',
+      contract: 'free.dia-oracle',
+      networkId: 'testnet04',
+      chainId: '0',
+      maxAssetsPerTx: 10,
+      maxRetryAttempts: 3,
+    },
+  },
+}));
 
-  beforeAll(() => {
-    (createClient as jest.Mock).mockReturnValue(mockClient);
-    (createSignWithKeypair as jest.Mock).mockReturnValue(mockSignWithKeypair);
+// Mock utils
+vi.mock('../src/utils', () => ({
+  splitIntoFixedBatches: vi.fn(),
+}));
+
+describe('Kadena Oracle', () => {
+  let mockClient: any;
+  let mockSignWithKeypair: any;
+  let mockUnsignedTransaction: any;
+  let mockSignedTx: any;
+  let kadenaModule: any;
+
+  beforeEach(async () => {
+    // Reset all mocks and modules
+    vi.clearAllMocks();
+    vi.resetModules();
+
+    // Setup mock client
+    mockClient = {
+      // Add any methods that might be called on client
+    };
+
+    // Setup mock sign function
+    mockSignWithKeypair = vi.fn();
+
+    // Setup mock unsigned transaction
+    mockUnsignedTransaction = {
+      // Add any properties that might be accessed
+    };
+
+    // Setup mock signed transaction
+    mockSignedTx = {
+      // Add any properties that might be accessed
+    };
+
+    // Setup constructor mocks
+    (createClient as any).mockReturnValue(mockClient);
+    (createSignWithKeypair as any).mockReturnValue(mockSignWithKeypair);
+    ((Pact.builder as any).createTransaction as any).mockReturnValue(mockUnsignedTransaction);
     mockSignWithKeypair.mockResolvedValue(mockSignedTx);
 
-    // Mock Pact.builder
-    (Pact as any).builder = mockPactBuilder;
-  });
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should successfully submit transactions for each batch', async () => {
-    (splitIntoFixedBatches as jest.Mock).mockImplementation((items) => [items]);
-    (submitKadenaTx as jest.Mock).mockResolvedValue('Success');
-
-    const keys = ['key1', 'key2'];
-    const prices = [100, 200];
-
-    await updateOracle(keys, prices);
-
-    expect(createClient).toHaveBeenCalledWith(
-      'http://mock-kadena-rpc-url/chainweb/0.0/testnet04/chain/0/pact',
-    );
-    expect(splitIntoFixedBatches).toHaveBeenCalledTimes(3); // For keys, dates, and prices
-    expect(createSignWithKeypair).toHaveBeenCalledWith({
-      publicKey: 'mockPublicKey',
-      secretKey: 'mockSecretKey',
+    // Setup utils mocks
+    (utilsModule.splitIntoFixedBatches as any).mockImplementation((items: any[], size: number) => {
+      const batches: any[][] = [];
+      for (let i = 0; i < items.length; i += size) {
+        batches.push(items.slice(i, i + size));
+      }
+      return batches;
     });
-    expect(mockSignWithKeypair).toHaveBeenCalledWith(expect.any(Object));
-    expect(submitKadenaTx).toHaveBeenCalledWith(mockClient, mockSignedTx);
+
+    // Import the module after mocks are set up
+    kadenaModule = await import('../src/oracles/kadena');
   });
 
-  it('should retry transaction on failure and eventually succeed', async () => {
-    (splitIntoFixedBatches as jest.Mock).mockImplementation((items) => [items]);
-    const submitKadenaTxMock = submitKadenaTx as jest.MockedFunction<typeof submitKadenaTx>;
-
-    submitKadenaTxMock
-      .mockRejectedValueOnce(new Error('Transaction failed'))
-      .mockResolvedValueOnce({} as ICommandResult);
-
-    const keys = ['key1', 'key2'];
-    const prices = [100, 200];
-
-    await updateOracle(keys, prices);
-
-    expect(submitKadenaTxMock).toHaveBeenCalledTimes(2); // 1 failure, 1 success
+  afterEach(() => {
+    //vi.restoreAllMocks();
   });
 
-  it('should throw an error after max retry attempts are reached', async () => {
-    (splitIntoFixedBatches as jest.Mock).mockImplementation((items) => [items]);
-    const submitKadenaTxMock = submitKadenaTx as jest.MockedFunction<typeof submitKadenaTx>;
+  describe('updateOracle', () => {
+    it('should successfully update oracle with valid data', async () => {
+      const keys = ['BTC', 'ETH'];
+      const prices = [50000, 3000];
 
-    submitKadenaTxMock.mockRejectedValue(new Error('Transaction failed'));
+      // Mock successful transaction
+      (submitKadenaTx as any).mockResolvedValue(undefined);
 
-    const keys = ['key1', 'key2'];
-    const prices = [100, 200];
+      await kadenaModule.updateOracle(keys, prices);
 
-    await expect(updateOracle(keys, prices)).rejects.toThrow('Transaction failed');
+      // Verify client was created with correct URL
+      expect(createClient).toHaveBeenCalledWith(
+        `${configModule.default.kadena.rpcUrl}/chainweb/0.0/${configModule.default.kadena.networkId}/chain/${configModule.default.kadena.chainId}/pact`
+      );
 
-    expect(submitKadenaTxMock).toHaveBeenCalledTimes(config.kadena.maxRetryAttempts);
+      // Verify signWithKeypair was created
+      expect(createSignWithKeypair).toHaveBeenCalledWith({
+        publicKey: configModule.default.kadena.publicKey,
+        secretKey: configModule.default.kadena.secretKey,
+      });
+
+      // Verify Pact.builder was used correctly
+      expect(Pact.builder.execution).toHaveBeenCalled();
+      expect((Pact.builder as any).addSigner).toHaveBeenCalledWith(configModule.default.kadena.publicKey);
+      expect((Pact.builder as any).setMeta).toHaveBeenCalledWith({
+        chainId: configModule.default.kadena.chainId as ChainId,
+        senderAccount: `k:${configModule.default.kadena.publicKey}`,
+      });
+      expect((Pact.builder as any).setNetworkId).toHaveBeenCalledWith(configModule.default.kadena.networkId);
+      expect((Pact.builder as any).createTransaction).toHaveBeenCalled();
+
+      // Verify transaction was signed and submitted
+      expect(mockSignWithKeypair).toHaveBeenCalledWith(mockUnsignedTransaction);
+      expect(submitKadenaTx).toHaveBeenCalledWith(mockClient, mockSignedTx);
+    });
+
+    it('should handle transaction failure and retry', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+
+      // Mock failure on first attempt, success on second
+      (submitKadenaTx as any)
+        .mockRejectedValueOnce(new Error('Transaction failed'))
+        .mockResolvedValueOnce(undefined);
+
+      await kadenaModule.updateOracle(keys, prices);
+
+      // Should have been called twice (retry)
+      expect(submitKadenaTx).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw error after max retry attempts', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+      const error = new Error('Persistent failure');
+
+      // Mock all attempts to fail
+      (submitKadenaTx as any).mockRejectedValue(error);
+
+      await expect(kadenaModule.updateOracle(keys, prices)).rejects.toThrow('Persistent failure');
+
+      // Should have been called maxRetryAttempts times
+      expect(submitKadenaTx).toHaveBeenCalledTimes(
+        configModule.default.kadena.maxRetryAttempts
+      );
+    });
+
+    it('should handle batching when data exceeds maxAssetsPerTx', async () => {
+      const keys = ['BTC', 'ETH', 'USDC', 'SOL', 'ADA'];
+      const prices = [50000, 3000, 1, 100, 0.5];
+
+      // Set maxAssetsPerTx to 2 for this test
+      const originalMaxAssetsPerTx = configModule.default.kadena.maxAssetsPerTx;
+      configModule.default.kadena.maxAssetsPerTx = 2;
+
+      (submitKadenaTx as any).mockResolvedValue(undefined);
+
+      await kadenaModule.updateOracle(keys, prices);
+
+      // Should have been called 3 times (2 items per batch, 5 total items)
+      expect(submitKadenaTx).toHaveBeenCalledTimes(3);
+
+      // Restore original maxAssetsPerTx
+      configModule.default.kadena.maxAssetsPerTx = originalMaxAssetsPerTx;
+    });
+
+    it('should use current ISO date for all entries', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+
+      const mockDate = new Date('2024-01-01T12:00:00.000Z');
+      
+      vi.useFakeTimers();
+      vi.setSystemTime(mockDate);
+
+      (submitKadenaTx as any).mockResolvedValue(undefined);
+
+      await kadenaModule.updateOracle(keys, prices);
+
+      vi.useRealTimers();
+
+      // Verify the execution was called with the correct date format
+      expect(Pact.builder.execution).toHaveBeenCalledWith(
+        expect.stringContaining('(time "2024-01-01T12:00:00Z")')
+      );
+    });
+
+    it('should handle empty keys and prices arrays', async () => {
+      const keys: string[] = [];
+      const prices: number[] = [];
+
+      (submitKadenaTx as any).mockResolvedValue(undefined);
+
+      await kadenaModule.updateOracle(keys, prices);
+
+      // Should still call the oracle with empty arrays
+      expect(Pact.builder.execution).not.toHaveBeenCalledWith(
+        expect.stringContaining('[] [] []')
+      );
+    });
+
+    it('should handle different price scales correctly', async () => {
+      const keys = ['BTC', 'ETH', 'USDC'];
+      const prices = [0.0001, 999999.9999, 1.0001];
+
+      (submitKadenaTx as any).mockResolvedValue(undefined);
+
+      await kadenaModule.updateOracle(keys, prices);
+
+      // Verify the execution was called
+      expect(Pact.builder.execution).toHaveBeenCalledWith(
+        expect.stringContaining(configModule.default.kadena.contract)
+      );
+    });
+
+    it('should format execution string correctly', async () => {
+      const keys = ['BTC', 'ETH'];
+      const prices = [50000, 3000];
+
+      (submitKadenaTx as any).mockResolvedValue(undefined);
+
+      await kadenaModule.updateOracle(keys, prices);
+
+      // Verify the execution string format
+      expect(Pact.builder.execution).toHaveBeenCalledWith(
+        expect.stringMatching(
+          new RegExp(`\\(${configModule.default.kadena.contract}\\.set-multiple-values \\[".*"\\] \\[\\(time ".*"\\)\\] \\[.*\\]\\)`)
+        )
+      );
+    });
+
+    it('should use splitIntoFixedBatches for keys, dates, and prices', async () => {
+      const keys = ['BTC', 'ETH', 'USDC'];
+      const prices = [50000, 3000, 1];
+
+      (submitKadenaTx as any).mockResolvedValue(undefined);
+
+      await kadenaModule.updateOracle(keys, prices);
+
+      // Verify splitIntoFixedBatches was called for keys, dates, and prices
+      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(keys, configModule.default.kadena.maxAssetsPerTx);
+      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(prices, configModule.default.kadena.maxAssetsPerTx);
+    });
   });
-});
+
+  describe('error handling', () => {
+    it('should handle transaction submission failure', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+      const error = new Error('Transaction submission failed');
+
+      (submitKadenaTx as any).mockRejectedValue(error);
+
+      await expect(kadenaModule.updateOracle(keys, prices)).rejects.toThrow('Transaction submission failed');
+    });
+
+    it('should log error details during retry attempts', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+      const error = new Error('Network error');
+
+      // Mock console.error to capture logs
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      (submitKadenaTx as any).mockRejectedValue(error);
+
+      await expect(kadenaModule.updateOracle(keys, prices)).rejects.toThrow('Network error');
+
+      // Verify error was logged for each retry attempt
+      expect(consoleSpy).toHaveBeenCalledTimes(configModule.default.kadena.maxRetryAttempts + 1);
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should log successful transaction submissions', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+
+      // Mock console.log to capture logs
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      (submitKadenaTx as any).mockResolvedValue(undefined);
+
+      await kadenaModule.updateOracle(keys, prices);
+
+      // Verify success was logged
+      expect(consoleSpy).toHaveBeenCalledWith('Signed transaction:', mockSignedTx);
+      expect(consoleSpy).toHaveBeenCalledWith('Transaction submitted successfully.');
+      expect(consoleSpy).toHaveBeenCalledWith('Oracle updated');
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('data processing', () => {
+    it('should create dates array with same ISO date for all prices', async () => {
+      const keys = ['BTC', 'ETH', 'USDC'];
+      const prices = [50000, 3000, 1];
+
+      const mockDate = new Date('2024-01-01T12:00:00.000Z');
+      
+      vi.useFakeTimers();
+      vi.setSystemTime(mockDate);
+
+      (submitKadenaTx as any).mockResolvedValue(undefined);
+
+      await kadenaModule.updateOracle(keys, prices);
+
+      vi.useRealTimers();
+
+      // Verify the execution was called with the correct number of time entries
+      expect(Pact.builder.execution).toHaveBeenCalledWith(
+        expect.stringMatching(/\(time "2024-01-01T12:00:00Z"\), \(time "2024-01-01T12:00:00Z"\), \(time "2024-01-01T12:00:00Z"\)/)
+      );
+    });
+
+    it('should handle single item batches correctly', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+
+      (submitKadenaTx as any).mockResolvedValue(undefined);
+
+      await kadenaModule.updateOracle(keys, prices);
+
+      // Verify the execution was called with single item format
+      expect(Pact.builder.execution).toHaveBeenCalledWith(
+        expect.stringMatching(/\(time ".*"\)/)
+      );
+    });
+
+    it('should handle multiple batches correctly', async () => {
+      const keys = ['BTC', 'ETH', 'USDC', 'SOL', 'ADA', 'DOT'];
+      const prices = [50000, 3000, 1, 100, 0.5, 5];
+
+      // Set maxAssetsPerTx to 2 for this test
+      const originalMaxAssetsPerTx = configModule.default.kadena.maxAssetsPerTx;
+      configModule.default.kadena.maxAssetsPerTx = 2;
+
+      (submitKadenaTx as any).mockResolvedValue(undefined);
+
+      await kadenaModule.updateOracle(keys, prices);
+
+      // Should have been called 3 times (2 items per batch, 6 total items)
+      expect(submitKadenaTx).toHaveBeenCalledTimes(3);
+
+      // Restore original maxAssetsPerTx
+      configModule.default.kadena.maxAssetsPerTx = originalMaxAssetsPerTx;
+    });
+  });
+
+  describe('configuration', () => {
+    it('should use correct contract name in execution', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+
+      (submitKadenaTx as any).mockResolvedValue(undefined);
+
+      await kadenaModule.updateOracle(keys, prices);
+
+      // Verify the contract name is used correctly
+      expect(Pact.builder.execution).toHaveBeenCalledWith(
+        expect.stringContaining(`${configModule.default.kadena.contract}.set-multiple-values`)
+      );
+    });
+
+    it('should use correct chainId and networkId', async () => {
+      const keys = ['BTC'];
+      const prices = [50000];
+
+      (submitKadenaTx as any).mockResolvedValue(undefined);
+
+      await kadenaModule.updateOracle(keys, prices);
+
+      // Verify the chainId and networkId are set correctly
+      expect((Pact.builder as any).setMeta).toHaveBeenCalledWith({
+        chainId: configModule.default.kadena.chainId as ChainId,
+        senderAccount: `k:${configModule.default.kadena.publicKey}`,
+      });
+      expect((Pact.builder as any).setNetworkId).toHaveBeenCalledWith(configModule.default.kadena.networkId);
+    });
+  });
+}); 

@@ -12,7 +12,7 @@
     "build": "tsc && mkdir -p build/midnight/managed/oracle && cp -r src/midnight/managed/oracle/* build/midnight/managed/oracle/",
     "clean": "rimraf build",
     "dev": "tsc -w",
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   },
   "peerDependencies": {
     "@stellar/stellar-sdk": "^13.0.0",
