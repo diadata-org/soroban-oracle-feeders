@@ -75,6 +75,59 @@ Sets up all necessary providers for Midnight blockchain interaction:
 - **Error Handling**: Implements retry logic with configurable attempts
 - **Confirmation**: Waits for transaction confirmation on the blockchain
 
+### Contract Artifacts and Compilation
+
+The Midnight integration requires specific compiled contract files to function properly. These are stored in the `src/midnight_src/` folder.
+
+#### Folder Structure
+
+```
+src/midnight_src/
+├── contract/           # Compiled contract artifacts
+│   ├── index.cjs      # Main contract implementation
+│   ├── index.d.cts    # TypeScript definitions
+│   └── index.cjs.map  # Source maps
+├── compiler/          # Compiler configuration
+│   └── contract-info.json
+├── zkir/             # Zero-knowledge proof circuits
+│   ├── get_value.zkir
+│   ├── set_value.zkir
+│   ├── set_multiple_values.zkir
+│   ├── change_oracle_updater.zkir
+│   └── *.bzkir files (binary format)
+└── keys/             # Cryptographic keys for proofs
+    ├── *.prover      # Prover keys
+    └── *.verifier    # Verifier keys
+```
+
+#### Contract Compilation Process
+
+**IMPORTANT**: If the oracle contracts are modified or updated, you must recompile and update the files in the `midnight_src` folder.
+
+1. **Contract Source**: The original contract source code is compiled using the Midnight compiler
+2. **Artifact Generation**: The compilation process generates:
+   - **Contract Artifacts** (`contract/` folder): JavaScript files that implement the contract logic
+   - **ZK Circuits** (`zkir/` folder): Zero-knowledge proof circuits for each contract function
+   - **Cryptographic Keys** (`keys/` folder): Prover and verifier keys for proof generation and verification
+   - **Type Definitions**: TypeScript definitions for type-safe contract interactions
+
+3. **Integration Requirements**: The `midnight.ts` file reads these compiled artifacts to:
+   - Create contract instances
+   - Generate zero-knowledge proofs
+   - Submit transactions to the blockchain
+   - Verify transaction results
+
+#### Updating Contract Artifacts
+
+When contracts are changed, follow these steps:
+
+1. **Recompile Contracts**: Use the Midnight compiler to generate new artifacts
+2. **Update Files**: Replace the contents of `src/midnight_src/` with the new compiled files
+3. **Verify Integration**: Test that the oracle integration works with the updated contracts
+4. **Update Dependencies**: Ensure all related type definitions and witnesses are updated
+
+**Note**: The contract artifacts are tightly coupled with the integration code. Any changes to the contract interface must be reflected in both the compiled artifacts and the TypeScript integration code.
+
 ### Configuration Parameters
 
 ```properties
