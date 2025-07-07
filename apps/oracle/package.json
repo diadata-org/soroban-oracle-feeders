@@ -9,7 +9,7 @@
     "clean": "rimraf build",
     "dev": "tsx src/index.ts",
     "start": "node .",
-    "test": "vitest run --coverage",
+    "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "coverage": "nyc yarn test"
