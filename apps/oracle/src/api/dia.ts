@@ -1,38 +1,7 @@
 import axios from 'axios';
 import { request, gql } from 'graphql-request';
-import config from './config';
-import { Quotation, GraphqlQuotation, GqlParams } from './validation';
-
-export type Asset = {
-  network: string;
-  address: string;
-  symbol: string;
-  gqlParams: GqlParams;
-};
-
-export async function getAssetPrices(assets: Asset[]) {
-  const fetch = config.api.useGql
-    ? (x: Asset) => getGraphqlAssetQuotation(x.network, x.address, x.gqlParams)
-    : (x: Asset) => getAssetQuotation(x.network, x.address);
-
-  const reqs = assets.map(async (asset) => {
-    const price = await fetch(asset);
-    return { key: asset.symbol, value: price };
-  });
-
-  const prices = new Map<string, number>();
-
-  for (const result of await Promise.allSettled(reqs)) {
-    if (result.status === 'rejected') {
-      console.error(`Failed to retrieve quotation data from DIA: ${result.reason}`);
-      continue;
-    }
-
-    const { key, value } = result.value;
-    prices.set(key, value);
-  }
-  return prices;
-}
+import config from '../config';
+import { Quotation, GraphqlQuotation, GqlParams } from '../validation';
 
 export async function getAssetQuotation(network: string, address: string) {
   const url = `${config.api.http.url}/${network}/${address}`;

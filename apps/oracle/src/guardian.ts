@@ -10,13 +10,14 @@ const CoingeckoResponse = z.record(
 );
 
 export async function getCoingeckoPrice(assetName: string) {
-  const url = `${config.coingecko.url}/api/v3/simple/price?ids=${assetName}&vs_currencies=usd`;
+  const { url: baseUrl, apiKey } = config.guardian.coingecko;
 
-  const header = config.coingecko.url.includes('pro') ? 'x-cg-pro-api-key' : 'x-cg-demo-api-key';
+  const url = `${baseUrl}/api/v3/simple/price?ids=${assetName}&vs_currencies=usd`;
+  const header = baseUrl.includes('pro') ? 'x-cg-pro-api-key' : 'x-cg-demo-api-key';
 
   const resp = await axios(url, {
     headers: {
-      [header]: config.coingecko.apiKey,
+      [header]: apiKey,
     },
   });
 
@@ -38,9 +39,11 @@ const CmcResponse = z.object({
 });
 
 export async function getCmcPrice(assetId: string) {
-  const resp = await axios(`${config.cmc.url}/v2/cryptocurrency/quotes/latest?id=${assetId}`, {
+  const { url, apiKey } = config.guardian.cmc;
+
+  const resp = await axios(`${url}/v2/cryptocurrency/quotes/latest?id=${assetId}`, {
     headers: {
-      'X-CMC_PRO_API_KEY': config.cmc.apiKey,
+      'X-CMC_PRO_API_KEY': apiKey,
     },
   });
 

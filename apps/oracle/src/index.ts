@@ -1,20 +1,24 @@
 import { interval, map, merge } from 'rxjs';
 import { createAsyncQueue, intoAsyncIterable } from '@repo/common';
-import { Asset, getAssetPrices } from './api';
+import { getAssetPrices } from './api';
+import type { Asset } from './assets';
 import config, { ChainName } from './config';
 import { getCmcPrice, getCoingeckoPrice } from './guardian';
-import {
-  extendOracleTtl,
-  restoreOracle,
-  updateOracle as updateSorobanOracle,
-} from './oracles/soroban';
-import { updateOracle as updateKadenaOracle } from './oracles/kadena';
-import { updateOracle as updateAlephiumOracle } from './oracles/alephium';
-import { updateOracle as updateStacksOracle } from './oracles/stacks';
-import { updateOracle as updateOpNetOracle } from './oracles/opnet';
+import { alephium, kadena, midnight, opnet, soroban, stacks } from './oracles';
 import { setupNock } from '../test/setupNock';
 
-function checkDeviation(oldPrice: number, newPrice: number) {
+type OracleUpdateFn = (keys: string[], values: number[]) => Promise<void>;
+
+const oracleUpdateMap: Record<ChainName, OracleUpdateFn> = {
+  [ChainName.Alephium]: alephium.update,
+  [ChainName.Kadena]: kadena.update,
+  [ChainName.Midnight]: midnight.update,
+  [ChainName.Opnet]: opnet.update,
+  [ChainName.Soroban]: soroban.update,
+  [ChainName.Stacks]: stacks.update,
+};
+
+export function checkDeviation(oldPrice: number, newPrice: number) {
   const deviation = config.deviationPermille / 1000;
   return (
     newPrice > 1e-8 &&
@@ -22,13 +26,13 @@ function checkDeviation(oldPrice: number, newPrice: number) {
   );
 }
 
-async function update(published: Map<string, number>, prices: Map<string, number>) {
+export async function update(published: Map<string, number>, prices: Map<string, number>) {
   const filtered = [...prices.entries()].filter((entry, index) => {
     const [symbol, price] = entry;
 
     for (const [asset0, asset1] of config.conditionalPairs) {
       if (asset1 === index) {
-        const { symbol: key } = config.api.assets[asset0];
+        const { symbol: key } = config.assets.cfg[asset0];
         const oldPrice = published.get(key) || 0;
         const newPrice = prices.get(key) || 0;
 
@@ -45,7 +49,7 @@ async function update(published: Map<string, number>, prices: Map<string, number
   const priceCollector = new Map(published);
 
   for (const [symbol, price] of filtered) {
-    const asset = config.api.assets.find((x) => x.symbol === symbol)!;
+    const asset = config.assets.cfg.find((a) => a.symbol === symbol)!;
     const externalPrices = [];
 
     if (asset.coingeckoName) {
@@ -100,23 +104,8 @@ async function update(published: Map<string, number>, prices: Map<string, number
       values.push(value);
     }
 
-    switch (config.chainName) {
-      case ChainName.Kadena:
-        await updateKadenaOracle(keys, values);
-        break;
-      case ChainName.Soroban:
-        await updateSorobanOracle(keys, values);
-        break;
-      case ChainName.Alephium:
-        await updateAlephiumOracle(keys, values);
-        break;
-      case ChainName.Stacks:
-        updateStacksOracle(keys, values);
-        break;
-      case ChainName.Opnet:
-        await updateOpNetOracle(keys, values);
-        break;
-    }
+    const updateOracle = oracleUpdateMap[config.chain.name];
+    await updateOracle(keys, values);
     console.log(Object.fromEntries(priceCollector));
   } else {
     console.log('No update necessary');
@@ -133,11 +122,11 @@ async function main() {
     setupNock();
   }
 
-  if (config.chainName === ChainName.Soroban) {
+  if (config.chain.name === ChainName.Soroban) {
     // soroban specific
-    await restoreOracle();
-    await extendOracleTtl();
-    setInterval(() => queue(extendOracleTtl), config.soroban.lifetimeInterval);
+    await soroban.restoreContract();
+    await soroban.extendContractTtl();
+    setInterval(() => queue(soroban.extendContractTtl), config.chain.soroban.lifetimeInterval);
   }
 
   let published = new Map<string, number>();
@@ -160,7 +149,7 @@ async function main() {
   const ticker = interval(config.intervals.frequency);
 
   if (config.intervals.mandatoryFrequency > 0) {
-    const mandatoryAssets = config.api.assets.filter((_, index) => {
+    const mandatoryAssets = config.assets.cfg.filter((_, index) => {
       return !config.conditionalPairs.find(
         ([asset0, asset1]) => index === asset0 || index === asset1,
       );
@@ -170,12 +159,12 @@ async function main() {
     const combined = merge(ticker.pipe(map(() => false)), mandatoryTicker.pipe(map(() => true)));
 
     for await (const isMandatory of intoAsyncIterable(combined)) {
-      const assets = isMandatory ? mandatoryAssets : config.api.assets;
+      const assets = isMandatory ? mandatoryAssets : config.assets.cfg;
       await executeUpdate(assets, isMandatory);
     }
   } else {
     for await (const _ of intoAsyncIterable(ticker)) {
-      await executeUpdate(config.api.assets);
+      await executeUpdate(config.assets.cfg);
     }
   }
 }

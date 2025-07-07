@@ -406,7 +406,6 @@ describe('Alephium Oracle', () => {
       mockOracle.transact.setMultipleValues.mockResolvedValue({ hash: 'test-hash' });
 
       await alephiumModule.updateOracle(keys, prices);
-
       // Verify fillArray was called to pad the arrays
       expect(utilsModule.fillArray).toHaveBeenCalledWith(
         expect.any(Array),
