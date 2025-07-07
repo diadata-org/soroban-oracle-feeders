@@ -63,7 +63,20 @@ vi.mock('crypto', () => {
 // Mock config
 vi.mock('../src/config', () => ({
   default: {
-    chainName: 'opnet',
+    chain: {
+      name: 'opnet',
+      opnet: {
+        rpcUrl: 'https://regtest.opnet.org',
+        network: 'regtest',
+        backupRpcUrl: 'https://backup.opnet.org',
+        secretKey: 'cShTHPAqa5rX2p9GxN6QvwsFMnnhHLUx2WRE8ztNTWxqwBGWycH8',
+        contract: 'bcrt1q39y3gw0zxaq0hgkr0x3m80tz504p5ta5l8j7y4',
+        maxBatchSize: 10,
+        maxRetryAttempts: 3,
+        feeRate: 100,
+        priorityFee: 1000n,
+      },
+    },
     opnet: {
       rpcUrl: 'https://regtest.opnet.org',
       network: 'regtest',
@@ -214,10 +227,10 @@ describe('OpNet Oracle', () => {
     it('should initialize provider, wallet, and contract with correct config', async () => {
       await opnetModule.init();
 
-      expect(JSONRpcProvider).toHaveBeenCalledWith(configModule.default.opnet.rpcUrl, mockNetwork);
-      expect(Wallet.fromWif).toHaveBeenCalledWith(configModule.default.opnet.secretKey, mockNetwork);
+      expect(JSONRpcProvider).toHaveBeenCalledWith(configModule.default.chain.opnet.rpcUrl, mockNetwork);
+      expect(Wallet.fromWif).toHaveBeenCalledWith(configModule.default.chain.opnet.secretKey, mockNetwork);
       expect(getContract).toHaveBeenCalledWith(
-        configModule.default.opnet.contract,
+        configModule.default.chain.opnet.contract,
         OP_NET_ABI,
         mockProvider,
         mockNetwork,
@@ -228,17 +241,17 @@ describe('OpNet Oracle', () => {
     it('should initialize backup provider when backupRpcUrl is provided', async () => {
       await opnetModule.init();
 
-      expect(JSONRpcProvider).toHaveBeenCalledWith(configModule.default.opnet.backupRpcUrl, mockNetwork);
+      expect(JSONRpcProvider).toHaveBeenCalledWith(configModule.default.chain.opnet.backupRpcUrl, mockNetwork);
     });
 
     it('should set correct network for regtest', async () => {
       await opnetModule.init();
 
-      expect(JSONRpcProvider).toHaveBeenCalledWith(configModule.default.opnet.rpcUrl, mockNetwork);
+      expect(JSONRpcProvider).toHaveBeenCalledWith(configModule.default.chain.opnet.rpcUrl, mockNetwork);
     });
   });
 
-  describe('updateOracle', () => {
+  describe('update', () => {
     beforeEach(async () => {
       await opnetModule.init();
     });
@@ -247,7 +260,7 @@ describe('OpNet Oracle', () => {
       const keys = ['BTC', 'ETH'];
       const prices = [50000, 3000];
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Verify UTXOs were fetched
       expect(mockProvider.utxoManager.getUTXOs).toHaveBeenCalledWith({
@@ -279,7 +292,7 @@ describe('OpNet Oracle', () => {
         .mockResolvedValueOnce({ success: true, result: 'mock-tx-hash' })
         .mockResolvedValueOnce({ success: true, result: 'mock-tx-hash' });
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Should have been called multiple times (retry)
       expect(mockProvider.sendRawTransaction).toHaveBeenCalledTimes(3);
@@ -292,7 +305,7 @@ describe('OpNet Oracle', () => {
 
       mockProvider.sendRawTransaction.mockRejectedValue(error);
 
-      await expect(opnetModule.updateOracle(keys, prices)).rejects.toThrow('Persistent failure');
+      await expect(opnetModule.update(keys, prices)).rejects.toThrow('Persistent failure');
     });
 
     it('should switch to backup provider on first failure', async () => {
@@ -305,10 +318,10 @@ describe('OpNet Oracle', () => {
         .mockResolvedValueOnce({ success: true, result: 'mock-tx-hash' })
         .mockResolvedValueOnce({ success: true, result: 'mock-tx-hash' });
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Should have switched to backup provider
-      expect(JSONRpcProvider).toHaveBeenCalledWith(configModule.default.opnet.backupRpcUrl, mockNetwork);
+      expect(JSONRpcProvider).toHaveBeenCalledWith(configModule.default.chain.opnet.backupRpcUrl, mockNetwork);
     });
 
     it('should handle batching when data exceeds maxBatchSize', async () => {
@@ -316,23 +329,23 @@ describe('OpNet Oracle', () => {
       const prices = [50000, 3000, 1, 100, 0.5];
 
       // Set maxBatchSize to 2 for this test
-      const originalMaxBatchSize = configModule.default.opnet.maxBatchSize;
-      configModule.default.opnet.maxBatchSize = 2;
+      const originalMaxBatchSize = configModule.default.chain.opnet.maxBatchSize;
+      configModule.default.chain.opnet.maxBatchSize = 2;
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Should have been called multiple times (multiple batches)
       expect(mockProvider.sendRawTransaction).toHaveBeenCalledTimes(6); // 3 batches * 2 transactions each
 
       // Restore original maxBatchSize
-      configModule.default.opnet.maxBatchSize = originalMaxBatchSize;
+      configModule.default.chain.opnet.maxBatchSize = originalMaxBatchSize;
     });
 
     it('should convert prices to correct format (multiply by 100_000_000)', async () => {
       const keys = ['BTC', 'ETH'];
       const prices = [50000.123, 3000.456];
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Verify writeU128 was called with correct values
       expect(mockBinaryWriter.writeStringWithLength).toHaveBeenCalledWith('BTC');
@@ -348,7 +361,7 @@ describe('OpNet Oracle', () => {
       vi.useFakeTimers();
       vi.setSystemTime(mockDate);
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       vi.useRealTimers();
 
@@ -360,7 +373,7 @@ describe('OpNet Oracle', () => {
       const keys: string[] = [];
       const prices: number[] = [];
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Should still call the oracle with empty arrays
       expect(mockBinaryWriter.writeU8).not.toHaveBeenCalledWith(0); // batch size
@@ -370,7 +383,7 @@ describe('OpNet Oracle', () => {
       const keys = ['BTC', 'ETH', 'USDC'];
       const prices = [0.0001, 999999.9999, 1.0001];
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Verify the transaction was called
       expect(mockProvider.call).toHaveBeenCalledWith(
@@ -386,7 +399,7 @@ describe('OpNet Oracle', () => {
 
       mockCallResult.estimatedGas = 500n;
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Verify gas parameters were fetched
       expect(mockProvider.gasParameters).toHaveBeenCalled();
@@ -396,7 +409,7 @@ describe('OpNet Oracle', () => {
       const keys = ['BTC'];
       const prices = [50000];
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Verify transaction was checked for confirmation
       expect(mockProvider.getTransaction).toHaveBeenCalledWith('mock-tx-hash');
@@ -406,7 +419,7 @@ describe('OpNet Oracle', () => {
   describe('conditional initialization', () => {
     it('should initialize backup provider when chainName is not Opnet', async () => {
       // Mock config to return non-Opnet chain
-      vi.mocked(configModule.default).chainName = 'OtherChain' as any;
+      vi.mocked(configModule.default).chain.name = 'OtherChain' as any;
 
       // Re-import the module to trigger the conditional initialization
       vi.resetModules();
@@ -418,7 +431,7 @@ describe('OpNet Oracle', () => {
 
     it('should initialize when chainName is Opnet', async () => {
       // Mock config to return Opnet chain
-      vi.mocked(configModule.default).chainName = 'opnet' as any;
+      vi.mocked(configModule.default).chain.name = 'opnet' as any;
 
       // Re-import the module to trigger the conditional initialization
       vi.resetModules();
@@ -441,7 +454,7 @@ describe('OpNet Oracle', () => {
 
       mockProvider.call.mockRejectedValue(error);
 
-      await expect(opnetModule.updateOracle(keys, prices)).rejects.toThrow('Provider call failed');
+      await expect(opnetModule.update(keys, prices)).rejects.toThrow('Provider call failed');
     });
 
     it('should handle transaction broadcast failure', async () => {
@@ -450,7 +463,7 @@ describe('OpNet Oracle', () => {
 
       mockProvider.sendRawTransaction.mockResolvedValue({ success: false });
 
-      await expect(opnetModule.updateOracle(keys, prices)).rejects.toThrow('First transaction broadcast failed.');
+      await expect(opnetModule.update(keys, prices)).rejects.toThrow('First transaction broadcast failed.');
     });
 
     it('should handle preimage generation failure', async () => {
@@ -459,7 +472,7 @@ describe('OpNet Oracle', () => {
 
       mockProvider.getPreimage.mockRejectedValue(new Error('Preimage not found'));
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Should have used random bytes as fallback
       expect(crypto.randomBytes).toHaveBeenCalledWith(128);
@@ -475,10 +488,10 @@ describe('OpNet Oracle', () => {
 
       mockProvider.sendRawTransaction.mockRejectedValue(error);
 
-      await expect(opnetModule.updateOracle(keys, prices)).rejects.toThrow('Network error');
+      await expect(opnetModule.update(keys, prices)).rejects.toThrow('Network error');
 
       // Verify error was logged for each retry attempt
-      expect(consoleSpy).toHaveBeenCalledTimes(configModule.default.opnet.maxRetryAttempts + 2);
+      expect(consoleSpy).toHaveBeenCalledTimes(configModule.default.chain.opnet.maxRetryAttempts + 2);
 
       consoleSpy.mockRestore();
     });
@@ -490,7 +503,7 @@ describe('OpNet Oracle', () => {
       // Mock console.log to capture logs
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Verify success was logged
       expect(consoleSpy).toHaveBeenCalledWith('Batch 0 update successful.');
@@ -509,18 +522,18 @@ describe('OpNet Oracle', () => {
       const keys = ['BTC', 'ETH', 'USDC'];
       const prices = [50000, 3000, 1];
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Verify splitIntoFixedBatches was called for both keys and prices
-      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(keys, configModule.default.opnet.maxBatchSize);
-      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(prices, configModule.default.opnet.maxBatchSize);
+      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(keys, configModule.default.chain.opnet.maxBatchSize);
+      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(prices, configModule.default.chain.opnet.maxBatchSize);
     });
 
     it('should create binary writer with correct data', async () => {
       const keys = ['BTC'];
       const prices = [50000];
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Verify binary writer was used correctly
       expect(BinaryWriter).toHaveBeenCalled();
@@ -534,16 +547,16 @@ describe('OpNet Oracle', () => {
       const prices = [50000, 3000, 1, 100, 0.5, 5];
 
       // Set maxBatchSize to 2 for this test
-      const originalMaxBatchSize = configModule.default.opnet.maxBatchSize;
-      configModule.default.opnet.maxBatchSize = 2;
+      const originalMaxBatchSize = configModule.default.chain.opnet.maxBatchSize;
+      configModule.default.chain.opnet.maxBatchSize = 2;
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Should have been called 6 times (3 batches * 2 transactions each)
       expect(mockProvider.sendRawTransaction).toHaveBeenCalledTimes(6);
 
       // Restore original maxBatchSize
-      configModule.default.opnet.maxBatchSize = originalMaxBatchSize;
+      configModule.default.chain.opnet.maxBatchSize = originalMaxBatchSize;
     });
   });
 
@@ -552,14 +565,14 @@ describe('OpNet Oracle', () => {
       const keys = ['BTC'];
       const prices = [50000];
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Verify transaction factory was called with correct parameters
       expect(TransactionFactory).toHaveBeenCalled();
       expect(mockTransactionFactory.signInteraction).toHaveBeenCalledWith(
         expect.objectContaining({
-          feeRate: configModule.default.opnet.feeRate,
-          priorityFee: configModule.default.opnet.priorityFee,
+          feeRate: configModule.default.chain.opnet.feeRate,
+          priorityFee: configModule.default.chain.opnet.priorityFee,
         })
       );
     });
@@ -568,11 +581,11 @@ describe('OpNet Oracle', () => {
       const keys = ['BTC'];
       const prices = [50000];
 
-      await opnetModule.updateOracle(keys, prices);
+      await opnetModule.update(keys, prices);
 
       // Verify contract address was used correctly
       expect(mockProvider.call).toHaveBeenCalledWith(
-        configModule.default.opnet.contract,
+        configModule.default.chain.opnet.contract,
         expect.any(Buffer),
         mockWallet.address
       );

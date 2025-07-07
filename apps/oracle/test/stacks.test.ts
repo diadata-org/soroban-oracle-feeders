@@ -49,7 +49,19 @@ vi.mock('@stacks/network', () => ({
 // Mock config
 vi.mock('../src/config', () => ({
   default: {
-    chainName: 'stacks',
+    chain: {
+      name: 'stacks',
+      stacks: {
+        rpcUrl: 'https://api.testnet.hiro.so',
+        backupRpcUrl: 'https://backup.testnet.hiro.so',
+        contractName: 'dia-oracle',
+        secretKey: '753b7cc01a1a2e86221266a154af739463fce51219d97e4f856cd7200c3bd2a601',
+        contract: 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',
+        feeRate: BigInt(100),
+        maxBatchSize: 10,
+        maxRetryAttempts: 3,
+      },
+    },
     stacks: {
       rpcUrl: 'https://api.testnet.hiro.so',
       backupRpcUrl: 'https://backup.testnet.hiro.so',
@@ -156,43 +168,43 @@ describe('Stacks Oracle', () => {
     it('should initialize network with correct config', () => {
       stacksModule.init();
 
-      expect(StacksTestnet).toHaveBeenCalledWith({ url: configModule.default.stacks.rpcUrl });
+      expect(StacksTestnet).toHaveBeenCalledWith({ url: configModule.default.chain.stacks.rpcUrl });
     });
 
     it('should initialize backup network when backupRpcUrl is provided', () => {
       stacksModule.init();
 
-      expect(StacksTestnet).toHaveBeenCalledWith({ url: configModule.default.stacks.backupRpcUrl });
+      expect(StacksTestnet).toHaveBeenCalledWith({ url: configModule.default.chain.stacks.backupRpcUrl });
     });
 
     it('should use StacksDevnet when no rpcUrl is provided', () => {
       // Mock config to have no rpcUrl
-      const originalRpcUrl = configModule.default.stacks.rpcUrl;
-      configModule.default.stacks.rpcUrl = '';
+      const originalRpcUrl = configModule.default.chain.stacks.rpcUrl;
+      configModule.default.chain.stacks.rpcUrl = '';
 
       stacksModule.init();
 
       expect(StacksDevnet).toHaveBeenCalled();
 
       // Restore original rpcUrl
-      configModule.default.stacks.rpcUrl = originalRpcUrl;
+      configModule.default.chain.stacks.rpcUrl = originalRpcUrl;
     });
 
     it('should use StacksMainnet for mainnet URLs', () => {
       // Mock config to have mainnet URL
-      const originalRpcUrl = configModule.default.stacks.rpcUrl;
-      configModule.default.stacks.rpcUrl = 'https://api.mainnet.hiro.so';
+      const originalRpcUrl = configModule.default.chain.stacks.rpcUrl;
+      configModule.default.chain.stacks.rpcUrl = 'https://api.mainnet.hiro.so';
 
       stacksModule.init();
 
-      expect(StacksMainnet).toHaveBeenCalledWith({ url: configModule.default.stacks.rpcUrl });
+      expect(StacksMainnet).toHaveBeenCalledWith({ url: configModule.default.chain.stacks.rpcUrl });
 
       // Restore original rpcUrl
-      configModule.default.stacks.rpcUrl = originalRpcUrl;
+      configModule.default.chain.stacks.rpcUrl = originalRpcUrl;
     });
   });
 
-  describe('updateOracle', () => {
+  describe('update', () => {
     beforeEach(() => {
       stacksModule.init();
     });
@@ -201,11 +213,11 @@ describe('Stacks Oracle', () => {
       const keys = ['BTC', 'ETH'];
       const prices = [50000, 3000];
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Verify address was derived from private key
       expect(getAddressFromPrivateKey).toHaveBeenCalledWith(
-        configModule.default.stacks.secretKey,
+        configModule.default.chain.stacks.secretKey,
         TransactionVersion.Testnet
       );
 
@@ -229,7 +241,7 @@ describe('Stacks Oracle', () => {
         .mockRejectedValueOnce(new Error('Transaction failed'))
         .mockResolvedValueOnce(mockBroadcastResponse);
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Should have been called twice (retry)
       expect(broadcastTransaction).toHaveBeenCalledTimes(2);
@@ -242,7 +254,7 @@ describe('Stacks Oracle', () => {
 
       (broadcastTransaction as any).mockRejectedValue(error);
 
-      await expect(stacksModule.updateOracle(keys, prices)).rejects.toThrow('Persistent failure');
+      await expect(stacksModule.update(keys, prices)).rejects.toThrow('Persistent failure');
     });
 
     it('should switch to backup network on first failure', async () => {
@@ -254,7 +266,7 @@ describe('Stacks Oracle', () => {
         .mockRejectedValueOnce(new Error('Transaction failed'))
         .mockResolvedValueOnce(mockBroadcastResponse);
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Should have switched to backup network on the second attempt
       const calls = (makeContractCall as any).mock.calls;
@@ -275,23 +287,23 @@ describe('Stacks Oracle', () => {
       const prices = [50000, 3000, 1, 100, 0.5];
 
       // Set maxBatchSize to 2 for this test
-      const originalMaxBatchSize = configModule.default.stacks.maxBatchSize;
-      configModule.default.stacks.maxBatchSize = 2;
+      const originalMaxBatchSize = configModule.default.chain.stacks.maxBatchSize;
+      configModule.default.chain.stacks.maxBatchSize = 2;
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Should have been called multiple times (multiple batches)
       expect(broadcastTransaction).toHaveBeenCalledTimes(3); // 3 batches
 
       // Restore original maxBatchSize
-      configModule.default.stacks.maxBatchSize = originalMaxBatchSize;
+      configModule.default.chain.stacks.maxBatchSize = originalMaxBatchSize;
     });
 
     it('should convert prices to correct format (multiply by 100_000_000)', async () => {
       const keys = ['BTC', 'ETH'];
       const prices = [50000.123, 3000.456];
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Verify uintCV was called with correct values
       expect(uintCV).toHaveBeenCalledWith(Math.floor(50000.123 * 100_000_000));
@@ -307,7 +319,7 @@ describe('Stacks Oracle', () => {
       vi.useFakeTimers();
       vi.setSystemTime(mockDate);
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       vi.useRealTimers();
 
@@ -319,7 +331,7 @@ describe('Stacks Oracle', () => {
       const keys: string[] = [];
       const prices: number[] = [];
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Should still call the oracle with empty arrays
       expect(makeContractCall).not.toHaveBeenCalled();
@@ -329,7 +341,7 @@ describe('Stacks Oracle', () => {
       const keys = ['BTC', 'ETH', 'USDC'];
       const prices = [0.0001, 999999.9999, 1.0001];
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Verify the transaction was called
       expect(makeContractCall).toHaveBeenCalledWith(
@@ -343,7 +355,7 @@ describe('Stacks Oracle', () => {
       const keys = ['BTC'];
       const prices = [50000];
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Verify fee estimation was called
       expect(estimateContractFunctionCall).toHaveBeenCalled();
@@ -363,7 +375,7 @@ describe('Stacks Oracle', () => {
         .mockRejectedValueOnce(new Error('Transaction failed'))
         .mockResolvedValueOnce(mockBroadcastResponse);
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Verify fee was increased on retry
       const calls = (makeContractCall as any).mock.calls;
@@ -375,23 +387,23 @@ describe('Stacks Oracle', () => {
       const prices = [50000, 3000, 1];
 
       // Set maxBatchSize to 1 for this test
-      const originalMaxBatchSize = configModule.default.stacks.maxBatchSize;
-      configModule.default.stacks.maxBatchSize = 1;
+      const originalMaxBatchSize = configModule.default.chain.stacks.maxBatchSize;
+      configModule.default.chain.stacks.maxBatchSize = 1;
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Should have been called 3 times with different nonces
       expect(broadcastTransaction).toHaveBeenCalledTimes(3);
 
       // Restore original maxBatchSize
-      configModule.default.stacks.maxBatchSize = originalMaxBatchSize;
+      configModule.default.chain.stacks.maxBatchSize = originalMaxBatchSize;
     });
   });
 
   describe('conditional initialization', () => {
     it('should initialize backup provider when chainName is not Stacks', async () => {
       // Mock config to return non-Stacks chain
-      vi.mocked(configModule.default).chainName = 'OtherChain' as any;
+      vi.mocked(configModule.default).chain.name = 'OtherChain' as any;
 
       // Re-import the module to trigger the conditional initialization
       vi.resetModules();
@@ -403,7 +415,7 @@ describe('Stacks Oracle', () => {
 
     it('should initialize when chainName is Stacks', async () => {
       // Mock config to return Stacks chain
-      vi.mocked(configModule.default).chainName = 'stacks' as any;
+      vi.mocked(configModule.default).chain.name = 'stacks' as any;
 
       // Re-import the module to trigger the conditional initialization
       vi.resetModules();
@@ -431,7 +443,7 @@ describe('Stacks Oracle', () => {
 
       (broadcastTransaction as any).mockResolvedValue(errorResponse);
 
-      await expect(stacksModule.updateOracle(keys, prices)).rejects.toThrow('Transaction failed with error: Insufficient funds');
+      await expect(stacksModule.update(keys, prices)).rejects.toThrow('Transaction failed with error: Insufficient funds');
     });
 
     it('should handle contract call failure', async () => {
@@ -441,7 +453,7 @@ describe('Stacks Oracle', () => {
 
       (makeContractCall as any).mockRejectedValue(error);
 
-      await expect(stacksModule.updateOracle(keys, prices)).rejects.toThrow('Contract call failed');
+      await expect(stacksModule.update(keys, prices)).rejects.toThrow('Contract call failed');
     });
 
     it('should handle fee estimation failure', async () => {
@@ -451,7 +463,7 @@ describe('Stacks Oracle', () => {
 
       (estimateContractFunctionCall as any).mockRejectedValue(error);
 
-      await expect(stacksModule.updateOracle(keys, prices)).rejects.toThrow('Fee estimation failed');
+      await expect(stacksModule.update(keys, prices)).rejects.toThrow('Fee estimation failed');
     });
 
     it('should log error details during retry attempts', async () => {
@@ -464,10 +476,10 @@ describe('Stacks Oracle', () => {
 
       (broadcastTransaction as any).mockRejectedValue(error);
 
-      await expect(stacksModule.updateOracle(keys, prices)).rejects.toThrow('Network error');
+      await expect(stacksModule.update(keys, prices)).rejects.toThrow('Network error');
 
       // Verify error was logged for each retry attempt
-      expect(consoleSpy).toHaveBeenCalledTimes(configModule.default.stacks.maxRetryAttempts + 2);
+      expect(consoleSpy).toHaveBeenCalledTimes(configModule.default.chain.stacks.maxRetryAttempts + 2);
 
       consoleSpy.mockRestore();
     });
@@ -479,7 +491,7 @@ describe('Stacks Oracle', () => {
       // Mock console.log to capture logs
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Verify success was logged
       expect(consoleSpy).toHaveBeenCalledWith('Batch 1 Transaction ID: mock-tx-id');
@@ -498,18 +510,18 @@ describe('Stacks Oracle', () => {
       const keys = ['BTC', 'ETH', 'USDC'];
       const prices = [50000, 3000, 1];
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Verify splitIntoFixedBatches was called for both keys and prices
-      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(keys, configModule.default.stacks.maxBatchSize);
-      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(prices, configModule.default.stacks.maxBatchSize);
+      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(keys, configModule.default.chain.stacks.maxBatchSize);
+      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(prices, configModule.default.chain.stacks.maxBatchSize);
     });
 
     it('should create correct Clarity values', async () => {
       const keys = ['BTC'];
       const prices = [50000];
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Verify Clarity values were created correctly
       expect(stringAsciiCV).toHaveBeenCalledWith('BTC');
@@ -523,16 +535,16 @@ describe('Stacks Oracle', () => {
       const prices = [50000, 3000, 1, 100, 0.5, 5];
 
       // Set maxBatchSize to 2 for this test
-      const originalMaxBatchSize = configModule.default.stacks.maxBatchSize;
-      configModule.default.stacks.maxBatchSize = 2;
+      const originalMaxBatchSize = configModule.default.chain.stacks.maxBatchSize;
+      configModule.default.chain.stacks.maxBatchSize = 2;
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Should have been called 3 times (3 batches)
       expect(broadcastTransaction).toHaveBeenCalledTimes(3);
 
       // Restore original maxBatchSize
-      configModule.default.stacks.maxBatchSize = originalMaxBatchSize;
+      configModule.default.chain.stacks.maxBatchSize = originalMaxBatchSize;
     });
   });
 
@@ -544,11 +556,11 @@ describe('Stacks Oracle', () => {
       // Mock network to be mainnet
       mockNetwork.isMainnet.mockReturnValue(true);
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Verify correct transaction version was used
       expect(getAddressFromPrivateKey).toHaveBeenCalledWith(
-        configModule.default.stacks.secretKey,
+        configModule.default.chain.stacks.secretKey,
         TransactionVersion.Mainnet
       );
     });
@@ -557,13 +569,13 @@ describe('Stacks Oracle', () => {
       const keys = ['BTC'];
       const prices = [50000];
 
-      await stacksModule.updateOracle(keys, prices);
+      await stacksModule.update(keys, prices);
 
       // Verify contract address and name were used correctly
       expect(makeContractCall).toHaveBeenCalledWith(
         expect.objectContaining({
-          contractAddress: configModule.default.stacks.contract,
-          contractName: configModule.default.stacks.contractName,
+          contractAddress: configModule.default.chain.stacks.contract,
+          contractName: configModule.default.chain.stacks.contractName,
         })
       );
     });
@@ -574,7 +586,7 @@ describe('Stacks Oracle', () => {
       const address = 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM';
 
       // Call the function directly (it's not exported, so we'll test it indirectly)
-      await stacksModule.updateOracle(['BTC'], [50000]);
+      await stacksModule.update(['BTC'], [50000]);
 
       // Verify axios was called with correct parameters
       expect(axios).toHaveBeenCalledWith(
@@ -588,7 +600,7 @@ describe('Stacks Oracle', () => {
         data: { total: 0, results: [] },
       });
 
-      await stacksModule.updateOracle(['BTC'], [50000]);
+      await stacksModule.update(['BTC'], [50000]);
 
       // Verify the function handled empty results correctly
       expect(makeContractCall).toHaveBeenCalledWith(

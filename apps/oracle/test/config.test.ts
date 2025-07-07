@@ -46,17 +46,18 @@ describe('Config', () => {
       
       const config = await import('../src/config');
       
-      expect(config.default.api.assets).toHaveLength(1);
-      expect(config.default.api.assets[0]).toEqual({
+      expect(config.default.assets.cfg).toHaveLength(1);
+      expect(config.default.assets.cfg[0]).toEqual({
         network: 'ethereum',
         address: '0x123456789',
+        luminaKey: "",
         symbol: 'BTC',
         coingeckoName: 'coingecko-btc',
         cmcName: 'cmc-btc',
         allowedDeviation: 0.5,
         gqlParams: { FeedSelection: [] },
       });
-      expect(config.default.api.useGql).toBe(false);
+      expect(config.default.assets.source).toBe(0);
     });
 
     it('should parse GQL_ASSETS environment variable correctly', async () => {
@@ -64,10 +65,11 @@ describe('Config', () => {
       
       const config = await import('../src/config');
       
-      expect(config.default.api.assets).toHaveLength(1);
-      expect(config.default.api.assets[0]).toEqual({
+      expect(config.default.assets.cfg).toHaveLength(1);
+      expect(config.default.assets.cfg[0]).toEqual({
         network: 'ethereum',
         address: '0x123456789',
+        luminaKey: "",
         symbol: 'BTC',
         coingeckoName: 'coingecko-btc',
         cmcName: 'cmc-btc',
@@ -82,7 +84,7 @@ describe('Config', () => {
           ],
         },
       });
-      expect(config.default.api.useGql).toBe(true);
+      expect(config.default.assets.source).toBe(1);
     });
 
     it('should handle IBC address formatting', async () => {
@@ -90,9 +92,10 @@ describe('Config', () => {
       
       const config = await import('../src/config');
       
-      expect(config.default.api.assets[0]).toEqual({
+      expect(config.default.assets.cfg[0]).toEqual({
         network: 'cosmos',
         address: 'ibc-123456789',
+        luminaKey: "",
         symbol: 'ATOM',
         coingeckoName: 'coingecko-atom',
         cmcName: 'cmc-atom',
@@ -106,9 +109,10 @@ describe('Config', () => {
       
       const config = await import('../src/config');
       
-      expect(config.default.api.assets[0]).toEqual({
+      expect(config.default.assets.cfg[0]).toEqual({
         network: 'cosmos',
         address: 'ibc-123456789',
+        luminaKey: "",
         symbol: 'ATOM',
         coingeckoName: 'coingecko-atom',
         cmcName: 'cmc-atom',
@@ -122,12 +126,11 @@ describe('Config', () => {
       
       const config = await import('../src/config');
       
-      expect(config.default.api.assets[0]).toEqual({
+      expect(config.default.assets.cfg[0]).toEqual({
         network: 'ethereum',
         address: '0x123456789',
+        luminaKey: "",
         symbol: 'BTC',
-        coingeckoName: '',
-        cmcName: '',
         allowedDeviation: 0.0,
         gqlParams: { FeedSelection: [] },
       });
@@ -138,7 +141,7 @@ describe('Config', () => {
       
       const config = await import('../src/config');
       
-      expect(config.default.api.assets[0].allowedDeviation).toBe(0.0);
+      expect(config.default.assets.cfg[0].allowedDeviation).toBe(0.0);
     });
 
     it('should handle invalid GQL params JSON', async () => {
@@ -149,7 +152,7 @@ describe('Config', () => {
       
       const config = await import('../src/config');
       
-      expect(config.default.api.assets[0].gqlParams).toEqual({ FeedSelection: [] });
+      expect(config.default.assets.cfg[0].gqlParams).toEqual({ FeedSelection: [] });
       expect(consoleSpy).toHaveBeenCalledWith('Error while parsing GQL asset string: ', expect.any(Error));
       
       consoleSpy.mockRestore();
@@ -160,9 +163,9 @@ describe('Config', () => {
       
       const config = await import('../src/config');
       
-      expect(config.default.api.assets).toHaveLength(2);
-      expect(config.default.api.assets[0].symbol).toBe('BTC');
-      expect(config.default.api.assets[1].symbol).toBe('ETH');
+      expect(config.default.assets.cfg).toHaveLength(2);
+      expect(config.default.assets.cfg[0].symbol).toBe('BTC');
+      expect(config.default.assets.cfg[1].symbol).toBe('ETH');
     });
 
     it('should exit when neither ASSETS nor GQL_ASSETS is provided', async () => {
@@ -247,6 +250,7 @@ describe('Config', () => {
       const config = await import('../src/config');
       
       expect(config.default.chainName).toBe('soroban');
+      expect(config.default.chain.name).toBe('soroban');
     });
 
     it('should use provided CHAIN_NAME', async () => {
@@ -255,6 +259,7 @@ describe('Config', () => {
       const config = await import('../src/config');
       
       expect(config.default.chainName).toBe('kadena');
+      expect(config.default.chain.name).toBe('kadena');
     });
 
     it('should export ChainName enum', async () => {
@@ -266,6 +271,7 @@ describe('Config', () => {
         Alephium: 'alephium',
         Stacks: 'stacks',
         Opnet: 'opnet',
+        Midnight: 'midnight',
       });
     });
   });
@@ -278,7 +284,7 @@ describe('Config', () => {
     it('should use default soroban values when environment variables are not provided', async () => {
       const config = await import('../src/config');
       
-      expect(config.default.soroban).toEqual({
+      expect(config.default.chain.soroban).toEqual({
         rpcUrl: 'https://soroban-testnet.stellar.org:443',
         secretKey: '',
         contractId: '',
@@ -294,7 +300,7 @@ describe('Config', () => {
       
       const config = await import('../src/config');
       
-      expect(config.default.soroban).toEqual({
+      expect(config.default.chain.soroban).toEqual({
         rpcUrl: 'https://custom-soroban-node.com',
         secretKey: 'custom-secret-key',
         contractId: 'custom-contract-id',
@@ -507,8 +513,6 @@ describe('Config', () => {
       const config = await import('../src/config');
       
       expect(config.default.api).toEqual({
-        useGql: false,
-        assets: expect.any(Array),
         http: {
           url: 'https://api.diadata.org/v1/assetQuotation',
         },
@@ -542,12 +546,12 @@ describe('Config', () => {
     it('should use default external API values when environment variables are not provided', async () => {
       const config = await import('../src/config');
       
-      expect(config.default.coingecko).toEqual({
+      expect(config.default.guardian.coingecko).toEqual({
         apiKey: '',
         url: 'https://pro-api.coingecko.com',
       });
       
-      expect(config.default.cmc).toEqual({
+      expect(config.default.guardian.cmc).toEqual({
         apiKey: '',
         url: 'https://pro-api.coinmarketcap.com',
       });
@@ -561,12 +565,12 @@ describe('Config', () => {
       
       const config = await import('../src/config');
       
-      expect(config.default.coingecko).toEqual({
+      expect(config.default.guardian.coingecko).toEqual({
         apiKey: 'coingecko-key',
         url: 'https://custom-coingecko.com',
       });
       
-      expect(config.default.cmc).toEqual({
+      expect(config.default.guardian.cmc).toEqual({
         apiKey: 'cmc-key',
         url: 'https://custom-cmc.com',
       });

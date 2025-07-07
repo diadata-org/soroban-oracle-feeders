@@ -8,11 +8,11 @@ let nodeProvider: NodeProvider;
 let wallet: PrivateKeyWallet;
 let oracle: DIAOracleInstance;
 
+const { alephium } = config.chain;
+
 if (config.chain.name === ChainName.Alephium) {
   init();
 }
-
-const { alephium } = config.chain;
 
 export function init() {
   nodeProvider = new NodeProvider(alephium.rpcUrl);

@@ -27,10 +27,19 @@ vi.mock('@repo/common', () => ({
   },
 }));
 
-// Mock config
+// Mock config - this must be set up before any imports
 vi.mock('../src/config', () => ({
   default: {
-    chainName: 'alephium',
+    chain: {
+      name: 'alephium',
+      alephium: {
+        rpcUrl: 'http://localhost:22973',
+        secretKey: 'test-secret-key',
+        contract: '2AsrYbF4PhVtoinHawPzV8iqcwrj26SCE2ghNDkb5Cdm1',
+        maxBatchSize: 10,
+        maxRetryAttempts: 3,
+      },
+    },
     alephium: {
       rpcUrl: 'http://localhost:22973',
       secretKey: 'test-secret-key',
@@ -102,7 +111,7 @@ describe('Alephium Oracle', () => {
       return result;
     });
 
-    // Import the module
+    // Import the module after all mocks are set up
     alephiumModule = await import('../src/oracles/alephium');
   });
 
@@ -114,18 +123,18 @@ describe('Alephium Oracle', () => {
     it('should initialize nodeProvider, wallet, and oracle with correct config', () => {
       alephiumModule.init();
 
-      expect(NodeProvider).toHaveBeenCalledWith(configModule.default.alephium.rpcUrl);
+      expect(NodeProvider).toHaveBeenCalledWith(configModule.default.chain.alephium.rpcUrl);
       expect(web3.setCurrentNodeProvider).toHaveBeenCalledWith(mockNodeProvider);
       expect(PrivateKeyWallet).toHaveBeenCalledWith({
-        privateKey: configModule.default.alephium.secretKey,
+        privateKey: configModule.default.chain.alephium.secretKey,
         keyType: undefined,
         nodeProvider: mockNodeProvider,
       });
-      expect(DIAOracle.at).toHaveBeenCalledWith(configModule.default.alephium.contract);
+      expect(DIAOracle.at).toHaveBeenCalledWith(configModule.default.chain.alephium.contract);
     });
   });
 
-  describe('updateOracle', () => {
+  describe('update', () => {
     beforeEach(() => {
       alephiumModule.init();
     });
@@ -137,7 +146,7 @@ describe('Alephium Oracle', () => {
       // Mock successful transaction
       mockOracle.transact.setMultipleValues.mockResolvedValue({ hash: 'test-hash' });
 
-      await alephiumModule.updateOracle(keys, prices);
+      await alephiumModule.update(keys, prices);
 
       // Verify stringToHex was called for keys
       expect(stringToHex).toHaveBeenCalledWith('BTC');
@@ -165,7 +174,7 @@ describe('Alephium Oracle', () => {
         .mockRejectedValueOnce(new Error('Transaction failed'))
         .mockResolvedValueOnce({ hash: 'test-hash' });
 
-      await alephiumModule.updateOracle(keys, prices);
+      await alephiumModule.update(keys, prices);
 
       // Should have been called twice (retry)
       expect(mockOracle.transact.setMultipleValues).toHaveBeenCalledTimes(2);
@@ -179,11 +188,11 @@ describe('Alephium Oracle', () => {
       // Mock all attempts to fail
       mockOracle.transact.setMultipleValues.mockRejectedValue(error);
 
-      await expect(alephiumModule.updateOracle(keys, prices)).rejects.toThrow('Persistent failure');
+      await expect(alephiumModule.update(keys, prices)).rejects.toThrow('Persistent failure');
 
       // Should have been called maxRetryAttempts times
       expect(mockOracle.transact.setMultipleValues).toHaveBeenCalledTimes(
-        configModule.default.alephium.maxRetryAttempts
+        configModule.default.chain.alephium.maxRetryAttempts
       );
     });
 
@@ -193,7 +202,7 @@ describe('Alephium Oracle', () => {
 
       mockOracle.transact.setMultipleValues.mockResolvedValue({ hash: 'test-hash' });
 
-      await alephiumModule.updateOracle(keys, prices);
+      await alephiumModule.update(keys, prices);
 
       // Verify the values were converted correctly
       const callArgs = mockOracle.transact.setMultipleValues.mock.calls[0][0];
@@ -210,18 +219,18 @@ describe('Alephium Oracle', () => {
       const prices = [50000, 3000, 1, 100, 0.5];
 
       // Set maxBatchSize to 2 for this test
-      const originalMaxBatchSize = configModule.default.alephium.maxBatchSize;
-      configModule.default.alephium.maxBatchSize = 2;
+      const originalMaxBatchSize = configModule.default.chain.alephium.maxBatchSize;
+      configModule.default.chain.alephium.maxBatchSize = 2;
 
       mockOracle.transact.setMultipleValues.mockResolvedValue({ hash: 'test-hash' });
 
-      await alephiumModule.updateOracle(keys, prices);
+      await alephiumModule.update(keys, prices);
 
       // Should have been called 3 times (2 items per batch, 5 total items)
       expect(mockOracle.transact.setMultipleValues).toHaveBeenCalledTimes(3);
 
       // Restore original maxBatchSize
-      configModule.default.alephium.maxBatchSize = originalMaxBatchSize;
+      configModule.default.chain.alephium.maxBatchSize = originalMaxBatchSize;
     });
 
     it('should use current timestamp for all entries', async () => {
@@ -236,7 +245,7 @@ describe('Alephium Oracle', () => {
 
       mockOracle.transact.setMultipleValues.mockResolvedValue({ hash: 'test-hash' });
 
-      await alephiumModule.updateOracle(keys, prices);
+      await alephiumModule.update(keys, prices);
 
       vi.useRealTimers();
 
@@ -253,7 +262,7 @@ describe('Alephium Oracle', () => {
 
       mockOracle.transact.setMultipleValues.mockResolvedValue({ hash: 'test-hash' });
 
-      await alephiumModule.updateOracle(keys, prices);
+      await alephiumModule.update(keys, prices);
 
       // Should still call the oracle with empty arrays
       expect(mockOracle.transact.setMultipleValues).not.toHaveBeenCalledWith({
@@ -274,7 +283,7 @@ describe('Alephium Oracle', () => {
 
       mockOracle.transact.setMultipleValues.mockResolvedValue({ hash: 'test-hash' });
 
-      await alephiumModule.updateOracle(keys, prices);
+      await alephiumModule.update(keys, prices);
 
       // Verify the transaction was called
       expect(mockOracle.transact.setMultipleValues).toHaveBeenCalledWith({
@@ -295,7 +304,7 @@ describe('Alephium Oracle', () => {
 
       mockOracle.transact.setMultipleValues.mockResolvedValue({ hash: 'test-hash' });
 
-      await alephiumModule.updateOracle(keys, prices);
+      await alephiumModule.update(keys, prices);
 
       // Verify attoAlphAmount is calculated correctly
       const callArgs = mockOracle.transact.setMultipleValues.mock.calls[0][0];
@@ -306,7 +315,7 @@ describe('Alephium Oracle', () => {
   describe('conditional initialization', () => {
     it('should not initialize when chainName is not Alephium', async () => {
       // Mock config to return non-Alephium chain
-      vi.mocked(configModule.default).chainName = 'OtherChain' as any;
+      vi.mocked(configModule.default).chain.name = 'OtherChain' as any;
 
       // Re-import the module to trigger the conditional initialization
       vi.resetModules();
@@ -318,7 +327,7 @@ describe('Alephium Oracle', () => {
 
     it('should initialize when chainName is Alephium', async () => {
       // Mock config to return Alephium chain
-      vi.mocked(configModule.default).chainName = 'alephium' as any;
+      vi.mocked(configModule.default).chain.name = 'alephium' as any;
 
       // Re-import the module to trigger the conditional initialization
       vi.resetModules();
@@ -341,7 +350,7 @@ describe('Alephium Oracle', () => {
 
       mockOracle.transact.setMultipleValues.mockRejectedValue(error);
 
-      await expect(alephiumModule.updateOracle(keys, prices)).rejects.toThrow('Oracle transaction failed');
+      await expect(alephiumModule.update(keys, prices)).rejects.toThrow('Oracle transaction failed');
     });
 
     it('should log error details during retry attempts', async () => {
@@ -354,10 +363,10 @@ describe('Alephium Oracle', () => {
 
       mockOracle.transact.setMultipleValues.mockRejectedValue(error);
 
-      await expect(alephiumModule.updateOracle(keys, prices)).rejects.toThrow('Network error');
+      await expect(alephiumModule.update(keys, prices)).rejects.toThrow('Network error');
 
       // Verify error was logged for each retry attempt
-      expect(consoleSpy).toHaveBeenCalledTimes(configModule.default.alephium.maxRetryAttempts + 1);
+      expect(consoleSpy).toHaveBeenCalledTimes(configModule.default.chain.alephium.maxRetryAttempts + 1);
 
       consoleSpy.mockRestore();
     });
@@ -371,7 +380,7 @@ describe('Alephium Oracle', () => {
 
       mockOracle.transact.setMultipleValues.mockResolvedValue({ hash: 'test-hash' });
 
-      await alephiumModule.updateOracle(keys, prices);
+      await alephiumModule.update(keys, prices);
 
       // Verify success was logged
       expect(consoleSpy).toHaveBeenCalledWith('batch update:', { hash: 'test-hash' });
@@ -392,11 +401,11 @@ describe('Alephium Oracle', () => {
 
       mockOracle.transact.setMultipleValues.mockResolvedValue({ hash: 'test-hash' });
 
-      await alephiumModule.updateOracle(keys, prices);
+      await alephiumModule.update(keys, prices);
 
       // Verify splitIntoFixedBatches was called for both keys and prices
-      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(keys, configModule.default.alephium.maxBatchSize);
-      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(prices, configModule.default.alephium.maxBatchSize);
+      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(keys, configModule.default.chain.alephium.maxBatchSize);
+      expect(utilsModule.splitIntoFixedBatches).toHaveBeenCalledWith(prices, configModule.default.chain.alephium.maxBatchSize);
     });
 
     it('should use fillArray to pad arrays to maxBatchSize', async () => {
@@ -405,16 +414,16 @@ describe('Alephium Oracle', () => {
 
       mockOracle.transact.setMultipleValues.mockResolvedValue({ hash: 'test-hash' });
 
-      await alephiumModule.updateOracle(keys, prices);
+      await alephiumModule.update(keys, prices);
       // Verify fillArray was called to pad the arrays
       expect(utilsModule.fillArray).toHaveBeenCalledWith(
         expect.any(Array),
-        configModule.default.alephium.maxBatchSize,
+        configModule.default.chain.alephium.maxBatchSize,
         expect.any(String)
       );
       expect(utilsModule.fillArray).toHaveBeenCalledWith(
         expect.any(Array),
-        configModule.default.alephium.maxBatchSize,
+        configModule.default.chain.alephium.maxBatchSize,
         expect.any(BigInt)
       );
     });

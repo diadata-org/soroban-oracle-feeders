@@ -28,7 +28,15 @@ vi.mock('@repo/common', () => ({
 // Mock config
 vi.mock('../src/config', () => ({
   default: {
-    chainName: 'Soroban',
+    chain: {
+      name: 'Soroban',
+      soroban: {
+        rpcUrl: 'https://testnet.stellar.org:9000',
+        secretKey: 'test-secret-key',
+        contractId: 'test-contract-id',
+        maxRetryAttempts: 3,
+      },
+    },
     soroban: {
       rpcUrl: 'https://testnet.stellar.org:9000',
       secretKey: 'test-secret-key',
@@ -117,23 +125,23 @@ describe('Soroban Oracle', () => {
       sorobanModule.init();
 
       expect(rpc.Server).toHaveBeenCalledWith(
-        configModule.default.soroban.rpcUrl,
+        configModule.default.chain.soroban.rpcUrl,
         { allowHttp: true }
       );
       expect(Keypair.fromSecret).toHaveBeenCalledWith(
-        configModule.default.soroban.secretKey
+        configModule.default.chain.soroban.secretKey
       );
       expect(Contract).toHaveBeenCalledWith(
-        configModule.default.soroban.contractId
+        configModule.default.chain.soroban.contractId
       );
     });
   });
 
-  describe('restoreOracle', () => {
+  describe('restoreContract', () => {
     it('should call restoreInstance with correct parameters', async () => {
       sorobanModule.init();
 
-      await sorobanModule.restoreOracle();
+      await sorobanModule.restoreContract();
 
       expect(common.restoreInstance).toHaveBeenCalledWith(
         mockServer,
@@ -143,11 +151,11 @@ describe('Soroban Oracle', () => {
     });
   });
 
-  describe('extendOracleTtl', () => {
+  describe('extendContractTtl', () => {
     it('should call extendInstanceTtl with correct parameters', async () => {
       sorobanModule.init();
 
-      await sorobanModule.extendOracleTtl();
+      await sorobanModule.extendContractTtl();
 
       const extendTo = common.DAY_IN_LEDGERS * 30;
       const threshold = extendTo - common.DAY_IN_LEDGERS;
@@ -162,7 +170,7 @@ describe('Soroban Oracle', () => {
     });
   });
 
-  describe('updateOracle', () => {
+  describe('update', () => {
     beforeEach(() => {
       sorobanModule.init();
     });
@@ -171,7 +179,7 @@ describe('Soroban Oracle', () => {
       const keys = ['BTC', 'ETH'];
       const prices = [50000, 3000];
 
-      await sorobanModule.updateOracle(keys, prices);
+      await sorobanModule.update(keys, prices);
 
       // Verify account was fetched
       expect(mockServer.getAccount).toHaveBeenCalledWith('test-public-key');
@@ -198,7 +206,7 @@ describe('Soroban Oracle', () => {
         .mockRejectedValueOnce(new Error('Transaction failed'))
         .mockResolvedValueOnce(undefined);
 
-      await sorobanModule.updateOracle(keys, prices);
+      await sorobanModule.update(keys, prices);
 
       // Should have been called twice (retry)
       expect(common.submitSorobanTx).toHaveBeenCalledTimes(2);
@@ -212,11 +220,11 @@ describe('Soroban Oracle', () => {
       // Mock all attempts to fail
       (common.submitSorobanTx as any).mockRejectedValue(error);
 
-      await expect(sorobanModule.updateOracle(keys, prices)).rejects.toThrow('Persistent failure');
+      await expect(sorobanModule.update(keys, prices)).rejects.toThrow('Persistent failure');
 
       // Should have been called maxRetryAttempts times
       expect(common.submitSorobanTx).toHaveBeenCalledTimes(
-        configModule.default.soroban.maxRetryAttempts
+        configModule.default.chain.soroban.maxRetryAttempts
       );
     });
 
@@ -224,7 +232,7 @@ describe('Soroban Oracle', () => {
       const keys = ['BTC', 'ETH'];
       const prices = [50000.123, 3000.456];
 
-      await sorobanModule.updateOracle(keys, prices);
+      await sorobanModule.update(keys, prices);
 
       // Verify nativeToScVal was called for keys
       expect(nativeToScVal).toHaveBeenCalledWith(keys);
@@ -245,7 +253,7 @@ describe('Soroban Oracle', () => {
       vi.useFakeTimers();
       vi.setSystemTime(mockDate);
 
-      await sorobanModule.updateOracle(keys, prices);
+      await sorobanModule.update(keys, prices);
 
       vi.useRealTimers();
 
@@ -261,7 +269,7 @@ describe('Soroban Oracle', () => {
       const keys: string[] = [];
       const prices: number[] = [];
 
-      await sorobanModule.updateOracle(keys, prices);
+      await sorobanModule.update(keys, prices);
 
       expect(mockContract.call).toHaveBeenCalledWith(
         'set_multiple_values',
@@ -274,7 +282,7 @@ describe('Soroban Oracle', () => {
       const keys = ['BTC', 'ETH', 'USDC'];
       const prices = [0.0001, 999999.9999, 1.0001];
 
-      await sorobanModule.updateOracle(keys, prices);
+      await sorobanModule.update(keys, prices);
 
       // Verify the contract call was made
       expect(mockContract.call).toHaveBeenCalledWith(
@@ -288,7 +296,7 @@ describe('Soroban Oracle', () => {
   describe('conditional initialization', () => {
     it('should not initialize when chainName is not Soroban', async () => {
       // Mock config to return non-Soroban chain
-      vi.mocked(configModule.default).chainName = 'OtherChain' as any;
+      vi.mocked(configModule.default).chain.name = 'OtherChain' as any;
 
       // Re-import the module to trigger the conditional initialization
       vi.resetModules();
@@ -300,7 +308,7 @@ describe('Soroban Oracle', () => {
 
     it('should initialize when chainName is Soroban', async () => {
       // Mock config to return Soroban chain
-      vi.mocked(configModule.default).chainName = 'Soroban' as any;
+      vi.mocked(configModule.default).chain.name = 'Soroban' as any;
 
       // Re-import the module to trigger the conditional initialization
       vi.resetModules();
@@ -322,7 +330,7 @@ describe('Soroban Oracle', () => {
 
       mockServer.getAccount.mockRejectedValue(error);
 
-      await expect(sorobanModule.updateOracle(keys, prices)).rejects.toThrow('Account not found');
+      await expect(sorobanModule.update(keys, prices)).rejects.toThrow('Account not found');
     });
 
     it('should handle server.prepareTransaction failure', async () => {
@@ -332,7 +340,7 @@ describe('Soroban Oracle', () => {
 
       mockServer.prepareTransaction.mockRejectedValue(error);
 
-      await expect(sorobanModule.updateOracle(keys, prices)).rejects.toThrow('Transaction preparation failed');
+      await expect(sorobanModule.update(keys, prices)).rejects.toThrow('Transaction preparation failed');
     });
   });
 }); 
