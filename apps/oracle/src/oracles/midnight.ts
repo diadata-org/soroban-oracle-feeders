@@ -1,14 +1,21 @@
 import config, { ChainName } from '../config';
-import { splitIntoFixedBatches, 
+import {
+  splitIntoFixedBatches,
   type OracleContract,
   type OraclePrivateStateId,
   type OracleProviders,
   type DeployedOracleContract,
-  OracleCircuits } from '../utils';
+  OracleCircuits,
+} from '../utils';
 import path from 'path';
 
 /** Midnight library imports */
-import { getLedgerNetworkId, getZswapNetworkId, NetworkId, setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import {
+  getLedgerNetworkId,
+  getZswapNetworkId,
+  NetworkId,
+  setNetworkId,
+} from '@midnight-ntwrk/midnight-js-network-id';
 import { Oracle, witnesses } from '@repo/common';
 import { Wallet } from '@midnight-ntwrk/wallet-api';
 import { WalletBuilder, type Resource } from '@midnight-ntwrk/wallet';
@@ -31,11 +38,13 @@ import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
 import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
+import bip39 from '@scure/bip39';
+import { wordlist } from '@scure/bip39/wordlists/english';
 import type { OracleValue } from '@repo/common';
 
 const contractConfig = {
   privateStateStoreName: 'OraclePrivateState',
-  zkConfigPath: path.join(process.cwd(), 'src/midnight_src')
+  zkConfigPath: path.join(process.cwd(), 'src/midnight_src'),
 };
 
 export const oracleContractInstance: OracleContract = new Oracle.Contract(witnesses);
@@ -47,18 +56,21 @@ import * as Rx from 'rxjs';
 let wallet: Wallet & Resource;
 let providers: OracleProviders;
 let oracleContract: DeployedOracleContract;
- 
+
 /**
  * Builds a wallet from seed and waits for funds.
  * @returns A promise that resolves to the wallet.
  */
 const buildWalletAndWaitForFunds = async (): Promise<Wallet & Resource> => {
+  const entropy = bip39.mnemonicToEntropy(config.midnight.seed, wordlist);
+  const seed = Buffer.from(entropy).toString('hex');
+
   wallet = await WalletBuilder.build(
     config.midnight.indexer,
     config.midnight.indexerWS,
     config.midnight.proofServer,
     config.midnight.node,
-    config.midnight.secretKey || '',
+    seed,
     getZswapNetworkId(),
     'info',
   );
@@ -101,7 +113,7 @@ const waitForFunds = (wallet: Wallet) =>
       Rx.map((s) => s.balances[nativeToken()] ?? 0n),
       Rx.filter((balance) => balance > 0n),
     ),
-);
+  );
 
 /**
  * Configures the providers for the Midnight Oracle.
@@ -117,7 +129,10 @@ const configureProviders = async (wallet: Wallet & Resource) => {
     privateStateStoreName: contractConfig.privateStateStoreName,
   });
 
-  const publicDataProvider = indexerPublicDataProvider(config.midnight.indexer, config.midnight.indexerWS);
+  const publicDataProvider = indexerPublicDataProvider(
+    config.midnight.indexer,
+    config.midnight.indexerWS,
+  );
   return {
     privateStateProvider: privateStateProvider,
     publicDataProvider: publicDataProvider,
@@ -133,7 +148,9 @@ const configureProviders = async (wallet: Wallet & Resource) => {
  * @param wallet - The wallet to create the wallet and Midnight provider.
  * @returns A promise that resolves to the wallet and Midnight provider.
  */
-const createWalletAndMidnightProvider = async (wallet: Wallet): Promise<WalletProvider & MidnightProvider> => {
+const createWalletAndMidnightProvider = async (
+  wallet: Wallet,
+): Promise<WalletProvider & MidnightProvider> => {
   setNetworkId(NetworkId.TestNet);
   const state = await Rx.firstValueFrom(wallet.state());
   return {
@@ -168,9 +185,7 @@ const createWalletAndMidnightProvider = async (wallet: Wallet): Promise<WalletPr
  * @param providers - The providers to instantiate the contract.
  * @returns A promise that resolves to the deployed contract.
  */
-const joinContract = async (
-  providers: OracleProviders
-): Promise<DeployedOracleContract> => {
+const joinContract = async (providers: OracleProviders): Promise<DeployedOracleContract> => {
   setNetworkId(NetworkId.TestNet);
   const oracleContract = await findDeployedContract(providers, {
     contractAddress: config.midnight.contractAddress || '',
@@ -191,8 +206,7 @@ if (config.chain.name === ChainName.Midnight) {
  * Initializes the Midnight Oracle.
  */
 export async function init() {
-
-	console.log('Initializing Midnight Oracle');
+  console.log('Initializing Midnight Oracle');
   // setup wallet
   wallet = await buildWalletAndWaitForFunds();
 
@@ -200,9 +214,9 @@ export async function init() {
   if (wallet !== null) {
     console.log('Initializing Providers');
     providers = await configureProviders(wallet);
-    console.log("Providers initialized")
-    oracleContract = await joinContract(providers)
-    console.log("Contract joined")
+    console.log('Providers initialized');
+    oracleContract = await joinContract(providers);
+    console.log('Contract joined');
   }
 }
 
@@ -220,7 +234,7 @@ export async function update(keys: string[], prices: number[]) {
   const priceBatches = splitIntoFixedBatches(prices, config.midnight.maxBatchSize);
 
   const maxRetries = config.midnight.maxRetryAttempts;
-  
+
   for (let batchIndex = 0; batchIndex < keyBatches.length; batchIndex++) {
     const now = () => BigInt(Math.floor(Date.now() / 1000));
     const keyBatch = keyBatches[batchIndex];
@@ -228,17 +242,20 @@ export async function update(keys: string[], prices: number[]) {
 
     let attempt = 0;
     // now prepare a batch of key, price and timestamp
-    const batch = keyBatch.map((key, index) => [
-      key,
-      {
-        value: BigInt(Math.floor(priceBatch[index])), // Convert to bigint with 6 decimal precision
-        timestamp: now()
-      } as OracleValue
-    ] as [string, OracleValue]);
+    const batch = keyBatch.map(
+      (key, index) =>
+        [
+          key,
+          {
+            value: BigInt(Math.floor(priceBatch[index])), // Convert to bigint with 6 decimal precision
+            timestamp: now(),
+          } as OracleValue,
+        ] as [string, OracleValue],
+    );
 
     while (attempt < maxRetries) {
       try {
-				// First transaction
+        // First transaction
         // If batch is the size of the maxBatchSize (10), it should call set_multiple_values.
         // If not, it should call set_value for each key, price and timestamp.
         let firstTxBroadcast;
@@ -248,19 +265,26 @@ export async function update(keys: string[], prices: number[]) {
           if (!batchTxBroadcast) {
             throw new Error('Batch transaction broadcast failed.');
           }
-  
-          console.log(`Transaction ${batchTxBroadcast.public.txId} added in block ${batchTxBroadcast.public.blockHeight}`);
+
+          console.log(
+            `Transaction ${batchTxBroadcast.public.txId} added in block ${batchTxBroadcast.public.blockHeight}`,
+          );
         } else {
-          console.log("It's not possible to batch value. It will update individually.")
+          console.log("It's not possible to batch value. It will update individually.");
 
           for (let i = 0; i < batch.length; i++) {
-            const firstTxBroadcast = await oracleContract.callTx.set_value(batch[i][0], batch[i][1]);
+            const firstTxBroadcast = await oracleContract.callTx.set_value(
+              batch[i][0],
+              batch[i][1],
+            );
 
             if (!firstTxBroadcast) {
               throw new Error('First transaction broadcast failed.');
             }
 
-            console.log(`Transaction ${firstTxBroadcast.public.txId} added in block ${firstTxBroadcast.public.blockHeight}`);
+            console.log(
+              `Transaction ${firstTxBroadcast.public.txId} added in block ${firstTxBroadcast.public.blockHeight}`,
+            );
           }
         }
         // await confirmation

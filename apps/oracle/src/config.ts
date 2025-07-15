@@ -159,10 +159,13 @@ export default {
     network: process.env.MIDNIGHT_NETWORK || '2',
     maxRetryAttempts: 3,
     maxBatchSize: 10, // max number of prices to update in a single transaction
-    secretKey: process.env.MIDNIGHT_PRIVATE_KEY,
+    seed: process.env.MIDNIGHT_SEED || '',
     contractAddress: process.env.MIDNIGHT_CONTRACT_ADDRESS,
-    indexer: process.env.MIDNIGHT_INDEXER || 'https://indexer.testnet-02.midnight.network/api/v1/graphql',
-    indexerWS: process.env.MIDNIGHT_INDEXER_WS || 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws',
+    indexer:
+      process.env.MIDNIGHT_INDEXER || 'https://indexer.testnet-02.midnight.network/api/v1/graphql',
+    indexerWS:
+      process.env.MIDNIGHT_INDEXER_WS ||
+      'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws',
     proofServer: process.env.MIDNIGHT_PROOF_SERVER || 'http://127.0.0.1:6300',
     node: process.env.MIDNIGHT_NODE || 'https://rpc.testnet-02.midnight.network',
   },
