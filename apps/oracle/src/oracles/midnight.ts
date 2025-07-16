@@ -206,6 +206,8 @@ function getNetworkId(network: string) {
   }
 }
 
+let ready = Promise.resolve();
+
 if (config.chain.name === ChainName.Midnight) {
   const networkId = getNetworkId(config.midnight.network);
   if (!networkId) {
@@ -214,7 +216,7 @@ if (config.chain.name === ChainName.Midnight) {
   }
 
   setNetworkId(networkId);
-  init();
+  ready = init();
 }
 
 /**
@@ -242,6 +244,7 @@ export async function init() {
  * @param prices - Array of corresponding prices
  */
 export async function update(keys: string[], prices: number[]) {
+  await ready;
   console.log('Updating Midnight oracle with:', keys, prices);
 
   // Split into batches for large updates
