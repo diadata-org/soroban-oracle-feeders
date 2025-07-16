@@ -11,7 +11,6 @@ import path from 'path';
 
 /** Midnight library imports */
 import {
-  getLedgerNetworkId,
   getZswapNetworkId,
   NetworkId,
   setNetworkId,
@@ -121,7 +120,6 @@ const waitForFunds = (wallet: Wallet) =>
  * @returns A promise that resolves to the providers.
  */
 const configureProviders = async (wallet: Wallet & Resource) => {
-  setNetworkId(NetworkId.TestNet);
   console.log('Configuring providers');
   console.log(contractConfig.zkConfigPath);
   const walletAndMidnightProvider = await createWalletAndMidnightProvider(wallet);
@@ -151,7 +149,6 @@ const configureProviders = async (wallet: Wallet & Resource) => {
 const createWalletAndMidnightProvider = async (
   wallet: Wallet,
 ): Promise<WalletProvider & MidnightProvider> => {
-  setNetworkId(NetworkId.TestNet);
   const state = await Rx.firstValueFrom(wallet.state());
   return {
     coinPublicKey: state.coinPublicKey,
@@ -186,7 +183,6 @@ const createWalletAndMidnightProvider = async (
  * @returns A promise that resolves to the deployed contract.
  */
 const joinContract = async (providers: OracleProviders): Promise<DeployedOracleContract> => {
-  setNetworkId(NetworkId.TestNet);
   const oracleContract = await findDeployedContract(providers, {
     contractAddress: config.midnight.contractAddress || '',
     contract: oracleContractInstance,
@@ -197,8 +193,27 @@ const joinContract = async (providers: OracleProviders): Promise<DeployedOracleC
   return oracleContract;
 };
 
+function getNetworkId(network: string) {
+  switch (network) {
+    case '0':
+      return NetworkId.Undeployed;
+    case '1':
+      return NetworkId.DevNet;
+    case '2':
+      return NetworkId.TestNet;
+    case '3':
+      return NetworkId.MainNet;
+  }
+}
+
 if (config.chain.name === ChainName.Midnight) {
-  setNetworkId(NetworkId.TestNet);
+  const networkId = getNetworkId(config.midnight.network);
+  if (!networkId) {
+    console.error(`Invalid network id: ${config.midnight.network}`);
+    process.exit(1);
+  }
+
+  setNetworkId(networkId);
   init();
 }
 
