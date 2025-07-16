@@ -38,7 +38,7 @@ import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
 import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
-import bip39 from '@scure/bip39';
+import * as bip39 from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english';
 import type { OracleValue } from '@repo/common';
 
