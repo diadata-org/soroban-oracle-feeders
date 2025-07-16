@@ -71,6 +71,8 @@ const _descriptor_5 = new _tuple_0();
 
 const _descriptor_6 = new __compactRuntime.CompactTypeVector(10, _descriptor_5);
 
+const _descriptor_7 = new __compactRuntime.CompactTypeBoolean();
+
 class _ContractAddress_0 {
   alignment() {
     return _descriptor_0.alignment();
@@ -85,11 +87,9 @@ class _ContractAddress_0 {
   }
 }
 
-const _descriptor_7 = new _ContractAddress_0();
+const _descriptor_8 = new _ContractAddress_0();
 
-const _descriptor_8 = new __compactRuntime.CompactTypeUnsignedInteger(18446744073709551615n, 8);
-
-const _descriptor_9 = new __compactRuntime.CompactTypeBoolean();
+const _descriptor_9 = new __compactRuntime.CompactTypeUnsignedInteger(18446744073709551615n, 8);
 
 const _descriptor_10 = new __compactRuntime.CompactTypeUnsignedInteger(255n, 1);
 
@@ -111,7 +111,7 @@ class Contract {
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.originalState != undefined && contextOrig_0.transactionContext != undefined))
           __compactRuntime.type_error('get_value',
                                       'argument 1 (as invoked from Typescript)',
-                                      'counter.compact line 31 char 1',
+                                      'oracle.compact line 17 char 1',
                                       'CircuitContext',
                                       contextOrig_0)
         const context = { ...contextOrig_0 };
@@ -137,13 +137,13 @@ class Contract {
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.originalState != undefined && contextOrig_0.transactionContext != undefined))
           __compactRuntime.type_error('set_value',
                                       'argument 1 (as invoked from Typescript)',
-                                      'counter.compact line 35 char 1',
+                                      'oracle.compact line 25 char 1',
                                       'CircuitContext',
                                       contextOrig_0)
         if (!(typeof(value_0) === 'object' && typeof(value_0.value) === 'bigint' && value_0.value >= 0 && value_0.value <= 340282366920938463463374607431768211455n && typeof(value_0.timestamp) === 'bigint' && value_0.timestamp >= 0 && value_0.timestamp <= 340282366920938463463374607431768211455n))
           __compactRuntime.type_error('set_value',
                                       'argument 2 (argument 3 as invoked from Typescript)',
-                                      'counter.compact line 35 char 1',
+                                      'oracle.compact line 25 char 1',
                                       'struct OracleValue<value: Uint<0..340282366920938463463374607431768211455>, timestamp: Uint<0..340282366920938463463374607431768211455>>',
                                       value_0)
         const context = { ...contextOrig_0 };
@@ -171,13 +171,13 @@ class Contract {
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.originalState != undefined && contextOrig_0.transactionContext != undefined))
           __compactRuntime.type_error('set_multiple_values',
                                       'argument 1 (as invoked from Typescript)',
-                                      'counter.compact line 40 char 1',
+                                      'oracle.compact line 30 char 1',
                                       'CircuitContext',
                                       contextOrig_0)
         if (!(Array.isArray(batch_0) && batch_0.length === 10 && batch_0.every((t) => Array.isArray(t) && t.length === 2  && true && typeof(t[1]) === 'object' && typeof(t[1].value) === 'bigint' && t[1].value >= 0 && t[1].value <= 340282366920938463463374607431768211455n && typeof(t[1].timestamp) === 'bigint' && t[1].timestamp >= 0 && t[1].timestamp <= 340282366920938463463374607431768211455n)))
           __compactRuntime.type_error('set_multiple_values',
                                       'argument 1 (argument 2 as invoked from Typescript)',
-                                      'counter.compact line 40 char 1',
+                                      'oracle.compact line 30 char 1',
                                       'Vector<10, [Opaque<"string">, struct OracleValue<value: Uint<0..340282366920938463463374607431768211455>, timestamp: Uint<0..340282366920938463463374607431768211455>>]>',
                                       batch_0)
         const context = { ...contextOrig_0 };
@@ -204,13 +204,13 @@ class Contract {
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.originalState != undefined && contextOrig_0.transactionContext != undefined))
           __compactRuntime.type_error('change_oracle_updater',
                                       'argument 1 (as invoked from Typescript)',
-                                      'counter.compact line 48 char 1',
+                                      'oracle.compact line 38 char 1',
                                       'CircuitContext',
                                       contextOrig_0)
         if (!(typeof(new_oracle_updater_0) === 'object' && new_oracle_updater_0.bytes.buffer instanceof ArrayBuffer && new_oracle_updater_0.bytes.BYTES_PER_ELEMENT === 1 && new_oracle_updater_0.bytes.length === 32))
           __compactRuntime.type_error('change_oracle_updater',
                                       'argument 1 (argument 2 as invoked from Typescript)',
-                                      'counter.compact line 48 char 1',
+                                      'oracle.compact line 38 char 1',
                                       'struct ZswapCoinPublicKey<bytes: Bytes<32>>',
                                       new_oracle_updater_0)
         const context = { ...contextOrig_0 };
@@ -319,24 +319,44 @@ class Contract {
     return result_0;
   }
   #_get_value_0(context, partialProofData, key_0) {
-    return _descriptor_4.fromValue(Contract._query(context,
-                                                   partialProofData,
-                                                   [
-                                                    { dup: { n: 0 } },
-                                                    { idx: { cached: false,
-                                                             pushPath: false,
-                                                             path: [
-                                                                    { tag: 'value',
-                                                                      value: { value: _descriptor_10.toValue(1n),
-                                                                               alignment: _descriptor_10.alignment() } }] } },
-                                                    { idx: { cached: false,
-                                                             pushPath: false,
-                                                             path: [
-                                                                    { tag: 'value',
-                                                                      value: { value: _descriptor_2.toValue(key_0),
-                                                                               alignment: _descriptor_2.alignment() } }] } },
-                                                    { popeq: { cached: false,
-                                                               result: undefined } }]).value);
+    if (!_descriptor_7.fromValue(Contract._query(context,
+                                                 partialProofData,
+                                                 [
+                                                  { dup: { n: 0 } },
+                                                  { idx: { cached: false,
+                                                           pushPath: false,
+                                                           path: [
+                                                                  { tag: 'value',
+                                                                    value: { value: _descriptor_10.toValue(1n),
+                                                                             alignment: _descriptor_10.alignment() } }] } },
+                                                  { push: { storage: false,
+                                                            value: __compactRuntime.StateValue.newCell({ value: _descriptor_2.toValue(key_0),
+                                                                                                         alignment: _descriptor_2.alignment() }).encode() } },
+                                                  'member',
+                                                  { popeq: { cached: true,
+                                                             result: undefined } }]).value))
+    {
+      return { value: 0n, timestamp: 0n };
+    } else {
+      return _descriptor_4.fromValue(Contract._query(context,
+                                                     partialProofData,
+                                                     [
+                                                      { dup: { n: 0 } },
+                                                      { idx: { cached: false,
+                                                               pushPath: false,
+                                                               path: [
+                                                                      { tag: 'value',
+                                                                        value: { value: _descriptor_10.toValue(1n),
+                                                                                 alignment: _descriptor_10.alignment() } }] } },
+                                                      { idx: { cached: false,
+                                                               pushPath: false,
+                                                               path: [
+                                                                      { tag: 'value',
+                                                                        value: { value: _descriptor_2.toValue(key_0),
+                                                                                 alignment: _descriptor_2.alignment() } }] } },
+                                                      { popeq: { cached: false,
+                                                                 result: undefined } }]).value);
+    }
   }
   #_set_value_0(context, partialProofData, key_0, value_0) {
     this.#_assert_oracle_updater_0(context, partialProofData);
@@ -363,10 +383,10 @@ class Contract {
     this.#_assert_oracle_updater_0(context, partialProofData);
     this.#_folder_0(context,
                     partialProofData,
-                    ((context, partialProofData, t_0, pair_0) =>
+                    ((context, partialProofData, t_0, entry_0) =>
                      {
-                       const tmp_0 = pair_0[0];
-                       const tmp_1 = pair_0[1];
+                       const tmp_0 = entry_0[0];
+                       const tmp_1 = entry_0[1];
                        Contract._query(context,
                                        partialProofData,
                                        [
@@ -492,7 +512,7 @@ function ledger(state) {
       isEmpty(...args_0) {
         if (args_0.length !== 0)
           throw new __compactRuntime.CompactError(`isEmpty: expected 0 arguments, received ${args_0.length}`);
-        return _descriptor_9.fromValue(Contract._query(context,
+        return _descriptor_7.fromValue(Contract._query(context,
                                                        partialProofData,
                                                        [
                                                         { dup: { n: 0 } },
@@ -504,8 +524,8 @@ function ledger(state) {
                                                                                    alignment: _descriptor_10.alignment() } }] } },
                                                         'size',
                                                         { push: { storage: false,
-                                                                  value: __compactRuntime.StateValue.newCell({ value: _descriptor_8.toValue(0n),
-                                                                                                               alignment: _descriptor_8.alignment() }).encode() } },
+                                                                  value: __compactRuntime.StateValue.newCell({ value: _descriptor_9.toValue(0n),
+                                                                                                               alignment: _descriptor_9.alignment() }).encode() } },
                                                         'eq',
                                                         { popeq: { cached: true,
                                                                    result: undefined } }]).value);
@@ -513,7 +533,7 @@ function ledger(state) {
       size(...args_0) {
         if (args_0.length !== 0)
           throw new __compactRuntime.CompactError(`size: expected 0 arguments, received ${args_0.length}`);
-        return _descriptor_8.fromValue(Contract._query(context,
+        return _descriptor_9.fromValue(Contract._query(context,
                                                        partialProofData,
                                                        [
                                                         { dup: { n: 0 } },
@@ -531,7 +551,7 @@ function ledger(state) {
         if (args_0.length !== 1)
           throw new __compactRuntime.CompactError(`member: expected 1 argument, received ${args_0.length}`);
         const key_0 = args_0[0];
-        return _descriptor_9.fromValue(Contract._query(context,
+        return _descriptor_7.fromValue(Contract._query(context,
                                                        partialProofData,
                                                        [
                                                         { dup: { n: 0 } },
