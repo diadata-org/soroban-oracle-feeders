@@ -176,7 +176,7 @@ const config = {
     indexerWS: "wss://indexer.testnet.midnight.stakewith.us",
     proofServer: "https://prover.testnet.midnight.stakewith.us", // REQUIRED: Must have proof server running
     node: "https://node.testnet.midnight.stakewith.us",
-    secretKey: "your-secret-key",
+    seed: "your-secret-key",
     network: "2", // TestNet - NOTE: This is for testnet only
     contractAddress: "deployed-contract-address",
     maxBatchSize: 10,
@@ -185,7 +185,7 @@ const config = {
 }
 ```
 
-**Note**: The `proofServer` parameter is critical for the integration to function. Ensure you have followed the [Proof Server Setup Guide](https://docs.midnight.stakewith.us/developers/proof-server) and have the proof server running before attempting to use this integration.
+**Note**: The `proofServer` parameter is critical for the integration to function. Ensure you have followed the [Proof Server Setup Guide](https://docs.midnight.network/develop/tutorial/using/proof-server) and have the proof server running before attempting to use this integration.
 
 **Testnet Warning**: This configuration is specifically for Midnight Testnet. The network endpoints, library APIs, and contract interfaces may change as Midnight progresses toward mainnet. Always refer to the [official documentation](https://docs.midnight.network/develop/tutorial/) for the latest updates.
 
@@ -251,6 +251,16 @@ const keys = ['BTC', 'ETH', 'SOL'];
 const prices = [45000, 3000, 100];
 await update(keys, prices);
 ```
+
+## Known Issues
+
+### Network ID Configuration
+
+**Issue**: If the network ID is not set correctly in the configuration, the integration may fail without returning a clear error message when attempting to join a contract.
+
+**Problem**: When the library uses the default network ID (0) instead of the correct testnet ID (2), it will attempt to connect to the wrong network. Since the oracle contract is deployed on testnet (network ID 2), the integration will fail to locate the contract, but the error message may not clearly indicate that the network ID is incorrect.
+
+**Solution**: Always ensure the network ID is explicitly set to the correct value in your configuration:
 
 ## Error Handling
 

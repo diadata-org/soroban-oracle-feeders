@@ -33,6 +33,7 @@
     "@midnight-ntwrk/wallet-api": "5.0.0",
     "@midnight-ntwrk/zswap": "^4.0.0",
     "@repo/common": "*",
+    "@scure/bip39": "^1.6.0",
     "@stacks/auth": "^6.16.1",
     "@stacks/network": "^6.16.0",
     "@stacks/transactions": "^6.16.1",
