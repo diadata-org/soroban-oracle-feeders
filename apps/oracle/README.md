@@ -143,6 +143,8 @@ MIDNIGHT_INDEXER="https://indexer.testnet-02.midnight.network/api/v1/graphql"
 MIDNIGHT_INDEXER_WS="wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws"
 
 # Proof Server (REQUIRED - must be running)
+# For local development: MIDNIGHT_PROOF_SERVER="http://127.0.0.1:6300"
+# For Docker local usage: MIDNIGHT_PROOF_SERVER="http://host.docker.internal:6300"
 MIDNIGHT_PROOF_SERVER="http://127.0.0.1:6300"
 
 # Wallet and Contract
@@ -206,6 +208,8 @@ MIDNIGHT_CONTRACT_ADDRESS=""
 MIDNIGHT_INDEXER="https://indexer.testnet-02.midnight.network/api/v1/graphql"
 MIDNIGHT_INDEXER_WS="wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws"
 # default proof server port is 6300
+# For local development: MIDNIGHT_PROOF_SERVER="http://127.0.0.1:6300"
+# For Docker local usage: MIDNIGHT_PROOF_SERVER="http://host.docker.internal:6300"
 MIDNIGHT_PROOF_SERVER="http://127.0.0.1:6300"
 MIDNIGHT_NODE="https://rpc.testnet-02.midnight.network"
 
