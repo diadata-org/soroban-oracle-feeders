@@ -1,6 +1,6 @@
 import axios from 'axios';
 import z from 'zod';
-import config from './config';
+import config from './config.js';
 
 export const DrandResponse = z.object({
   round: z.number().int(),

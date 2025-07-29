@@ -1,22 +1,22 @@
 import { interval } from 'rxjs';
 import { createAsyncQueue, intoAsyncIterable } from '@repo/common';
-import config, { ChainName } from './config';
+import config, { ChainName } from './config.js';
 import {
   extendOracleTtl,
   getLastRound as getLastSorobanRound,
   restoreOracle,
   updateOracle as updateSorobanOracle,
-} from './oracles/soroban';
+} from './oracles/soroban.js';
 import {
   updateOracle as updateAlephiumOracle,
   getLastRound as getLastAlephiumRound,
-} from './oracles/alephium';
+} from './oracles/alephium.js';
 import {
   updateOracle as updateStacksOracle,
   getLastRound as getLastStacksRound,
-} from './oracles/stacks';
-import { fetchRandomValue } from './api';
-import { setupNock } from '../test/setupNock';
+} from './oracles/stacks.js';
+import { fetchRandomValue } from './api.js';
+import { setupNock } from '../test/setupNock.js';
 
 async function main() {
   const queue = createAsyncQueue({ onError: (e) => console.error(e) });

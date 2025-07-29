@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest';
 import { Observable, of } from 'rxjs';
 import { sleep, createAsyncQueue, intoAsyncIterable } from '../src/utils';
 
@@ -43,7 +44,7 @@ describe('Utility Functions', () => {
 
     it('should handle errors and continue processing', async () => {
       const results: string[] = [];
-      const errorSpy = jest.fn();
+      const errorSpy = vi.fn();
       const queue = createAsyncQueue({ onError: errorSpy });
 
       const task1 = () =>

@@ -1,4 +1,4 @@
-import { GqlParams } from './validation';
+import { GqlParams } from './validation.js';
 
 export enum AssetSource {
   Rest,

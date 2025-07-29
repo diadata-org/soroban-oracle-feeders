@@ -1,8 +1,8 @@
 import { MAP_ENTRY_DEPOSIT, NodeProvider, web3 } from '@alephium/web3';
 import { PrivateKeyWallet } from '@alephium/web3-wallet';
 import { DIARandomOracle, DIARandomOracleInstance } from '@repo/common';
-import config, { ChainName } from '../config';
-import type { DrandResponse } from '../api';
+import config, { ChainName } from '../config.js';
+import type { DrandResponse } from '../api.js';
 import { bigint } from 'zod';
 
 let nodeProvider: NodeProvider;

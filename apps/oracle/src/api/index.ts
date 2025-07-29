@@ -1,7 +1,7 @@
-import { type Asset, AssetSource } from '../assets';
-import config from '../config';
-import { getAssetQuotation, getGraphqlAssetQuotation } from './dia';
-import * as lumina from './lumina';
+import { type Asset, AssetSource } from '../assets.js';
+import config from '../config.js';
+import { getAssetQuotation, getGraphqlAssetQuotation } from './dia.js';
+import * as lumina from './lumina.js';
 
 export async function getAssetPrices(assets: readonly Asset[]) {
   if (config.assets.source === AssetSource.Lumina) {

@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   BASE_FEE,
   contract,
@@ -18,91 +19,91 @@ import {
 } from '../src/soroban';
 import { sleep } from '../src/utils';
 
-jest.mock('@stellar/stellar-sdk', () => {
-  const originalModule = jest.requireActual('@stellar/stellar-sdk');
+vi.mock('@stellar/stellar-sdk', async () => {
+  const originalModule = await vi.importActual('@stellar/stellar-sdk') as any;
   return {
     ...originalModule,
-    SorobanDataBuilder: jest.fn().mockImplementation(() => ({
-      setReadOnly: jest.fn().mockReturnThis(),
-      setReadWrite: jest.fn().mockReturnThis(),
-      build: jest.fn().mockReturnThis(),
+    SorobanDataBuilder: vi.fn().mockImplementation(() => ({
+      setReadOnly: vi.fn().mockReturnThis(),
+      setReadWrite: vi.fn().mockReturnThis(),
+      build: vi.fn().mockReturnThis(),
     })),
-    TransactionBuilder: jest.fn().mockImplementation(() => ({
-      addOperation: jest.fn().mockReturnThis(),
-      setSorobanData: jest.fn().mockReturnThis(),
-      setTimeout: jest.fn().mockReturnThis(),
-      build: jest.fn().mockReturnThis(),
-      sign: jest.fn(), // Mock sign method on TransactionBuilder
+    TransactionBuilder: vi.fn().mockImplementation(() => ({
+      addOperation: vi.fn().mockReturnThis(),
+      setSorobanData: vi.fn().mockReturnThis(),
+      setTimeout: vi.fn().mockReturnThis(),
+      build: vi.fn().mockReturnThis(),
+      sign: vi.fn(), // Mock sign method on TransactionBuilder
     })),
     rpc: {
-      Server: jest.fn().mockImplementation(() => ({
-        sendTransaction: jest.fn().mockResolvedValue({
+      Server: vi.fn().mockImplementation(() => ({
+        sendTransaction: vi.fn().mockResolvedValue({
           status: 'PENDING', // Mock status to return 'PENDING'
           hash: 'mockTransactionHash',
           errorResult: null,
         }),
-        getTransaction: jest.fn().mockResolvedValue({
+        getTransaction: vi.fn().mockResolvedValue({
           status: 'SUCCESS',
           resultXdr: 'mockResultXdr',
           resultMetaXdr: 'mockResultMetaXdr',
         }),
-        getWasm: jest.fn().mockResolvedValue({}), // Mock getWasm
-        getLatestLedger: jest.fn().mockResolvedValue(100), // Mock getLatestLedger
-        getLedgerEntries: jest.fn().mockResolvedValue({
+        getWasm: vi.fn().mockResolvedValue({}), // Mock getWasm
+        getLatestLedger: vi.fn().mockResolvedValue(100), // Mock getLatestLedger
+        getLedgerEntries: vi.fn().mockResolvedValue({
           entries: [
             {
               liveUntilLedgerSeq: 200, // Mock necessary property
             },
           ],
         }),
-        getAccount: jest.fn().mockResolvedValue({
+        getAccount: vi.fn().mockResolvedValue({
           sequence: '1',
         }),
-        prepareTransaction: jest.fn().mockResolvedValue({
-          sign: jest.fn(),
+        prepareTransaction: vi.fn().mockResolvedValue({
+          sign: vi.fn(),
         }),
       })),
     },
     Operation: {
-      extendFootprintTtl: jest.fn(),
-      restoreFootprint: jest.fn(),
+      extendFootprintTtl: vi.fn(),
+      restoreFootprint: vi.fn(),
     },
-    Contract: jest.fn().mockImplementation(() => ({
-      getFootprint: jest.fn().mockReturnValue({
-        contractCode: jest.fn().mockImplementation((data) => {
+    Contract: vi.fn().mockImplementation(() => ({
+      getFootprint: vi.fn().mockReturnValue({
+        contractCode: vi.fn().mockImplementation((data) => {
           return new originalModule.xdr.LedgerKey('contractCode', data);
         }),
       }),
-      contractId: jest.fn().mockReturnValue('mockContractId'),
+      contractId: vi.fn().mockReturnValue('mockContractId'),
     })),
     Keypair: {
-      fromSecret: jest.fn().mockReturnValue({
-        publicKey: jest
+      fromSecret: vi.fn().mockReturnValue({
+        publicKey: vi
           .fn()
           .mockReturnValue('GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'),
-        sign: jest.fn(),
+        sign: vi.fn(),
       }),
     },
     xdr: {
       ...originalModule.xdr,
       LedgerKey: {
-        contractCode: jest.fn().mockImplementation((data) => {
+        contractCode: vi.fn().mockImplementation((data) => {
           return new originalModule.xdr.LedgerKey('contractCode', data);
         }),
       },
-      LedgerEntryData: jest.fn().mockImplementation(() => ({
-        contractData: jest.fn().mockReturnThis(),
-        val: jest.fn().mockReturnThis(),
-        instance: jest.fn().mockReturnThis(),
-        executable: jest.fn().mockReturnThis(),
-        wasmHash: jest.fn().mockReturnValue('mockWasmHash'),
+      LedgerEntryData: vi.fn().mockImplementation(() => ({
+        contractData: vi.fn().mockReturnThis(),
+        val: vi.fn().mockReturnThis(),
+        instance: vi.fn().mockReturnThis(),
+        executable: vi.fn().mockReturnThis(),
+        wasmHash: vi.fn().mockReturnValue('mockWasmHash'),
       })),
     },
   };
 });
 
-jest.mock('../src/utils', () => ({
-  sleep: jest.fn(),
+vi.mock('../src/utils', () => ({
+  sleep: vi.fn(),
 }));
 
 describe('Soroban Functions', () => {
@@ -128,28 +129,28 @@ describe('Soroban Functions', () => {
       DEFAULT_TX_OPTIONS,
     );
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('extendInstanceTtl', () => {
     it('should extend the TTL of the contract instance', async () => {
       const wasmEntry = {
         liveUntilLedgerSeq: 150,
-        contractData: jest.fn().mockReturnThis(),
+        contractData: vi.fn().mockReturnThis(),
         val: {
-          contractData: jest.fn().mockReturnThis(),
-          instance: jest.fn().mockReturnThis(),
-          executable: jest.fn().mockReturnThis(),
-          wasmHash: jest.fn().mockReturnValue('mockWasmHash'),
-          val: jest.fn().mockReturnThis(),
+          contractData: vi.fn().mockReturnThis(),
+          instance: vi.fn().mockReturnThis(),
+          executable: vi.fn().mockReturnThis(),
+          wasmHash: vi.fn().mockReturnValue('mockWasmHash'),
+          val: vi.fn().mockReturnThis(),
         },
       };
       const latestLedger = { sequence: 100 };
 
-      (mockServer.getLatestLedger as jest.Mock).mockResolvedValue(latestLedger);
-      (mockServer.getLedgerEntries as jest.Mock).mockResolvedValue({ entries: [wasmEntry] });
-      (mockServer.getAccount as jest.Mock).mockResolvedValue({ sequence: '1' });
-      (mockServer.prepareTransaction as jest.Mock).mockResolvedValue(mockTx);
+      (mockServer.getLatestLedger as any).mockResolvedValue(latestLedger);
+      (mockServer.getLedgerEntries as any).mockResolvedValue({ entries: [wasmEntry] });
+      (mockServer.getAccount as any).mockResolvedValue({ sequence: '1' });
+      (mockServer.prepareTransaction as any).mockResolvedValue(mockTx);
 
       await extendInstanceTtl({
         server: mockServer,
@@ -167,8 +168,8 @@ describe('Soroban Functions', () => {
       const wasmEntry = { liveUntilLedgerSeq: 100 };
       const latestLedger = { sequence: 101 };
 
-      (mockServer.getLatestLedger as jest.Mock).mockResolvedValue(latestLedger);
-      (mockServer.getLedgerEntries as jest.Mock).mockResolvedValue({ entries: [wasmEntry] });
+      (mockServer.getLatestLedger as any).mockResolvedValue(latestLedger);
+      (mockServer.getLedgerEntries as any).mockResolvedValue({ entries: [wasmEntry] });
 
       await expect(
         extendInstanceTtl({
@@ -187,19 +188,19 @@ describe('Soroban Functions', () => {
       const wasmEntry = {
         liveUntilLedgerSeq: 100,
         val: {
-          contractData: jest.fn().mockReturnThis(),
-          instance: jest.fn().mockReturnThis(),
-          executable: jest.fn().mockReturnThis(),
-          wasmHash: jest.fn().mockReturnValue('mockWasmHash'),
-          val: jest.fn().mockReturnThis(),
+          contractData: vi.fn().mockReturnThis(),
+          instance: vi.fn().mockReturnThis(),
+          executable: vi.fn().mockReturnThis(),
+          wasmHash: vi.fn().mockReturnValue('mockWasmHash'),
+          val: vi.fn().mockReturnThis(),
         },
       };
       const latestLedger = { sequence: 101 };
 
-      (mockServer.getLatestLedger as jest.Mock).mockResolvedValue(latestLedger);
-      (mockServer.getLedgerEntries as jest.Mock).mockResolvedValue({ entries: [wasmEntry] });
-      (mockServer.getAccount as jest.Mock).mockResolvedValue({ sequence: '1' });
-      (mockServer.prepareTransaction as jest.Mock).mockResolvedValue(mockTx);
+      (mockServer.getLatestLedger as any).mockResolvedValue(latestLedger);
+      (mockServer.getLedgerEntries as any).mockResolvedValue({ entries: [wasmEntry] });
+      (mockServer.getAccount as any).mockResolvedValue({ sequence: '1' });
+      (mockServer.prepareTransaction as any).mockResolvedValue(mockTx);
 
       await restoreInstance(mockServer, mockKeypair, mockContract);
 
@@ -212,8 +213,8 @@ describe('Soroban Functions', () => {
       const wasmEntry = { liveUntilLedgerSeq: 200, val: {} };
       const latestLedger = { sequence: 100 };
 
-      (mockServer.getLatestLedger as jest.Mock).mockResolvedValue(latestLedger);
-      (mockServer.getLedgerEntries as jest.Mock).mockResolvedValue({ entries: [wasmEntry] });
+      (mockServer.getLatestLedger as any).mockResolvedValue(latestLedger);
+      (mockServer.getLedgerEntries as any).mockResolvedValue({ entries: [wasmEntry] });
 
       await restoreInstance(mockServer, mockKeypair, mockContract);
 

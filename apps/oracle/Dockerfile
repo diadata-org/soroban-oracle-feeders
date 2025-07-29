@@ -21,8 +21,9 @@ FROM base AS runner
 WORKDIR /app
 
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nodejs
+RUN mkdir -p /app/midnight-level-db && chown -R nodejs:nodejs /app
 USER nodejs
 COPY --from=installer /app .
 
 ENV NODE_ENV=production
-CMD ["node", "apps/oracle/build/src/index.js"]
+CMD ["node", "apps/oracle/build/index.js"]

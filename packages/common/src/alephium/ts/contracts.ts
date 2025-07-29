@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import { Contract, ContractFactory } from '@alephium/web3';
-import { DIAOracle, DIAOracleBaseTest, DIARandomOracle } from '.';
+import { DIAOracle, DIAOracleBaseTest, DIARandomOracle } from './index.js';
 
 let contracts: ContractFactory<any>[] | undefined = undefined;
 export function getContractByCodeHash(codeHash: string): Contract {

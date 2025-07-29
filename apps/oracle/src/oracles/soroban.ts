@@ -6,7 +6,7 @@ import {
   restoreInstance,
   submitSorobanTx,
 } from '@repo/common';
-import config, { ChainName } from '../config';
+import config, { ChainName } from '../config.js';
 
 const { soroban } = config.chain;
 

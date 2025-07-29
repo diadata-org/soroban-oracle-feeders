@@ -1,5 +1,5 @@
 import axios from 'axios';
-import config from './config';
+import config from './config.js';
 import z from 'zod';
 
 const CoingeckoResponse = z.record(

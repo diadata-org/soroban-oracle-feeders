@@ -11,7 +11,7 @@ import {
   TransactionBuilder,
   xdr,
 } from '@stellar/stellar-sdk';
-import { sleep } from './utils';
+import { sleep } from './utils.js';
 
 export const DAY_IN_LEDGERS = 17280;
 export const DEFAULT_TX_OPTIONS = { fee: BASE_FEE, networkPassphrase: Networks.TESTNET };

@@ -1,8 +1,8 @@
 import { Pact, createClient, createSignWithKeypair } from '@kadena/client';
 import { IKeyPair, ChainId } from '@kadena/types';
 import { submitKadenaTx } from '@repo/common';
-import config from '../config';
-import { splitIntoFixedBatches } from '../utils';
+import config from '../config.js';
+import { splitIntoFixedBatches } from '../utils.js';
 
 const { kadena } = config.chain;
 

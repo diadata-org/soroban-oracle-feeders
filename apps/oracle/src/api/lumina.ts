@@ -1,5 +1,5 @@
 import { createPublicClient, defineChain, formatUnits, http, parseAbi } from 'viem';
-import config from '../config';
+import config from '../config.js';
 
 const diaLasernet = defineChain({
   id: 1050,

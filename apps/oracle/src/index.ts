@@ -1,11 +1,11 @@
 import { interval, map, merge } from 'rxjs';
 import { createAsyncQueue, intoAsyncIterable } from '@repo/common';
-import { getAssetPrices } from './api';
-import type { Asset } from './assets';
-import config, { ChainName } from './config';
-import { getCmcPrice, getCoingeckoPrice } from './guardian';
-import { alephium, kadena, midnight, opnet, soroban, stacks } from './oracles';
-import { setupNock } from '../test/setupNock';
+import { getAssetPrices } from './api/index.js';
+import type { Asset } from './assets.js';
+import config, { ChainName } from './config.js';
+import { getCmcPrice, getCoingeckoPrice } from './guardian.js';
+import { alephium, kadena, midnight, opnet, soroban, stacks } from './oracles/index.js';
+// import { setupNock } from '../test/setupNock';
 
 type OracleUpdateFn = (keys: string[], values: number[]) => Promise<void>;
 
@@ -117,10 +117,10 @@ export async function update(published: Map<string, number>, prices: Map<string,
 async function main() {
   const queue = createAsyncQueue({ onError: (e) => console.error(e) });
 
-  if (process.env.RUN_MOCK == 'true') {
-    // e2e test
-    setupNock();
-  }
+      if (process.env.RUN_MOCK == 'true') {
+      // e2e test
+      //setupNock();
+    }
 
   if (config.chain.name === ChainName.Soroban) {
     // soroban specific

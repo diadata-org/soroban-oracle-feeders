@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import { Address, HexString, Val, Struct } from '@alephium/web3';
-import { default as allStructsJson } from '../structs.ral.json';
+import { default as allStructsJson } from '../structs.ral.json' with { type: 'json' };
 export const AllStructs = allStructsJson.map((json) => Struct.fromJson(json));
 export interface DIAOracleValue extends Record<string, Val> {
   value: bigint;

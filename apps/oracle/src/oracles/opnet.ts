@@ -9,8 +9,8 @@ import {
 } from '@btc-vision/transaction';
 import { Network, networks } from 'bitcoinjs-lib';
 import crypto from 'crypto';
-import config, { ChainName } from '../config';
-import { splitIntoFixedBatches } from '../utils';
+import config, { ChainName } from '../config.js';
+import { splitIntoFixedBatches } from '../utils.js';
 
 const { opnet } = config.chain;
 

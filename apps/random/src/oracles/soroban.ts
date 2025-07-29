@@ -14,8 +14,8 @@ import {
   restoreInstance,
   submitSorobanTx as submitTx,
 } from '@repo/common';
-import type { DrandResponse } from '../api';
-import config, { ChainName } from '../config';
+import type { DrandResponse } from '../api.js';
+import config, { ChainName } from '../config.js';
 
 let server: rpc.Server;
 let keypair: Keypair;

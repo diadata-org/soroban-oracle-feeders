@@ -1,4 +1,4 @@
-import config, { ChainName } from '../config';
+import config, { ChainName } from '../config.js';
 import {
   splitIntoFixedBatches,
   type OracleContract,
@@ -6,8 +6,9 @@ import {
   type OracleProviders,
   type DeployedOracleContract,
   OracleCircuits,
-} from '../utils';
+} from '../utils.js';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 /** Midnight library imports */
 import {
@@ -43,7 +44,7 @@ import type { OracleValue } from '@repo/common';
 
 const contractConfig = {
   privateStateStoreName: 'OraclePrivateState',
-  zkConfigPath: path.join(process.cwd(), 'src/midnight_src'),
+  zkConfigPath: path.join(path.dirname(fileURLToPath(import.meta.url)), '../midnight_src'),
 };
 
 export const oracleContractInstance: OracleContract = new Oracle.Contract(witnesses);

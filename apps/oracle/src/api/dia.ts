@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { request, gql } from 'graphql-request';
-import config from '../config';
-import { Quotation, GraphqlQuotation, GqlParams } from '../validation';
+import config from '../config.js';
+import { Quotation, GraphqlQuotation, GqlParams } from '../validation.js';
 
 export async function getAssetQuotation(network: string, address: string) {
   const url = `${config.api.http.url}/${network}/${address}`;

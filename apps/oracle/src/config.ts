@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { TransactionBuilder } from '@btc-vision/transaction';
-import { AssetSource, parseAssets } from './assets';
-import { parseAddress } from './utils';
+import { AssetSource, parseAssets } from './assets.js';
+import { parseAddress } from './utils.js';
 
 export enum ChainName {
   Kadena = 'kadena',

@@ -13,8 +13,8 @@ import {
 } from '@stacks/transactions';
 import { StacksDevnet, StacksMainnet, StacksTestnet } from '@stacks/network';
 import type { TransactionResults } from '@stacks/stacks-blockchain-api-types';
-import config, { ChainName } from '../config';
-import { splitIntoFixedBatches } from '../utils';
+import config, { ChainName } from '../config.js';
+import { splitIntoFixedBatches } from '../utils.js';
 
 const { stacks } = config.chain;
 

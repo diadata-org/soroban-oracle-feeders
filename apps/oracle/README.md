@@ -146,7 +146,7 @@ MIDNIGHT_INDEXER_WS="wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws
 MIDNIGHT_PROOF_SERVER="http://127.0.0.1:6300"
 
 # Wallet and Contract
-MIDNIGHT_PRIVATE_KEY="your-private-key-here"
+MIDNIGHT_SEED="your-wallet-seed-here"
 MIDNIGHT_CONTRACT_ADDRESS="deployed-oracle-contract-address"
 
 # Performance Settings
@@ -201,7 +201,7 @@ OPNET_FEE_RATE=""
 OPNET_PRIORITY_FEE=""
 
 MIDNIGHT_NETWORK="2"
-MIDNIGHT_PRIVATE_KEY=""
+MIDNIGHT_SEED=""
 MIDNIGHT_CONTRACT_ADDRESS=""
 MIDNIGHT_INDEXER="https://indexer.testnet-02.midnight.network/api/v1/graphql"
 MIDNIGHT_INDEXER_WS="wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws"

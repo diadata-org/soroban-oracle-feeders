@@ -1,8 +1,8 @@
 import { MAP_ENTRY_DEPOSIT, NodeProvider, stringToHex, web3 } from '@alephium/web3';
 import { PrivateKeyWallet } from '@alephium/web3-wallet';
 import { DIAOracle, DIAOracleInstance } from '@repo/common';
-import config, { ChainName } from '../config';
-import { splitIntoFixedBatches, fillArray } from '../utils';
+import config, { ChainName } from '../config.js';
+import { splitIntoFixedBatches, fillArray } from '../utils.js';
 
 let nodeProvider: NodeProvider;
 let wallet: PrivateKeyWallet;

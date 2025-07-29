@@ -31,9 +31,9 @@ import {
   addStdIdToFields,
   encodeContractFields,
 } from '@alephium/web3';
-import { default as DIARandomOracleContractJson } from '../DIARandomOracle.ral.json';
-import { getContractByCodeHash } from './contracts';
-import { DIAOracleValue, DIARandomValue, AllStructs } from './types';
+import { default as DIARandomOracleContractJson } from '../DIARandomOracle.ral.json' with { type: 'json' };
+import { getContractByCodeHash } from './contracts.js';
+import { DIAOracleValue, DIARandomValue, AllStructs } from './types.js';
 import { RalphMap } from '@alephium/web3';
 
 // Custom types for the contract

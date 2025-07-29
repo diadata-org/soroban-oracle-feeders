@@ -8,8 +8,8 @@ import {
   cvToValue,
 } from '@stacks/transactions';
 import { StacksDevnet, StacksMainnet } from '@stacks/network';
-import config, { ChainName } from '../config';
-import { bufferFromHex } from '@stacks/transactions/dist/cl';
+import config, { ChainName } from '../config.js';
+import { bufferFromHex } from '@stacks/transactions/dist/cl.js';
 
 let network: StacksMainnet;
 let backupNetwork: StacksMainnet | undefined;
