@@ -73,6 +73,8 @@ const _descriptor_6 = new __compactRuntime.CompactTypeVector(10, _descriptor_5);
 
 const _descriptor_7 = new __compactRuntime.CompactTypeBoolean();
 
+const _descriptor_8 = new __compactRuntime.CompactTypeUnsignedInteger(18446744073709551615n, 8);
+
 class _ContractAddress_0 {
   alignment() {
     return _descriptor_0.alignment();
@@ -87,33 +89,35 @@ class _ContractAddress_0 {
   }
 }
 
-const _descriptor_8 = new _ContractAddress_0();
-
-const _descriptor_9 = new __compactRuntime.CompactTypeUnsignedInteger(18446744073709551615n, 8);
+const _descriptor_9 = new _ContractAddress_0();
 
 const _descriptor_10 = new __compactRuntime.CompactTypeUnsignedInteger(255n, 1);
 
 class Contract {
   witnesses;
   constructor(...args_0) {
-    if (args_0.length !== 1)
+    if (args_0.length !== 1) {
       throw new __compactRuntime.CompactError(`Contract constructor: expected 1 argument, received ${args_0.length}`);
+    }
     const witnesses_0 = args_0[0];
-    if (typeof(witnesses_0) !== 'object')
+    if (typeof(witnesses_0) !== 'object') {
       throw new __compactRuntime.CompactError('first (witnesses) argument to Contract constructor is not an object');
+    }
     this.witnesses = witnesses_0;
     this.circuits = {
       get_value: (...args_1) => {
-        if (args_1.length !== 2)
+        if (args_1.length !== 2) {
           throw new __compactRuntime.CompactError(`get_value: expected 2 arguments (as invoked from Typescript), received ${args_1.length}`);
+        }
         const contextOrig_0 = args_1[0];
         const key_0 = args_1[1];
-        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.originalState != undefined && contextOrig_0.transactionContext != undefined))
+        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.originalState != undefined && contextOrig_0.transactionContext != undefined)) {
           __compactRuntime.type_error('get_value',
                                       'argument 1 (as invoked from Typescript)',
                                       'oracle.compact line 17 char 1',
                                       'CircuitContext',
                                       contextOrig_0)
+        }
         const context = { ...contextOrig_0 };
         const partialProofData = {
           input: {
@@ -124,28 +128,31 @@ class Contract {
           publicTranscript: [],
           privateTranscriptOutputs: []
         };
-        const result_0 = this.#_get_value_0(context, partialProofData, key_0);
+        const result_0 = this._get_value_0(context, partialProofData, key_0);
         partialProofData.output = { value: _descriptor_4.toValue(result_0), alignment: _descriptor_4.alignment() };
         return { result: result_0, context: context, proofData: partialProofData };
       },
       set_value: (...args_1) => {
-        if (args_1.length !== 3)
+        if (args_1.length !== 3) {
           throw new __compactRuntime.CompactError(`set_value: expected 3 arguments (as invoked from Typescript), received ${args_1.length}`);
+        }
         const contextOrig_0 = args_1[0];
         const key_0 = args_1[1];
         const value_0 = args_1[2];
-        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.originalState != undefined && contextOrig_0.transactionContext != undefined))
+        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.originalState != undefined && contextOrig_0.transactionContext != undefined)) {
           __compactRuntime.type_error('set_value',
                                       'argument 1 (as invoked from Typescript)',
                                       'oracle.compact line 25 char 1',
                                       'CircuitContext',
                                       contextOrig_0)
-        if (!(typeof(value_0) === 'object' && typeof(value_0.value) === 'bigint' && value_0.value >= 0 && value_0.value <= 340282366920938463463374607431768211455n && typeof(value_0.timestamp) === 'bigint' && value_0.timestamp >= 0 && value_0.timestamp <= 340282366920938463463374607431768211455n))
+        }
+        if (!(typeof(value_0) === 'object' && typeof(value_0.value) === 'bigint' && value_0.value >= 0n && value_0.value <= 340282366920938463463374607431768211455n && typeof(value_0.timestamp) === 'bigint' && value_0.timestamp >= 0n && value_0.timestamp <= 340282366920938463463374607431768211455n)) {
           __compactRuntime.type_error('set_value',
                                       'argument 2 (argument 3 as invoked from Typescript)',
                                       'oracle.compact line 25 char 1',
                                       'struct OracleValue<value: Uint<0..340282366920938463463374607431768211455>, timestamp: Uint<0..340282366920938463463374607431768211455>>',
                                       value_0)
+        }
         const context = { ...contextOrig_0 };
         const partialProofData = {
           input: {
@@ -156,30 +163,33 @@ class Contract {
           publicTranscript: [],
           privateTranscriptOutputs: []
         };
-        const result_0 = this.#_set_value_0(context,
-                                            partialProofData,
-                                            key_0,
-                                            value_0);
+        const result_0 = this._set_value_0(context,
+                                           partialProofData,
+                                           key_0,
+                                           value_0);
         partialProofData.output = { value: [], alignment: [] };
         return { result: result_0, context: context, proofData: partialProofData };
       },
       set_multiple_values: (...args_1) => {
-        if (args_1.length !== 2)
+        if (args_1.length !== 2) {
           throw new __compactRuntime.CompactError(`set_multiple_values: expected 2 arguments (as invoked from Typescript), received ${args_1.length}`);
+        }
         const contextOrig_0 = args_1[0];
         const batch_0 = args_1[1];
-        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.originalState != undefined && contextOrig_0.transactionContext != undefined))
+        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.originalState != undefined && contextOrig_0.transactionContext != undefined)) {
           __compactRuntime.type_error('set_multiple_values',
                                       'argument 1 (as invoked from Typescript)',
                                       'oracle.compact line 30 char 1',
                                       'CircuitContext',
                                       contextOrig_0)
-        if (!(Array.isArray(batch_0) && batch_0.length === 10 && batch_0.every((t) => Array.isArray(t) && t.length === 2  && true && typeof(t[1]) === 'object' && typeof(t[1].value) === 'bigint' && t[1].value >= 0 && t[1].value <= 340282366920938463463374607431768211455n && typeof(t[1].timestamp) === 'bigint' && t[1].timestamp >= 0 && t[1].timestamp <= 340282366920938463463374607431768211455n)))
+        }
+        if (!(Array.isArray(batch_0) && batch_0.length === 10 && batch_0.every((t) => Array.isArray(t) && t.length === 2  && true && typeof(t[1]) === 'object' && typeof(t[1].value) === 'bigint' && t[1].value >= 0n && t[1].value <= 340282366920938463463374607431768211455n && typeof(t[1].timestamp) === 'bigint' && t[1].timestamp >= 0n && t[1].timestamp <= 340282366920938463463374607431768211455n))) {
           __compactRuntime.type_error('set_multiple_values',
                                       'argument 1 (argument 2 as invoked from Typescript)',
                                       'oracle.compact line 30 char 1',
                                       'Vector<10, [Opaque<"string">, struct OracleValue<value: Uint<0..340282366920938463463374607431768211455>, timestamp: Uint<0..340282366920938463463374607431768211455>>]>',
                                       batch_0)
+        }
         const context = { ...contextOrig_0 };
         const partialProofData = {
           input: {
@@ -190,29 +200,32 @@ class Contract {
           publicTranscript: [],
           privateTranscriptOutputs: []
         };
-        const result_0 = this.#_set_multiple_values_0(context,
-                                                      partialProofData,
-                                                      batch_0);
+        const result_0 = this._set_multiple_values_0(context,
+                                                     partialProofData,
+                                                     batch_0);
         partialProofData.output = { value: [], alignment: [] };
         return { result: result_0, context: context, proofData: partialProofData };
       },
       change_oracle_updater: (...args_1) => {
-        if (args_1.length !== 2)
+        if (args_1.length !== 2) {
           throw new __compactRuntime.CompactError(`change_oracle_updater: expected 2 arguments (as invoked from Typescript), received ${args_1.length}`);
+        }
         const contextOrig_0 = args_1[0];
         const new_oracle_updater_0 = args_1[1];
-        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.originalState != undefined && contextOrig_0.transactionContext != undefined))
+        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.originalState != undefined && contextOrig_0.transactionContext != undefined)) {
           __compactRuntime.type_error('change_oracle_updater',
                                       'argument 1 (as invoked from Typescript)',
                                       'oracle.compact line 38 char 1',
                                       'CircuitContext',
                                       contextOrig_0)
-        if (!(typeof(new_oracle_updater_0) === 'object' && new_oracle_updater_0.bytes.buffer instanceof ArrayBuffer && new_oracle_updater_0.bytes.BYTES_PER_ELEMENT === 1 && new_oracle_updater_0.bytes.length === 32))
+        }
+        if (!(typeof(new_oracle_updater_0) === 'object' && new_oracle_updater_0.bytes.buffer instanceof ArrayBuffer && new_oracle_updater_0.bytes.BYTES_PER_ELEMENT === 1 && new_oracle_updater_0.bytes.length === 32)) {
           __compactRuntime.type_error('change_oracle_updater',
                                       'argument 1 (argument 2 as invoked from Typescript)',
                                       'oracle.compact line 38 char 1',
                                       'struct ZswapCoinPublicKey<bytes: Bytes<32>>',
                                       new_oracle_updater_0)
+        }
         const context = { ...contextOrig_0 };
         const partialProofData = {
           input: {
@@ -223,9 +236,9 @@ class Contract {
           publicTranscript: [],
           privateTranscriptOutputs: []
         };
-        const result_0 = this.#_change_oracle_updater_0(context,
-                                                        partialProofData,
-                                                        new_oracle_updater_0);
+        const result_0 = this._change_oracle_updater_0(context,
+                                                       partialProofData,
+                                                       new_oracle_updater_0);
         partialProofData.output = { value: [], alignment: [] };
         return { result: result_0, context: context, proofData: partialProofData };
       }
@@ -238,8 +251,9 @@ class Contract {
     };
   }
   initialState(...args_0) {
-    if (args_0.length !== 1)
+    if (args_0.length !== 1) {
       throw new __compactRuntime.CompactError(`Contract state constructor: expected 1 argument (as invoked from Typescript), received ${args_0.length}`);
+    }
     const constructorContext_0 = args_0[0];
     if (typeof(constructorContext_0) !== 'object') {
       throw new __compactRuntime.CompactError(`Contract state constructor: expected 'constructorContext' in argument 1 (as invoked from Typescript) to be an object`);
@@ -292,7 +306,7 @@ class Contract {
                                         new __compactRuntime.StateMap()
                                       ).encode() } },
                      { ins: { cached: false, n: 1 } }]);
-    const tmp_0 = this.#_ownPublicKey_0(context, partialProofData);
+    const tmp_0 = this._ownPublicKey_0(context, partialProofData);
     Contract._query(context,
                     partialProofData,
                     [
@@ -310,7 +324,7 @@ class Contract {
       currentZswapLocalState: context.currentZswapLocalState
     }
   }
-  #_ownPublicKey_0(context, partialProofData) {
+  _ownPublicKey_0(context, partialProofData) {
     const result_0 = __compactRuntime.ownPublicKey(context);
     partialProofData.privateTranscriptOutputs.push({
       value: _descriptor_1.toValue(result_0),
@@ -318,7 +332,7 @@ class Contract {
     });
     return result_0;
   }
-  #_get_value_0(context, partialProofData, key_0) {
+  _get_value_0(context, partialProofData, key_0) {
     if (!_descriptor_7.fromValue(Contract._query(context,
                                                  partialProofData,
                                                  [
@@ -358,8 +372,8 @@ class Contract {
                                                                  result: undefined } }]).value);
     }
   }
-  #_set_value_0(context, partialProofData, key_0, value_0) {
-    this.#_assert_oracle_updater_0(context, partialProofData);
+  _set_value_0(context, partialProofData, key_0, value_0) {
+    this._assert_oracle_updater_0(context, partialProofData);
     Contract._query(context,
                     partialProofData,
                     [
@@ -379,39 +393,39 @@ class Contract {
                      { ins: { cached: true, n: 1 } }]);
     return [];
   }
-  #_set_multiple_values_0(context, partialProofData, batch_0) {
-    this.#_assert_oracle_updater_0(context, partialProofData);
-    this.#_folder_0(context,
-                    partialProofData,
-                    ((context, partialProofData, t_0, entry_0) =>
-                     {
-                       const tmp_0 = entry_0[0];
-                       const tmp_1 = entry_0[1];
-                       Contract._query(context,
-                                       partialProofData,
-                                       [
-                                        { idx: { cached: false,
-                                                 pushPath: true,
-                                                 path: [
-                                                        { tag: 'value',
-                                                          value: { value: _descriptor_10.toValue(1n),
-                                                                   alignment: _descriptor_10.alignment() } }] } },
-                                        { push: { storage: false,
-                                                  value: __compactRuntime.StateValue.newCell({ value: _descriptor_2.toValue(tmp_0),
-                                                                                               alignment: _descriptor_2.alignment() }).encode() } },
-                                        { push: { storage: true,
-                                                  value: __compactRuntime.StateValue.newCell({ value: _descriptor_4.toValue(tmp_1),
-                                                                                               alignment: _descriptor_4.alignment() }).encode() } },
-                                        { ins: { cached: false, n: 1 } },
-                                        { ins: { cached: true, n: 1 } }]);
-                       return t_0;
-                     }),
-                    [],
-                    batch_0);
+  _set_multiple_values_0(context, partialProofData, batch_0) {
+    this._assert_oracle_updater_0(context, partialProofData);
+    this._folder_0(context,
+                   partialProofData,
+                   ((context, partialProofData, t_0, entry_0) =>
+                    {
+                      const tmp_0 = entry_0[0];
+                      const tmp_1 = entry_0[1];
+                      Contract._query(context,
+                                      partialProofData,
+                                      [
+                                       { idx: { cached: false,
+                                                pushPath: true,
+                                                path: [
+                                                       { tag: 'value',
+                                                         value: { value: _descriptor_10.toValue(1n),
+                                                                  alignment: _descriptor_10.alignment() } }] } },
+                                       { push: { storage: false,
+                                                 value: __compactRuntime.StateValue.newCell({ value: _descriptor_2.toValue(tmp_0),
+                                                                                              alignment: _descriptor_2.alignment() }).encode() } },
+                                       { push: { storage: true,
+                                                 value: __compactRuntime.StateValue.newCell({ value: _descriptor_4.toValue(tmp_1),
+                                                                                              alignment: _descriptor_4.alignment() }).encode() } },
+                                       { ins: { cached: false, n: 1 } },
+                                       { ins: { cached: true, n: 1 } }]);
+                      return t_0;
+                    }),
+                   [],
+                   batch_0);
     return [];
   }
-  #_change_oracle_updater_0(context, partialProofData, new_oracle_updater_0) {
-    this.#_assert_oracle_updater_0(context, partialProofData);
+  _change_oracle_updater_0(context, partialProofData, new_oracle_updater_0) {
+    this._assert_oracle_updater_0(context, partialProofData);
     Contract._query(context,
                     partialProofData,
                     [
@@ -424,34 +438,33 @@ class Contract {
                      { ins: { cached: false, n: 1 } }]);
     return [];
   }
-  #_assert_oracle_updater_0(context, partialProofData) {
-    __compactRuntime.assert(this.#_equal_0(this.#_ownPublicKey_0(context,
-                                                                 partialProofData),
-                                           _descriptor_1.fromValue(Contract._query(context,
-                                                                                   partialProofData,
-                                                                                   [
-                                                                                    { dup: { n: 0 } },
-                                                                                    { idx: { cached: false,
-                                                                                             pushPath: false,
-                                                                                             path: [
-                                                                                                    { tag: 'value',
-                                                                                                      value: { value: _descriptor_10.toValue(0n),
-                                                                                                               alignment: _descriptor_10.alignment() } }] } },
-                                                                                    { popeq: { cached: false,
-                                                                                               result: undefined } }]).value)),
+  _assert_oracle_updater_0(context, partialProofData) {
+    __compactRuntime.assert(this._equal_0(this._ownPublicKey_0(context,
+                                                               partialProofData),
+                                          _descriptor_1.fromValue(Contract._query(context,
+                                                                                  partialProofData,
+                                                                                  [
+                                                                                   { dup: { n: 0 } },
+                                                                                   { idx: { cached: false,
+                                                                                            pushPath: false,
+                                                                                            path: [
+                                                                                                   { tag: 'value',
+                                                                                                     value: { value: _descriptor_10.toValue(0n),
+                                                                                                              alignment: _descriptor_10.alignment() } }] } },
+                                                                                   { popeq: { cached: false,
+                                                                                              result: undefined } }]).value)),
                             'Caller is not the oracle updater');
     return [];
   }
-  #_folder_0(context, partialProofData, f, x, a0)
-  {
-    for (let i = 0; i < 10; i++) x = f(context, partialProofData, x, a0[i]);
+  _folder_0(context, partialProofData, f, x, a0) {
+    for (let i = 0; i < 10; i++) { x = f(context, partialProofData, x, a0[i]) }
     return x;
   }
-  #_equal_0(x0, y0) {
+  _equal_0(x0, y0) {
     {
       let x1 = x0.bytes;
       let y1 = y0.bytes;
-      if (!x1.every((x, i) => y1[i] === x)) return false;
+      if (!x1.every((x, i) => y1[i] === x)) { return false; }
     }
     return true;
   }
@@ -510,8 +523,9 @@ function ledger(state) {
     },
     values: {
       isEmpty(...args_0) {
-        if (args_0.length !== 0)
+        if (args_0.length !== 0) {
           throw new __compactRuntime.CompactError(`isEmpty: expected 0 arguments, received ${args_0.length}`);
+        }
         return _descriptor_7.fromValue(Contract._query(context,
                                                        partialProofData,
                                                        [
@@ -524,16 +538,17 @@ function ledger(state) {
                                                                                    alignment: _descriptor_10.alignment() } }] } },
                                                         'size',
                                                         { push: { storage: false,
-                                                                  value: __compactRuntime.StateValue.newCell({ value: _descriptor_9.toValue(0n),
-                                                                                                               alignment: _descriptor_9.alignment() }).encode() } },
+                                                                  value: __compactRuntime.StateValue.newCell({ value: _descriptor_8.toValue(0n),
+                                                                                                               alignment: _descriptor_8.alignment() }).encode() } },
                                                         'eq',
                                                         { popeq: { cached: true,
                                                                    result: undefined } }]).value);
       },
       size(...args_0) {
-        if (args_0.length !== 0)
+        if (args_0.length !== 0) {
           throw new __compactRuntime.CompactError(`size: expected 0 arguments, received ${args_0.length}`);
-        return _descriptor_9.fromValue(Contract._query(context,
+        }
+        return _descriptor_8.fromValue(Contract._query(context,
                                                        partialProofData,
                                                        [
                                                         { dup: { n: 0 } },
@@ -548,8 +563,9 @@ function ledger(state) {
                                                                    result: undefined } }]).value);
       },
       member(...args_0) {
-        if (args_0.length !== 1)
+        if (args_0.length !== 1) {
           throw new __compactRuntime.CompactError(`member: expected 1 argument, received ${args_0.length}`);
+        }
         const key_0 = args_0[0];
         return _descriptor_7.fromValue(Contract._query(context,
                                                        partialProofData,
@@ -569,8 +585,9 @@ function ledger(state) {
                                                                    result: undefined } }]).value);
       },
       lookup(...args_0) {
-        if (args_0.length !== 1)
+        if (args_0.length !== 1) {
           throw new __compactRuntime.CompactError(`lookup: expected 1 argument, received ${args_0.length}`);
+        }
         const key_0 = args_0[0];
         return _descriptor_4.fromValue(Contract._query(context,
                                                        partialProofData,
@@ -592,8 +609,9 @@ function ledger(state) {
                                                                    result: undefined } }]).value);
       },
       [Symbol.iterator](...args_0) {
-        if (args_0.length !== 0)
+        if (args_0.length !== 0) {
           throw new __compactRuntime.CompactError(`iter: expected 0 arguments, received ${args_0.length}`);
+        }
         const self_0 = state.asArray()[1];
         return self_0.asMap().keys().map(  (key) => {    const value = self_0.asMap().get(key).asCell();    return [      _descriptor_2.fromValue(key.value),      _descriptor_4.fromValue(value.value)    ];  })[Symbol.iterator]();
       }
@@ -605,7 +623,7 @@ const _emptyContext = {
   transactionContext: new __compactRuntime.QueryContext(new __compactRuntime.ContractState().data, __compactRuntime.dummyContractAddress())
 };
 const _dummyContract = new Contract({ });
-const pureCircuits = { };
+const pureCircuits = {};
 const contractReferenceLocations = { tag: 'publicLedgerArray', indices: { } };
 exports.Contract = Contract;
 exports.ledger = ledger;

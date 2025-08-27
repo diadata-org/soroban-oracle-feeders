@@ -65,13 +65,18 @@ const buildWalletAndWaitForFunds = async (): Promise<Wallet & Resource> => {
   const entropy = bip39.mnemonicToEntropy(config.midnight.seed, wordlist);
   const seed = Buffer.from(entropy).toString('hex');
 
+  console.log('Seed:', seed);
+  console.log(getZswapNetworkId());
+
+  const seed2 = "be4e89e75e92c546e4594b6e59fa576b0a87732ee45fdca39f8e25554e03a8d1"
+
   wallet = await WalletBuilder.build(
     config.midnight.indexer,
     config.midnight.indexerWS,
     config.midnight.proofServer,
     config.midnight.node,
-    seed,
-    getZswapNetworkId(),
+    seed2,
+    2,
     'info',
   );
 
@@ -266,7 +271,7 @@ export async function update(keys: string[], prices: number[]) {
         [
           key,
           {
-            value: BigInt(Math.floor(priceBatch[index])), // Convert to bigint with 6 decimal precision
+            value: BigInt(Math.round(priceBatch[index] * 1_000_000)), // Convert to bigint with 6 decimal precision
             timestamp: now(),
           } as OracleValue,
         ] as [string, OracleValue],
