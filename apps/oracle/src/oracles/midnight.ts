@@ -39,8 +39,8 @@ import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client
 import { Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
 import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
 import * as bip39 from '@scure/bip39';
-import { wordlist } from '@scure/bip39/wordlists/english';
 import type { OracleValue } from '@repo/common';
+import { HDWallet, Roles } from '@midnight-ntwrk/wallet-sdk-hd';
 
 const contractConfig = {
   privateStateStoreName: 'OraclePrivateState',
@@ -62,22 +62,31 @@ let oracleContract: DeployedOracleContract;
  * @returns A promise that resolves to the wallet.
  */
 const buildWalletAndWaitForFunds = async (): Promise<Wallet & Resource> => {
-  const entropy = bip39.mnemonicToEntropy(config.midnight.seed, wordlist);
-  const seed = Buffer.from(entropy).toString('hex');
+  const mnemonic = config.midnight.seed ?? '';
+  const mnemonicSeed = bip39.mnemonicToSeedSync(mnemonic);
+  const generatedWallet = HDWallet.fromSeed(mnemonicSeed);
 
-  console.log('Seed:', seed);
-  console.log(getZswapNetworkId());
+  let seed = "";
 
-  const seed2 = "be4e89e75e92c546e4594b6e59fa576b0a87732ee45fdca39f8e25554e03a8d1"
+  if (generatedWallet.type == 'seedOk') {
+    const zswapKey = generatedWallet.hdWallet.selectAccount(0).selectRole(Roles.Zswap).deriveKeyAt(0);
+    if (zswapKey.type === 'keyDerived') {
+      seed = Buffer.from(zswapKey.key).toString('hex')
+    } else {
+      console.error('Error deriving key');
+    }
+  } else {
+    console.error('Error generating HDWallet');
+  }
 
   wallet = await WalletBuilder.build(
     config.midnight.indexer,
     config.midnight.indexerWS,
     config.midnight.proofServer,
     config.midnight.node,
-    seed2,
-    2,
-    'info',
+    seed,
+    2,  // Network ID
+    'info', // Log level
   );
 
   wallet.start();
@@ -299,7 +308,10 @@ export async function update(keys: string[], prices: number[]) {
           for (let i = 0; i < batch.length; i++) {
             const firstTxBroadcast = await oracleContract.callTx.set_value(
               batch[i][0],
-              batch[i][1],
+              {
+                value: BigInt(Math.round(priceBatch[i] * 1_000_000)), // Convert to bigint with 6 decimal precision
+                timestamp: now(),
+              } as OracleValue,
             );
 
             if (!firstTxBroadcast) {
