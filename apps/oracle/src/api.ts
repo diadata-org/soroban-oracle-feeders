@@ -2,6 +2,7 @@ import axios from 'axios';
 import { request, gql } from 'graphql-request';
 import config from './config';
 import { Quotation, GraphqlQuotation, GqlParams } from './validation';
+import { getHermeticaUsdhPrice, isHermeticaUsdh } from './hermetica';
 
 export type Asset = {
   network: string;
@@ -11,12 +12,19 @@ export type Asset = {
 };
 
 export async function getAssetPrices(assets: Asset[]) {
-  const fetch = config.api.useGql
+  const defaultFetch = config.api.useGql
     ? (x: Asset) => getGraphqlAssetQuotation(x.network, x.address, x.gqlParams)
     : (x: Asset) => getAssetQuotation(x.network, x.address);
 
   const reqs = assets.map(async (asset) => {
-    const price = await fetch(asset);
+    if (isHermeticaUsdh(asset.address)) {
+      console.log(`using Hermetica as data source for ${asset.symbol}`);
+      const price = await getHermeticaUsdhPrice();
+      return { key: asset.symbol, value: price };
+    }
+
+    // Default fetch for other assets
+    const price = await defaultFetch(asset);
     return { key: asset.symbol, value: price };
   });
 
@@ -70,12 +78,13 @@ const feedQuery = gql`
 export async function getGraphqlAssetQuotation(
   network: string,
   address: string,
-  params: GqlParams,
+  params?: GqlParams,
+  timestamp?: number,
 ) {
   const feedSelection = [];
   const base = { Address: address, Blockchain: network } as FeedSelection;
 
-  if (params.FeedSelection.length) {
+  if (params?.FeedSelection.length) {
     for (const feed of params.FeedSelection) {
       const item = { ...base };
 
@@ -93,10 +102,10 @@ export async function getGraphqlAssetQuotation(
     feedSelection.push(base);
   }
 
-  const now = Math.floor(Date.now() / 1000);
+  const endTime = timestamp ? Math.floor(timestamp) : Math.floor(Date.now() / 1000);
   const variables = {
-    startTime: now - config.api.gql.windowSize * 2,
-    endTime: now,
+    startTime: endTime - config.api.gql.windowSize * 2,
+    endTime,
     feedSelection,
   };
 
