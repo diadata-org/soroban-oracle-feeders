@@ -54,11 +54,11 @@ export async function getHermeticaUsdhPrice(): Promise<number> {
   const reserveUsdValue = liquidStablesAmount * usdcPrice + btcAmount * btcPrice;
   console.log(`Reserve USD value: ${reserveUsdValue}`);
 
-  const usdhCalculatedPrice =   supply/reserveUsdValue;
+  const usdhCalculatedPrice = reserveUsdValue/supply;
 
   console.log(`Calculated USDh price before min check: ${usdhCalculatedPrice.toFixed(8)} USD`);
 
-   const usdhPrice = Math.max(1, usdhCalculatedPrice);
+  const usdhPrice = Math.min(1, usdhCalculatedPrice);
 
   console.log(`Calculated USDh price: ${usdhPrice.toFixed(8)} USD`);
 
