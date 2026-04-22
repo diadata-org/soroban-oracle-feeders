@@ -7,6 +7,10 @@ const SUPPLY_URL = 'https://app.hermetica.fi/api/v1/usdh/supply';
 interface ReserveResult {
   timestamp: number;
   liquid_stables_amount: string;
+  strc_amount?: string;
+  /** Present on the API for reference; reserve USD uses strc_amount * strc_usd_price instead. */
+  strc_in_usd?: string;
+  strc_usd_price?: string;
   btc_amount: string;
 }
 
@@ -22,7 +26,7 @@ interface SupplyResponse {
 export async function getHermeticaUsdhPrice(): Promise<number> {
   console.log('get USDh price from Hermetica API');
 
-   console.log(`get Hermetica reserve data from ${RESERVE_URL}`);
+  console.log(`get Hermetica reserve data from ${RESERVE_URL}`);
   const reserveResponse = await axios.get<ReserveResponse>(RESERVE_URL);
   const reserveData = reserveResponse.data;
   console.log(`Reserve data: ${JSON.stringify(reserveData, null, 2)}`);
@@ -43,15 +47,20 @@ export async function getHermeticaUsdhPrice(): Promise<number> {
   console.log(`BTC price at timestamp from dia gql: ${btcPrice}`);
   console.log(`USDC price at timestamp from dia gql: ${usdcPrice}`);
 
-   const supply = parseFloat(supplyData.result);
+  const supply = parseFloat(supplyData.result);
   const liquidStablesAmount = parseFloat(reserveData.result.liquid_stables_amount);
   const btcAmount = parseFloat(reserveData.result.btc_amount);
+  const strcAmount = parseFloat(reserveData.result.strc_amount ?? '0');
+  const strcUsdPrice = parseFloat(reserveData.result.strc_usd_price ?? '0');
+  const strcReserveUsd = strcAmount * strcUsdPrice;
 
   console.log(`Supply: ${supply}`);
   console.log(`Liquid stables amount: ${liquidStablesAmount}`);
   console.log(`BTC amount: ${btcAmount}`);
+  console.log(`STRC amount: ${strcAmount}, STRC USD price (from backing): ${strcUsdPrice}, STRC reserve USD: ${strcReserveUsd}`);
 
-  const reserveUsdValue = liquidStablesAmount * usdcPrice + btcAmount * btcPrice;
+  const reserveUsdValue =
+    liquidStablesAmount * usdcPrice + btcAmount * btcPrice + strcReserveUsd;
   console.log(`Reserve USD value: ${reserveUsdValue}`);
 
   const usdhCalculatedPrice = reserveUsdValue/supply;
