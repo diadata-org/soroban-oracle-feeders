@@ -13,6 +13,9 @@ import {
 } from '@stellar/stellar-sdk';
 import { sleep } from './utils';
 
+// SDK 16 removed the TransactionBuilder namespace; derive the options type instead.
+type TxOptions = ConstructorParameters<typeof TransactionBuilder>[1];
+
 export const DAY_IN_LEDGERS = 17280;
 export const DEFAULT_TX_OPTIONS = { fee: BASE_FEE, networkPassphrase: Networks.TESTNET };
 
@@ -44,7 +47,7 @@ export type ExtendTtlConfig = {
   contract: Contract;
   threshold: number;
   extendTo: number;
-  options?: TransactionBuilder.TransactionBuilderOptions;
+  options?: TxOptions;
 };
 
 export async function extendInstanceTtl({
@@ -91,7 +94,7 @@ export async function restoreInstance(
   server: rpc.Server,
   source: Keypair,
   contract: Contract,
-  options: TransactionBuilder.TransactionBuilderOptions = DEFAULT_TX_OPTIONS,
+  options: TxOptions = DEFAULT_TX_OPTIONS,
 ) {
   const instance = contract.getFootprint();
 
