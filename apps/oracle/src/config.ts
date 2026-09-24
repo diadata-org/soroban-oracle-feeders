@@ -1,3 +1,5 @@
+import os from 'os';
+import path from 'path';
 import dotenv from 'dotenv';
 import { TransactionBuilder } from '@btc-vision/transaction';
 import { GqlParams } from './validation';
@@ -69,6 +71,7 @@ export enum ChainName {
   Alephium = 'alephium',
   Stacks = 'stacks',
   Opnet = 'opnet',
+  Midnight = 'midnight',
 }
 
 export default {
@@ -119,6 +122,26 @@ export default {
     maxRetryAttempts: 3,
     feeRate: parseInt(process.env.OPNET_FEE_RATE || '100', 10),
     priorityFee: BigInt(process.env.OPNET_PRIORITY_FEE || TransactionBuilder.MINIMUM_DUST),
+  },
+  midnight: {
+    networkId: process.env.MIDNIGHT_NETWORK_ID || 'preprod',
+    indexerUrl:
+      process.env.MIDNIGHT_INDEXER_URL ||
+      'https://indexer.preprod.midnight.network/api/v4/graphql',
+    indexerWsUrl:
+      process.env.MIDNIGHT_INDEXER_WS_URL ||
+      'wss://indexer.preprod.midnight.network/api/v4/graphql/ws',
+    nodeUrl: process.env.MIDNIGHT_NODE_URL || 'wss://rpc.preprod.midnight.network',
+    proofServerUrl: process.env.MIDNIGHT_PROOF_SERVER_URL || 'http://127.0.0.1:6300',
+    seed: process.env.MIDNIGHT_SEED || '',
+    contractAddress: process.env.MIDNIGHT_CONTRACT || '',
+    privateStateDir:
+      process.env.MIDNIGHT_PRIVATE_STATE_DIR || path.join(os.tmpdir(), 'midnight-level-db'),
+    privateStatePassword:
+      process.env.MIDNIGHT_PRIVATE_STATE_PASSWORD || 'Oracle-Private-State-Password-1!',
+    syncCacheDir: process.env.MIDNIGHT_SYNC_CACHE_DIR || undefined,
+    syncTimeoutMs: parseInt(process.env.MIDNIGHT_SYNC_TIMEOUT_SECONDS || '3600', 10) * 1000,
+    maxRetryAttempts: 3,
   },
 
   chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.Soroban,
