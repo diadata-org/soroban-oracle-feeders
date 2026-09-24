@@ -14,7 +14,9 @@
     "dev": "turbo run dev",
     "format": "prettier --write ."
   },
-  "dependencies": {},
+  "dependencies": {
+    "bn.js": "^5.2.5"
+  },
   "devDependencies": {
     "@babel/core": "^7.25.8",
     "@babel/preset-env": "^7.25.8",
@@ -26,5 +28,9 @@
   "engines": {
     "node": "^22.x",
     "npm": "^10.x"
+  },
+  "resolutions": {
+    "@midnight-ntwrk/ledger-v8": "8.1.0",
+    "@midnight-ntwrk/onchain-runtime-v3": "3.0.0"
   }
 }
