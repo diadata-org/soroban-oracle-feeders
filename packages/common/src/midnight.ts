@@ -250,14 +250,43 @@ function dustBalance(state: FacadeState): bigint {
   }
 }
 
-// api.ts: waitForSync (also waits for DUST, and gives up after `timeoutMs`)
+// api.ts: channelProgress
+function channelProgress(progress: {
+  appliedIndex: bigint;
+  highestRelevantWalletIndex: bigint;
+  isStrictlyComplete: () => boolean;
+}): string {
+  if (progress.isStrictlyComplete()) {
+    return 'synced';
+  }
+  const { appliedIndex: applied, highestRelevantWalletIndex: target } = progress;
+  // The target is only known once the first progress update arrives from the indexer.
+  if (target <= 0n) {
+    return `${applied}/? `.trim();
+  }
+  const percent = Number((applied * 1000n) / target) / 10;
+  return `${applied}/${target} (${percent.toFixed(1)}%)`;
+}
+
+// api.ts: syncSummary
+function syncSummary(state: FacadeState): string {
+  const unshielded = state.unshielded.progress.isStrictlyComplete()
+    ? 'synced'
+    : `applied ${state.unshielded.progress.appliedId}`;
+  return (
+    `unshielded=${unshielded}, shielded=${channelProgress(state.shielded.state.progress)}, ` +
+    `dust=${channelProgress(state.dust.state.progress)}, dustBalance=${dustBalance(state)}`
+  );
+}
+
+// api.ts: waitForSync + logSyncProgress (also waits for DUST, and gives up after `timeoutMs`)
 async function waitForSync(wallet: WalletFacade, timeoutMs: number): Promise<FacadeState> {
   return Rx.firstValueFrom(
     wallet.state().pipe(
       Rx.throttleTime(10_000, undefined, { leading: true, trailing: true }),
       Rx.tap((state) => {
         if (!state.isSynced) {
-          console.log(`Midnight wallet syncing, DUST balance: ${dustBalance(state)}`);
+          console.log(`Waiting for funds. ${syncSummary(state)}`);
         }
       }),
       Rx.filter((state) => state.isSynced),
