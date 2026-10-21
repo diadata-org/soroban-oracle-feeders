@@ -295,6 +295,86 @@ async function waitForSync(wallet: WalletFacade, timeoutMs: number): Promise<Fac
   );
 }
 
+// The wallet SDK opens one indexer subscription per channel (shielded, unshielded, DUST) with
+// `shouldRetry: () => false`, and runs each in a background fiber. When the indexer closes a socket
+// (Blockfrost does this on long-lived connections), that channel's fiber dies and the channel stays
+// frozen at its last applied state; nothing is rethrown to the caller. The socket wrapper below
+// reports those closes, and the wallet is rebuilt from its own serialized state, so it resumes
+// where it stopped rather than replaying the chain.
+const indexerSocketDrops = new Rx.Subject<string>();
+let indexerWsOrigin: string | undefined;
+
+const redact = (url: string) => url.replace(/(project_id=)[^&]+/i, '$1***');
+
+class IndexerAwareWebSocket extends WebSocket {
+  constructor(address: any, protocols?: any, options?: any) {
+    super(address, protocols, options);
+    const url = String(address);
+    this.on('error', (err) => console.error(`[ws] error ${redact(url)}: ${err.message}`));
+    this.on('close', (code, reason) => {
+      // 1000 is a normal closure, which is also what `wallet.stop()` sends.
+      if (code === 1000) {
+        return;
+      }
+      console.error(`[ws] close ${redact(url)} code=${code} reason=${reason.toString() || '-'}`);
+      if (indexerWsOrigin && url.startsWith(indexerWsOrigin)) {
+        indexerSocketDrops.next(url);
+      }
+    });
+  }
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function serializeWallet(wallet: WalletFacade): Promise<SerializedWalletState> {
+  return {
+    shielded: await wallet.shielded.serializeState(),
+    unshielded: await wallet.unshielded.serializeState(),
+    dust: await wallet.dust.serializeState(),
+  };
+}
+
+// Stops the wallet and starts a new one from where it got to.
+async function restartWallet(
+  sdk: Sdk,
+  config: MidnightOracleConfig,
+  keys: WalletKeys,
+  wallet: WalletFacade,
+): Promise<WalletFacade> {
+  const serialized = await serializeWallet(wallet);
+  await wallet.stop().catch(() => undefined);
+  return initWallet(sdk, config, keys, serialized);
+}
+
+// waitForSync, but rebuilds the wallet whenever an indexer socket drops before it is synced.
+async function syncWallet(
+  sdk: Sdk,
+  config: MidnightOracleConfig,
+  keys: WalletKeys,
+  wallet: WalletFacade,
+): Promise<WalletFacade> {
+  const deadline = Date.now() + config.syncTimeoutMs;
+  let restarts = 0;
+  for (;;) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      throw new Error(`Midnight wallet did not sync within ${config.syncTimeoutMs / 1000}s`);
+    }
+    const outcome = await Promise.race([
+      waitForSync(wallet, remaining).then(() => 'synced' as const),
+      Rx.firstValueFrom(indexerSocketDrops).then(() => 'dropped' as const),
+    ]);
+    if (outcome === 'synced') {
+      return wallet;
+    }
+    restarts++;
+    const backoff = Math.min(60_000, 2_000 * 2 ** Math.min(restarts, 5));
+    console.warn(`Indexer connection dropped, resuming wallet sync in ${backoff / 1000}s`);
+    await sleep(backoff);
+    wallet = await restartWallet(sdk, config, keys, wallet);
+  }
+}
+
 // api.ts: buildWalletAndWaitForFunds (restore from the sync cache, else build from scratch)
 async function buildWallet(
   sdk: Sdk,
@@ -308,8 +388,7 @@ async function buildWallet(
       console.log(`Restoring Midnight wallet state from ${cacheFile}`);
       const serialized = JSON.parse(fs.readFileSync(cacheFile, 'utf-8')) as SerializedWalletState;
       wallet = await initWallet(sdk, config, keys, serialized);
-      await waitForSync(wallet, config.syncTimeoutMs);
-      return wallet;
+      return await syncWallet(sdk, config, keys, wallet);
     } catch (err: unknown) {
       console.error('Could not restore Midnight wallet state, syncing from scratch:', err);
       await wallet?.stop().catch(() => undefined);
@@ -317,16 +396,15 @@ async function buildWallet(
   }
 
   const wallet = await initWallet(sdk, config, keys);
-  await waitForSync(wallet, config.syncTimeoutMs);
-  return wallet;
+  return syncWallet(sdk, config, keys, wallet);
 }
 
 export async function connectMidnightOracle(
   config: MidnightOracleConfig,
 ): Promise<MidnightOracleClient> {
   // api.ts: the indexer client subscribes over websockets through apollo, which expects `ws`.
-  // @ts-expect-error: `ws` is not a drop-in type for the DOM WebSocket
-  globalThis.WebSocket = WebSocket;
+  (globalThis as any).WebSocket = IndexerAwareWebSocket;
+  indexerWsOrigin = new URL(config.indexerWsUrl).origin.replace(/^http/, 'ws');
 
   const sdk = await loadSdk();
   sdk.networkId.setNetworkId(config.networkId);
@@ -341,17 +419,35 @@ export async function connectMidnightOracle(
     ? path.join(config.syncCacheDir, `wallet-${config.networkId}-${address.slice(-12)}.json`)
     : undefined;
 
-  const wallet = await buildWallet(sdk, config, keys, cacheFile);
+  // api.ts: saveState
+  const saveState = async (w: WalletFacade) => {
+    if (!cacheFile) {
+      return;
+    }
+    const serialized = await serializeWallet(w);
+    await fs.promises.mkdir(path.dirname(cacheFile), { recursive: true });
+    await fs.promises.writeFile(cacheFile, JSON.stringify(serialized));
+  };
 
-  // api.ts: syncFailed. A failed sync can leave local state inconsistent with the chain; persisting
-  // it produces transactions the node rejects, so the cache is no longer written.
-  let syncFailed = false;
-  wallet.state().subscribe({
-    error: (err: unknown) => {
-      syncFailed = true;
-      console.error('Midnight wallet sync error:', err);
-    },
+  // `let`: the providers below always use the current wallet, which is replaced after a drop.
+  let wallet = await buildWallet(sdk, config, keys, cacheFile);
+  await saveState(wallet).catch((err) =>
+    console.error('Failed to save Midnight wallet state:', err),
+  );
+
+  // Drops after the initial sync are handled before the next transaction.
+  let needsResync = false;
+  indexerSocketDrops.subscribe(() => {
+    needsResync = true;
   });
+  const ensureSynced = async () => {
+    if (!needsResync) {
+      return;
+    }
+    needsResync = false;
+    console.warn('Indexer connection dropped since the last update, resyncing wallet');
+    wallet = await syncWallet(sdk, config, keys, await restartWallet(sdk, config, keys, wallet));
+  };
 
   const state = await Rx.firstValueFrom(wallet.state());
   const dust = dustBalance(state);
@@ -414,29 +510,16 @@ export async function connectMidnightOracle(
   });
   console.log(`Joined Midnight oracle contract at ${config.contractAddress}`);
 
-  // api.ts: saveState
-  const saveState = async () => {
-    if (!cacheFile || syncFailed) {
-      return;
-    }
-    const serialized: SerializedWalletState = {
-      shielded: await wallet.shielded.serializeState(),
-      unshielded: await wallet.unshielded.serializeState(),
-      dust: await wallet.dust.serializeState(),
-    };
-    await fs.promises.mkdir(path.dirname(cacheFile), { recursive: true });
-    await fs.promises.writeFile(cacheFile, JSON.stringify(serialized));
-  };
-
   return {
     // api.ts: setMultipleValues, then saveState so a restart resumes from the latest sync point
     async setMultipleValues(batch) {
       if (batch.length !== MIDNIGHT_BATCH_SIZE) {
         throw new Error(`Midnight batch must have exactly ${MIDNIGHT_BATCH_SIZE} entries`);
       }
+      await ensureSynced();
       const finalized = await (contract.callTx as any).set_multiple_values(batch);
       try {
-        await saveState();
+        await saveState(wallet);
       } catch (err: unknown) {
         console.error('Failed to save Midnight wallet state:', err);
       }

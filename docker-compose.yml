@@ -9,11 +9,18 @@ services:
     restart: always
     env_file:
       - ./apps/oracle/.env
-  random:
-    container_name: random-oracle-feeder
-    build:
-      context: .
-      dockerfile: ./apps/random/Dockerfile
-    restart: always
-    env_file:
-      - ./apps/random/.env
+    volumes:
+      - midnight-data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+#  random:
+#    container_name: random-oracle-feeder
+#    build:
+#      context: .
+#      dockerfile: ./apps/random/Dockerfile
+#    restart: always
+#    env_file:
+#      - ./apps/random/.env
+
+volumes:
+  midnight-data:
