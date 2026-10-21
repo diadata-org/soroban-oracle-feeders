@@ -456,18 +456,45 @@ export async function connectMidnightOracle(
     console.error('Midnight wallet has no DUST, oracle updates cannot pay fees');
   }
 
+  // Each wallet step logs its duration and fails after a timeout, so a stuck transaction shows
+  // where it stopped and the caller's retry logic takes over instead of waiting forever.
+  const step = async <T>(name: string, timeoutMs: number, run: () => Promise<T>): Promise<T> => {
+    const started = Date.now();
+    console.log(`[tx] ${name}...`);
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      const result = await Promise.race([
+        run(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error(`${name} timed out after ${timeoutMs / 1000}s`)),
+            timeoutMs,
+          );
+        }),
+      ]);
+      console.log(`[tx] ${name} done in ${((Date.now() - started) / 1000).toFixed(1)}s`);
+      return result;
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
   // api.ts: createWalletAndMidnightProvider
   const walletProvider = {
     getCoinPublicKey: () => keys.shieldedSecretKeys.coinPublicKey,
     getEncryptionPublicKey: () => keys.shieldedSecretKeys.encryptionPublicKey,
     async balanceTx(tx: Parameters<WalletFacade['balanceUnboundTransaction']>[0], ttl?: Date) {
-      const recipe = await wallet.balanceUnboundTransaction(tx, keys, {
-        ttl: ttl ?? new Date(Date.now() + 60 * 60 * 1000), // ttlOneHour
-      });
-      return wallet.finalizeRecipe(recipe);
+      const recipe = await step('balancing fees', 5 * 60_000, () =>
+        wallet.balanceUnboundTransaction(tx, keys, {
+          ttl: ttl ?? new Date(Date.now() + 60 * 60 * 1000), // ttlOneHour
+        }),
+      );
+      return step('proving fee payment', 10 * 60_000, () => wallet.finalizeRecipe(recipe));
     },
     submitTx: (tx: Parameters<WalletFacade['submitTransaction']>[0]) =>
-      wallet.submitTransaction(tx),
+      step('submitting and waiting for finalization', 10 * 60_000, () =>
+        wallet.submitTransaction(tx),
+      ),
   };
 
   // api.ts: configureProviders
@@ -517,6 +544,7 @@ export async function connectMidnightOracle(
         throw new Error(`Midnight batch must have exactly ${MIDNIGHT_BATCH_SIZE} entries`);
       }
       await ensureSynced();
+      console.log('[tx] proving set_multiple_values...');
       const finalized = await (contract.callTx as any).set_multiple_values(batch);
       try {
         await saveState(wallet);

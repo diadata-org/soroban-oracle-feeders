@@ -8,27 +8,50 @@ dotenv.config();
 
 let assetsToParse = '';
 let useGql = false;
+let useLumina = false;
 
-if (process.env.ASSETS && !process.env.GQL_ASSETS) {
-  assetsToParse = process.env.ASSETS;
-} else if (!process.env.ASSETS && process.env.GQL_ASSETS) {
+const assetSources = ['ASSETS', 'GQL_ASSETS', 'LUMINA_ASSETS'].filter((name) => process.env[name]);
+
+if (assetSources.length !== 1) {
+  console.error('Use exactly one of the ASSETS, GQL_ASSETS or LUMINA_ASSETS env variables');
+  process.exit(1);
+} else if (process.env.GQL_ASSETS) {
   assetsToParse = process.env.GQL_ASSETS;
   useGql = true;
+} else if (process.env.LUMINA_ASSETS) {
+  assetsToParse = process.env.LUMINA_ASSETS;
+  useLumina = true;
 } else {
-  console.error('Use either ASSETS or GQL_ASSETS env variable');
-  process.exit(1);
+  assetsToParse = process.env.ASSETS || '';
 }
 
 const assets = assetsToParse.split(';').map((str) => {
-  const [network, address, symbol, ...entries] = str
-    .replace('-ibc-', '-ibc/')
-    .split('§')
-    .map((str) => str.trim());
+  let network = '';
+  let address = '';
+  let luminaKey = '';
+  let symbol: string;
+  let entries: string[];
+
+  if (useLumina) {
+    // LUMINA_ASSETS: <lumina key>§<symbol>[§<coingecko name>§<cmc name>§<allowed deviation>]
+    [luminaKey, symbol, ...entries] = str.split('§').map((str) => str.trim());
+    if (!luminaKey || !symbol) {
+      console.error(`Invalid LUMINA_ASSETS entry "${str}", expected <lumina key>§<symbol>`);
+      process.exit(1);
+    }
+  } else {
+    [network, address, symbol, ...entries] = str
+      .replace('-ibc-', '-ibc/')
+      .split('§')
+      .map((str) => str.trim());
+    address = address.replace('ibc/', 'ibc-');
+  }
 
   const currAsset = {
     network,
-    address: address.replace('ibc/', 'ibc-'),
+    address,
     symbol,
+    luminaKey,
     coingeckoName: '',
     cmcName: '',
     allowedDeviation: 0.0,
@@ -64,6 +87,17 @@ const conditionalPairs = process.env.CONDITIONAL_ASSETS?.split(';').map((str) =>
   const [asset0, asset1] = str.split('-').map((s) => parseInt(s, 10));
   return [asset0, asset1] as const;
 });
+
+function parseLuminaAddress(value: string | undefined): `0x${string}` {
+  const address = (value || '').trim();
+  if (!/^0x[0-9a-fA-F]{40}$/.test(address) || /^0x0{40}$/.test(address)) {
+    console.error(
+      'LUMINA_ORACLE_V2_ADDRESS must be set to the DIAOracleV2 address on DIA Lasernet',
+    );
+    process.exit(1);
+  }
+  return address as `0x${string}`;
+}
 
 export enum ChainName {
   Kadena = 'kadena',
@@ -153,6 +187,7 @@ export default {
 
   api: {
     useGql,
+    useLumina,
     assets,
     http: {
       url: 'https://api.diadata.org/v1/assetQuotation',
@@ -162,6 +197,19 @@ export default {
       windowSize: parseInt(process.env.GQL_WINDOW_SIZE || '120', 10),
       methodology: process.env.GQL_METHODOLOGY || 'vwap',
     },
+  },
+
+  lumina: {
+    rpcUrl: process.env.LUMINA_RPC_URL || 'https://rpc.diadata.org',
+    backupRpcUrl: process.env.LUMINA_BACKUP_RPC_URL || undefined,
+    // Only validated when Lumina is the data source, so other setups need not set it.
+    oracleV2Address: useLumina
+      ? parseLuminaAddress(process.env.LUMINA_ORACLE_V2_ADDRESS)
+      : ('0x0000000000000000000000000000000000000000' as const),
+    // Values older than this are skipped; 0 disables the check.
+    dataAgeTimeout: BigInt(process.env.DATA_AGE_TIMEOUT_SECONDS || '0'),
+    // Decimals of the values stored in the Lumina DIAOracleV2 contract.
+    decimals: parseInt(process.env.LUMINA_DECIMALS || '18', 10),
   },
 
   deviationPermille: parseInt(process.env.DEVIATION_PERMILLE || '10', 10),

@@ -3,15 +3,23 @@ import { request, gql } from 'graphql-request';
 import config from './config';
 import { Quotation, GraphqlQuotation, GqlParams } from './validation';
 import { getHermeticaUsdhPrice, isHermeticaUsdh } from './hermetica';
+import { getLuminaPrices } from './lumina';
 
 export type Asset = {
   network: string;
   address: string;
   symbol: string;
+  luminaKey?: string; // only set for LUMINA_ASSETS
   gqlParams: GqlParams;
 };
 
 export async function getAssetPrices(assets: Asset[]) {
+  if (config.api.useLumina) {
+    return getLuminaPrices(
+      assets.map((a) => ({ symbol: a.symbol, luminaKey: a.luminaKey ?? '' })),
+    );
+  }
+
   const defaultFetch = config.api.useGql
     ? (x: Asset) => getGraphqlAssetQuotation(x.network, x.address, x.gqlParams)
     : (x: Asset) => getAssetQuotation(x.network, x.address);
