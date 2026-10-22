@@ -92,8 +92,10 @@ async function loadSdk() {
     shielded,
     unshielded,
     dust,
+    dustV1,
     hd,
     abstractions,
+    effect,
     oracle,
   ] = await Promise.all([
     importEsm<typeof import('@midnight-ntwrk/ledger-v8')>('@midnight-ntwrk/ledger-v8'),
@@ -128,10 +130,16 @@ async function loadSdk() {
     importEsm<typeof import('@midnight-ntwrk/wallet-sdk-dust-wallet')>(
       '@midnight-ntwrk/wallet-sdk-dust-wallet',
     ),
+    // Types by file path: the CommonJS `moduleResolution` here ignores the package's `./v1` export.
+    importEsm<typeof import('@midnight-ntwrk/wallet-sdk-dust-wallet/dist/v1/index.js')>(
+      '@midnight-ntwrk/wallet-sdk-dust-wallet/v1',
+    ),
     importEsm<typeof import('@midnight-ntwrk/wallet-sdk-hd')>('@midnight-ntwrk/wallet-sdk-hd'),
     importEsm<typeof import('@midnight-ntwrk/wallet-sdk-abstractions')>(
       '@midnight-ntwrk/wallet-sdk-abstractions',
     ),
+    // The same `effect` instance the wallet SDK uses, for the `Either` the dust wallet expects.
+    importEsm<typeof import('effect')>('effect'),
     importEsm<typeof OracleContract>(
       pathToFileURL(path.join(MIDNIGHT_ORACLE_ARTIFACTS, 'contract', 'index.js')).href,
     ),
@@ -150,8 +158,10 @@ async function loadSdk() {
     shielded,
     unshielded,
     dust,
+    dustV1,
     hd,
     abstractions,
+    effect,
     oracle,
   };
 }
@@ -195,6 +205,133 @@ function deriveKeys(sdk: Sdk, seed: Uint8Array): WalletKeys {
   };
 }
 
+// The SDK's default DUST coin selection is smallest-first. With several small DUST coins, the
+// first balancing pass picks the smallest ones, the extra inputs push the fee past what they cover,
+// and `computeBalancingRecipe` (wallet-sdk-dust-wallet <= 4.x) then loops forever inside a
+// synchronous `Effect.runSync`, blocking the event loop (midnight-wallet#741, unmerged). Picking
+// the largest coin first covers the fee in one pass, so the loop converges.
+type DustCoin = { type: string; value: bigint };
+const largestDustFirst = <T extends DustCoin>(coins: readonly T[], tokenType: string) =>
+  coins
+    .filter((coin) => coin.type === tokenType)
+    .reduce<
+      T | undefined
+    >((best, coin) => (!best || coin.value > best.value ? coin : best), undefined);
+
+// wallet-sdk-dust-wallet <= 4.x computes the DUST fee in `computeBalancingRecipe` with an
+// unbounded loop run through a synchronous `Effect.runSync` (midnight-wallet#741, unmerged). Every
+// pass after the first is seeded with a positive fee that the balancer reads as a surplus, so it
+// selects no coin and repeats forever, blocking the event loop. It also happens with a single,
+// ample DUST coin when the first pass selects nothing. This replaces that method with a bounded
+// loop: select coins (largest first) until they cover the fee, dry-run the balancing transaction
+// to get the real fee, and repeat with that fee if the selection does not cover it.
+const MAX_FEE_PASSES = 8;
+
+function makeBoundedFeeTransacting(sdk: Sdk) {
+  const { Either } = sdk.effect;
+  const Base: any = sdk.dustV1.Transacting.TransactingCapabilityImplementation;
+
+  class BoundedFeeTransacting extends Base {
+    constructor(...args: any[]) {
+      super(...args);
+    }
+
+    computeBalancingRecipe(
+      secretKey: unknown,
+      state: unknown,
+      transactions: readonly any[],
+      ttl: Date,
+      currentTime: Date,
+      ledgerParams: unknown,
+    ) {
+      try {
+        const self = this as any;
+        const baseFee = transactions.reduce<bigint>(
+          (total, tx) => total + self.calculateFee(tx, ledgerParams),
+          0n,
+        );
+        const imbalance = transactions.reduce<bigint>(
+          (total, tx) => total + Base.feeImbalance(tx, self.calculateFee(tx, ledgerParams)),
+          0n,
+        );
+        const coins: { token: unknown; value: bigint }[] = [
+          ...self.getCoins().getAvailableCoinsWithGeneratedDust(state, currentTime),
+        ].sort((a, b) => (b.value > a.value ? 1 : b.value < a.value ? -1 : 0));
+        console.log(
+          `[tx] DUST fee: base fee ${baseFee}, dust imbalance ${imbalance}, ${coins.length} coin(s)`,
+        );
+
+        // A negative imbalance is the outstanding deficit; otherwise fall back to the full fee.
+        let required = imbalance < 0n ? -imbalance : baseFee;
+        for (let pass = 1; pass <= MAX_FEE_PASSES; pass++) {
+          const inputs: { token: unknown; value: bigint }[] = [];
+          let coverage = 0n;
+          for (const coin of coins) {
+            if (coverage >= required && inputs.length > 0) {
+              break;
+            }
+            inputs.push({ token: coin.token, value: coin.value });
+            coverage += coin.value;
+          }
+          if (coverage < required) {
+            return Either.left(
+              new Error(`Insufficient DUST: fee needs ${required}, wallet has ${coverage}`),
+            );
+          }
+          const fee: bigint = self.dryRunFee(
+            inputs,
+            transactions,
+            secretKey,
+            state,
+            ttl,
+            currentTime,
+            ledgerParams,
+          );
+          console.log(
+            `[tx] DUST fee pass ${pass}: ${inputs.length} input(s) covering ${coverage}, fee ${fee}`,
+          );
+          if (fee <= coverage) {
+            // Take the fee from the inputs in order (distributeFeeAcrossInputs in the SDK).
+            let remaining = fee;
+            const recipeInputs = inputs.map((input) => {
+              const take = remaining >= input.value ? input.value : remaining;
+              remaining -= take;
+              return { ...input, value: take };
+            });
+            return Either.right({ fee, recipeInputs });
+          }
+          required = fee;
+        }
+        return Either.left(new Error(`DUST fee did not converge after ${MAX_FEE_PASSES} passes`));
+      } catch (err: unknown) {
+        return Either.left(err instanceof Error ? err : new Error(String(err)));
+      }
+    }
+  }
+
+  return (config: any, getContext: () => any) =>
+    new BoundedFeeTransacting(
+      config.networkId,
+      config.costParameters,
+      () => getContext().coinSelection,
+      () => getContext().coinsAndBalancesCapability,
+      () => getContext().keysCapability,
+    );
+}
+
+let loggedDustBalancing = false;
+function dustWallet(sdk: Sdk, configuration: any) {
+  if (!loggedDustBalancing) {
+    loggedDustBalancing = true;
+    console.log('DUST fee balancing: bounded (works around midnight-wallet#741)');
+  }
+  const builder = new sdk.dustV1.V1Builder()
+    .withDefaults()
+    .withCoinSelection(() => largestDustFirst as any)
+    .withTransacting(makeBoundedFeeTransacting(sdk) as any);
+  return sdk.dustV1.CustomDustWallet(configuration, builder as any);
+}
+
 // api.ts: walletConfiguration + initWallet
 async function initWallet(
   sdk: Sdk,
@@ -229,13 +366,11 @@ async function initWallet(
         : sdk.unshielded.UnshieldedWallet(c).restore(serialized.unshielded),
     dust: (c) =>
       serialized === undefined
-        ? sdk.dust
-            .DustWallet(c)
-            .startWithSecretKey(
-              keys.dustSecretKey,
-              sdk.ledger.LedgerParameters.initialParameters().dust,
-            )
-        : sdk.dust.DustWallet(c).restore(serialized.dust),
+        ? dustWallet(sdk, c).startWithSecretKey(
+            keys.dustSecretKey,
+            sdk.ledger.LedgerParameters.initialParameters().dust,
+          )
+        : dustWallet(sdk, c).restore(serialized.dust),
   });
   await wallet.start(keys.shieldedSecretKeys, keys.dustSecretKey);
   return wallet;
@@ -483,12 +618,51 @@ export async function connectMidnightOracle(
   const walletProvider = {
     getCoinPublicKey: () => keys.shieldedSecretKeys.coinPublicKey,
     getEncryptionPublicKey: () => keys.shieldedSecretKeys.encryptionPublicKey,
+    // Same steps as WalletFacade.balanceUnboundTransaction, run one by one so the log shows which
+    // one stops. A step that blocks the event loop cannot time out, so its "done" line is missing.
     async balanceTx(tx: Parameters<WalletFacade['balanceUnboundTransaction']>[0], ttl?: Date) {
-      const recipe = await step('balancing fees', 5 * 60_000, () =>
-        wallet.balanceUnboundTransaction(tx, keys, {
-          ttl: ttl ?? new Date(Date.now() + 60 * 60 * 1000), // ttlOneHour
-        }),
+      const txTtl = ttl ?? new Date(Date.now() + 60 * 60 * 1000); // ttlOneHour
+
+      const { dust } = await Rx.firstValueFrom(wallet.state());
+      const available = [...dust.availableCoins].sort((a, b) =>
+        b.generatedNow > a.generatedNow ? 1 : b.generatedNow < a.generatedNow ? -1 : 0,
       );
+      console.log(
+        `[tx] DUST coins: ${available.length} available, ${dust.pendingCoins.length} pending; ` +
+          `largest: ${
+            available
+              .slice(0, 5)
+              .map((c) => c.generatedNow)
+              .join(', ') || '-'
+          }`,
+      );
+
+      const shieldedBalancing = await step('shielded balancing', 5 * 60_000, () =>
+        wallet.shielded.balanceTransaction(keys.shieldedSecretKeys, tx as any),
+      );
+      const balancedUnshielded = await step('unshielded balancing', 5 * 60_000, () =>
+        wallet.unshielded.balanceUnboundTransaction(tx),
+      );
+      const baseTx: any = balancedUnshielded ?? tx;
+      const feeBalancing = await step('DUST fee balancing', 5 * 60_000, () =>
+        wallet.dust.balanceTransactions(
+          keys.dustSecretKey,
+          shieldedBalancing ? [baseTx, shieldedBalancing as any] : [baseTx],
+          txTtl,
+        ),
+      );
+      const balancingTransaction =
+        shieldedBalancing && feeBalancing
+          ? (shieldedBalancing as any).merge(feeBalancing)
+          : (shieldedBalancing ?? feeBalancing);
+      if (!balancingTransaction && !balancedUnshielded) {
+        throw new Error('No balancing transaction was created. Please check your transaction.');
+      }
+      const recipe = {
+        type: 'UNBOUND_TRANSACTION',
+        baseTransaction: baseTx,
+        balancingTransaction: balancingTransaction ?? undefined,
+      } as Parameters<WalletFacade['finalizeRecipe']>[0];
       return step('proving fee payment', 10 * 60_000, () => wallet.finalizeRecipe(recipe));
     },
     submitTx: (tx: Parameters<WalletFacade['submitTransaction']>[0]) =>
