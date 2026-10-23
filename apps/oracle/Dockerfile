@@ -21,6 +21,7 @@ FROM base AS runner
 WORKDIR /app
 
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nodejs
+RUN mkdir -p /data && chown nodejs:nodejs /data
 USER nodejs
 COPY --from=installer /app .
 
