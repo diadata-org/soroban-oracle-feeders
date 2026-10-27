@@ -51,6 +51,12 @@ export async function updateOracle(keys: string[], prices: number[]) {
           console.error('Max retry attempts reached. Transaction failed.');
           throw error;
         }
+
+        // Give the wallet time to see the result of the failed attempt (e.g. a spent DUST coin
+        // and its change) before building the next transaction.
+        const delayMs = config.midnight.retryDelayMs * attempt;
+        console.log(`Retrying in ${delayMs / 1000}s`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
     }
   }

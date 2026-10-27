@@ -175,7 +175,11 @@ export default {
       process.env.MIDNIGHT_PRIVATE_STATE_PASSWORD || 'Oracle-Private-State-Password-1!',
     syncCacheDir: process.env.MIDNIGHT_SYNC_CACHE_DIR || undefined,
     syncTimeoutMs: parseInt(process.env.MIDNIGHT_SYNC_TIMEOUT_SECONDS || '3600', 10) * 1000,
+    // Resync when the wallet has not received an indexer update for this long; 0 disables.
+    staleResyncMs: parseInt(process.env.MIDNIGHT_STALE_RESYNC_SECONDS || '900', 10) * 1000,
     maxRetryAttempts: 3,
+    // Wait between retries: this, then twice this, ...
+    retryDelayMs: parseInt(process.env.MIDNIGHT_RETRY_DELAY_SECONDS || '20', 10) * 1000,
   },
 
   chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.Soroban,

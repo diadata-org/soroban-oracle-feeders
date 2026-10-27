@@ -53,6 +53,8 @@ export type MidnightOracleConfig = {
   privateStatePassword: string;
   syncCacheDir?: string;
   syncTimeoutMs: number;
+  // Resync when the wallet has not received an indexer update for this long; 0 disables.
+  staleResyncMs?: number;
 };
 
 export type MidnightTxResult = {
@@ -487,13 +489,15 @@ async function syncWallet(
   config: MidnightOracleConfig,
   keys: WalletKeys,
   wallet: WalletFacade,
+  onWallet?: (wallet: WalletFacade) => void,
+  timeoutMs: number = config.syncTimeoutMs,
 ): Promise<WalletFacade> {
-  const deadline = Date.now() + config.syncTimeoutMs;
+  const deadline = Date.now() + timeoutMs;
   let restarts = 0;
   for (;;) {
     const remaining = deadline - Date.now();
     if (remaining <= 0) {
-      throw new Error(`Midnight wallet did not sync within ${config.syncTimeoutMs / 1000}s`);
+      throw new Error(`Midnight wallet did not sync within ${timeoutMs / 1000}s`);
     }
     const outcome = await Promise.race([
       waitForSync(wallet, remaining).then(() => 'synced' as const),
@@ -507,7 +511,125 @@ async function syncWallet(
     console.warn(`Indexer connection dropped, resuming wallet sync in ${backoff / 1000}s`);
     await sleep(backoff);
     wallet = await restartWallet(sdk, config, keys, wallet);
+    onWallet?.(wallet);
   }
+}
+
+// Keeps a long-running wallet in sync. The wallet's indexer subscriptions die silently when the
+// host sleeps or the network drops, and the SDK never reconnects them, so a wallet can sit on stale
+// state for days and then try to spend DUST it no longer has. A watchdog ticks every
+// `watchdogMs` and runs `resync` when:
+//  - something called `flag` (an indexer socket closed abnormally),
+//  - its own timer fired late, i.e. the process was suspended (laptop sleep, paused container),
+//  - `noteUpdate` was not called for `staleResyncMs` (0 disables this check).
+// Resyncs, saves and transactions share one lock, so the wallet is never swapped mid-transaction,
+// and a transaction first resyncs if needed and then runs `catchUp`. A failed resync keeps its
+// reason, so the next tick or transaction tries again.
+export function createSyncSupervisor(options: {
+  resync: (reason: string) => Promise<void>;
+  catchUp: () => Promise<void>;
+  save: () => Promise<void>;
+  staleResyncMs: number;
+  watchdogMs?: number;
+  saveEveryMs?: number;
+}) {
+  const watchdogMs = options.watchdogMs ?? 30_000;
+  const saveEveryMs = options.saveEveryMs ?? 10 * 60_000;
+  // A timer due every `watchdogMs` that fires this late means the process was frozen.
+  const suspendGapMs = 3 * watchdogMs;
+
+  let lock: Promise<unknown> = Promise.resolve();
+  const exclusive = <T>(run: () => Promise<T>): Promise<T> => {
+    const result = lock.then(run, run);
+    lock = result.catch(() => undefined);
+    return result;
+  };
+
+  let flagged: string | undefined;
+  let lastUpdateAt = Date.now();
+  let lastTickAt = Date.now();
+  let lastSaveAt = Date.now();
+
+  const pendingReason = (): string | undefined => {
+    if (flagged) {
+      return flagged;
+    }
+    // Covers a transaction that starts right after wake-up, before the watchdog has ticked.
+    const overdue = Date.now() - lastTickAt;
+    if (overdue > suspendGapMs) {
+      return `process was suspended for about ${Math.round(overdue / 1000)}s`;
+    }
+    const silent = Date.now() - lastUpdateAt;
+    if (options.staleResyncMs > 0 && silent > options.staleResyncMs) {
+      return `no wallet updates for ${Math.round(silent / 1000)}s`;
+    }
+    return undefined;
+  };
+
+  // Runs under the lock.
+  const resyncIfNeeded = async () => {
+    const reason = pendingReason();
+    if (!reason) {
+      return;
+    }
+    flagged = undefined;
+    try {
+      await options.resync(reason);
+      flagged = undefined; // a drop during the resync was handled by it
+      lastUpdateAt = Date.now();
+    } catch (err: unknown) {
+      flagged = `previous resync failed (${reason})`;
+      throw err;
+    }
+  };
+
+  let busy = false;
+  const timer = setInterval(() => {
+    // Measured outside the lock, so waiting behind a long transaction is not mistaken for sleep.
+    const now = Date.now();
+    const gap = now - lastTickAt;
+    lastTickAt = now;
+    if (gap > suspendGapMs) {
+      flagged ??= `process was suspended for about ${Math.round(gap / 1000)}s`;
+    }
+    if (busy) {
+      return;
+    }
+    busy = true;
+    void exclusive(async () => {
+      await resyncIfNeeded();
+      if (Date.now() - lastSaveAt > saveEveryMs) {
+        lastSaveAt = Date.now();
+        await options.save();
+      }
+    })
+      .catch((err: unknown) => console.error('Midnight wallet resync failed, will retry:', err))
+      .finally(() => {
+        busy = false;
+      });
+  }, watchdogMs);
+
+  return {
+    flag(reason: string) {
+      flagged ??= reason;
+    },
+    noteUpdate() {
+      lastUpdateAt = Date.now();
+    },
+    transaction<T>(run: () => Promise<T>): Promise<T> {
+      return exclusive(async () => {
+        await resyncIfNeeded();
+        await options.catchUp();
+        flagged = undefined;
+        const result = await run();
+        lastSaveAt = Date.now(); // the transaction saves the wallet itself
+        return result;
+      });
+    },
+    stop() {
+      clearInterval(timer);
+    },
+  };
 }
 
 // api.ts: buildWalletAndWaitForFunds (restore from the sync cache, else build from scratch)
@@ -570,19 +692,56 @@ export async function connectMidnightOracle(
     console.error('Failed to save Midnight wallet state:', err),
   );
 
-  // Drops after the initial sync are handled before the next transaction.
-  let needsResync = false;
-  indexerSocketDrops.subscribe(() => {
-    needsResync = true;
-  });
-  const ensureSynced = async () => {
-    if (!needsResync) {
-      return;
-    }
-    needsResync = false;
-    console.warn('Indexer connection dropped since the last update, resyncing wallet');
-    wallet = await syncWallet(sdk, config, keys, await restartWallet(sdk, config, keys, wallet));
+  // Background sync supervisor (see createSyncSupervisor). Every new wallet is watched for
+  // updates, so a silent one is noticed.
+  let updates: Rx.Subscription | undefined;
+  const useWallet = (next: WalletFacade) => {
+    wallet = next;
+    updates?.unsubscribe();
+    supervisor.noteUpdate();
+    updates = next.state().subscribe({
+      next: () => supervisor.noteUpdate(),
+      error: () => undefined, // reported through the socket wrapper
+    });
   };
+
+  const RESYNC_TIMEOUT_MS = 15 * 60_000;
+  const supervisor = createSyncSupervisor({
+    staleResyncMs: config.staleResyncMs ?? 15 * 60_000,
+    // Resume the wallet from its own serialized state: seconds, no replay of the chain.
+    resync: async (reason) => {
+      console.warn(`Resyncing Midnight wallet: ${reason}`);
+      const started = Date.now();
+      let serialized: SerializedWalletState | undefined;
+      try {
+        serialized = await serializeWallet(wallet);
+      } catch (err: unknown) {
+        console.error('Could not serialize the running wallet, using the sync cache:', err);
+        serialized =
+          cacheFile && fs.existsSync(cacheFile)
+            ? (JSON.parse(fs.readFileSync(cacheFile, 'utf-8')) as SerializedWalletState)
+            : undefined;
+      }
+      await wallet.stop().catch(() => undefined);
+      useWallet(await initWallet(sdk, config, keys, serialized));
+      useWallet(await syncWallet(sdk, config, keys, wallet, useWallet, RESYNC_TIMEOUT_MS));
+      await saveState(wallet).catch((err) =>
+        console.error('Failed to save Midnight wallet state:', err),
+      );
+      const synced = await Rx.firstValueFrom(wallet.state());
+      console.log(
+        `Midnight wallet resynced in ${((Date.now() - started) / 1000).toFixed(1)}s. ${syncSummary(synced)}`,
+      );
+    },
+    // Before a transaction: make sure every channel has caught up (returns at once if it has).
+    catchUp: async () => {
+      useWallet(await syncWallet(sdk, config, keys, wallet, useWallet, RESYNC_TIMEOUT_MS));
+    },
+    // Keep the sync cache fresh, so a restart resumes from minutes ago rather than the last tx.
+    save: () => saveState(wallet),
+  });
+  indexerSocketDrops.subscribe(() => supervisor.flag('indexer connection dropped'));
+  useWallet(wallet);
 
   const state = await Rx.firstValueFrom(wallet.state());
   const dust = dustBalance(state);
@@ -713,22 +872,23 @@ export async function connectMidnightOracle(
 
   return {
     // api.ts: setMultipleValues, then saveState so a restart resumes from the latest sync point
-    async setMultipleValues(batch) {
+    setMultipleValues(batch) {
       if (batch.length !== MIDNIGHT_BATCH_SIZE) {
         throw new Error(`Midnight batch must have exactly ${MIDNIGHT_BATCH_SIZE} entries`);
       }
-      await ensureSynced();
-      console.log('[tx] proving set_multiple_values...');
-      const finalized = await (contract.callTx as any).set_multiple_values(batch);
-      try {
-        await saveState(wallet);
-      } catch (err: unknown) {
-        console.error('Failed to save Midnight wallet state:', err);
-      }
-      return {
-        txId: String(finalized.public.txId),
-        blockHeight: Number(finalized.public.blockHeight),
-      };
+      return supervisor.transaction(async () => {
+        console.log('[tx] proving set_multiple_values...');
+        const finalized = await (contract.callTx as any).set_multiple_values(batch);
+        try {
+          await saveState(wallet);
+        } catch (err: unknown) {
+          console.error('Failed to save Midnight wallet state:', err);
+        }
+        return {
+          txId: String(finalized.public.txId),
+          blockHeight: Number(finalized.public.blockHeight),
+        };
+      });
     },
   };
 }

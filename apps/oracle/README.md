@@ -55,6 +55,10 @@ MIDNIGHT_PRIVATE_STATE_DIR=""
 MIDNIGHT_PRIVATE_STATE_PASSWORD=""
 MIDNIGHT_SYNC_CACHE_DIR=""
 MIDNIGHT_SYNC_TIMEOUT_SECONDS="3600"
+# resync when the wallet has had no indexer update for this long; 0 disables
+MIDNIGHT_STALE_RESYNC_SECONDS="900"
+# wait between transaction retries (this, then 2x, ...)
+MIDNIGHT_RETRY_DELAY_SECONDS="20"
 
 FREQUENCY_SECONDS="120"
 MANDATORY_FREQUENCY_SECONDS="0"
@@ -94,5 +98,6 @@ The Midnight feeder writes to the key/value oracle from the [DIA Midnight oracle
 - `MIDNIGHT_CONTRACT` is the deployed contract address (hex). Deploy it with the `oracle-cli` of the Midnight repository.
 - Every write is proven locally, so a [Midnight proof server](https://docs.midnight.network/develop/tutorial/using/proof-server) must be reachable at `MIDNIGHT_PROOF_SERVER_URL`. Its version must match the network (see `oracle-cli/proof-server-*.yml` in the Midnight repository).
 - On startup the wallet syncs against the chain before the first update is sent. On a fresh wallet this can take a long time; set `MIDNIGHT_SYNC_CACHE_DIR` to a persistent, writable directory so restarts resume from the saved state. The feeder exits if the sync does not finish within `MIDNIGHT_SYNC_TIMEOUT_SECONDS`.
+- After that, a watchdog keeps the wallet in sync in the background. The SDK never reconnects a dropped indexer subscription, so the feeder resumes the wallet from its saved state when an indexer connection drops, when the process was suspended (e.g. a laptop sleeping), or when the wallet has had no update for `MIDNIGHT_STALE_RESYNC_SECONDS`. It also saves the sync cache every 10 minutes. Transactions wait for any resync and for the wallet to catch up first.
 - The contract only accepts batches of exactly 10 entries. Updates are split into batches of 10 and short batches are padded by repeating their last entry.
 - Prices are stored with 8 decimals and timestamps in Unix milliseconds, as on Stacks, Alephium and OP_NET.
