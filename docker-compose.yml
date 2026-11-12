@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   oracle:
     container_name: oracle-feeder

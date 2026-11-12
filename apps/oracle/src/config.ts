@@ -159,13 +159,11 @@ export default {
   },
   midnight: {
     networkId: process.env.MIDNIGHT_NETWORK_ID || 'preprod',
-    indexerUrl:
-      process.env.MIDNIGHT_INDEXER_URL ||
-      'https://indexer.preprod.midnight.network/api/v4/graphql',
-    indexerWsUrl:
-      process.env.MIDNIGHT_INDEXER_WS_URL ||
-      'wss://indexer.preprod.midnight.network/api/v4/graphql/ws',
-    nodeUrl: process.env.MIDNIGHT_NODE_URL || 'wss://rpc.preprod.midnight.network',
+    // No defaults: Midnight's own hosted endpoints were retired, and preprod and mainnet are served by
+    // Blockfrost with a per-network project ID in the URL (see the README).
+    indexerUrl: process.env.MIDNIGHT_INDEXER_URL || '',
+    indexerWsUrl: process.env.MIDNIGHT_INDEXER_WS_URL || '',
+    nodeUrl: process.env.MIDNIGHT_NODE_URL || '',
     proofServerUrl: process.env.MIDNIGHT_PROOF_SERVER_URL || 'http://127.0.0.1:6300',
     seed: process.env.MIDNIGHT_SEED || '',
     contractAddress: process.env.MIDNIGHT_CONTRACT || '',
@@ -175,7 +173,11 @@ export default {
       process.env.MIDNIGHT_PRIVATE_STATE_PASSWORD || 'Oracle-Private-State-Password-1!',
     syncCacheDir: process.env.MIDNIGHT_SYNC_CACHE_DIR || undefined,
     syncTimeoutMs: parseInt(process.env.MIDNIGHT_SYNC_TIMEOUT_SECONDS || '3600', 10) * 1000,
+    // Resync when the wallet has not received an indexer update for this long; 0 disables.
+    staleResyncMs: parseInt(process.env.MIDNIGHT_STALE_RESYNC_SECONDS || '900', 10) * 1000,
     maxRetryAttempts: 3,
+    // Wait between retries: this, then twice this, ...
+    retryDelayMs: parseInt(process.env.MIDNIGHT_RETRY_DELAY_SECONDS || '20', 10) * 1000,
   },
 
   chainName: (process.env.CHAIN_NAME as ChainName) || ChainName.Soroban,

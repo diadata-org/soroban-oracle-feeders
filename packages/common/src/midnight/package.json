@@ -1,0 +1,4 @@
+{
+  "//": "The vendored contract in managed/ is ES module JavaScript (Compact output); this tells Node so without the MODULE_TYPELESS_PACKAGE_JSON warning and reparse. Kept outside managed/ so replacing the artifacts keeps it.",
+  "type": "module"
+}

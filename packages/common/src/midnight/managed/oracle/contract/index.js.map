@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "file": "index.js",
+  "sourceRoot": "../../../../",
+  "sources": ["src/oracle.compact", "compiler/zkir-v3-library.compact"],
+  "names": [],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAYA;;;;;;;;;;MAIA,AAAA,SAKC;;;;;cALwB,KAAqB;;;;;;;;;;;;;;;;;;yCAArB,KAAqB;;;;;;;;;iDAArB,KAAqB;;;;OAK7C;MAGD,AAAA,SAGC;;;;;cAHwB,KAAqB;cAAE,OAAkB;;;;;;;;;;;;;;;;;;;;;;;;;yCAAzC,KAAqB,+BAAE,OAAkB;;;;;;;;;iDAAzC,KAAqB;iDAAE,OAAkB;;;;OAGjE;MAED,AAAA,mBAMC;;;;;cANkC,OAAkD;;;;;;;;;;;;;;;;;;yCAAlD,OAAkD;;;;;;;;;2DAAlD,OAAkD;;;;OAMpF;MAED,AAAA,qBAGC;;;;;cAHoC,oBAAsC;;;;;;;;;;;;;;;;;;yCAAtC,oBAAsC;;;;;;;;;6DAAtC,oBAAsC;;;;OAG1E;;;;;;;;;;;;;;GA1BA;EAFD;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAHA;;;;;;;;;yEAAiD;IACjD;;;;;;;;;;yEAAyD;UAGvD,KAAc;IAAd;;;;;;;2HAAA,KAAc;;yEAAA;;;;;;;GACf;ECdD,AAAA;;;;;;;;EDgBA,AAAA,kBAKC,4BALwB,KAAqB;iCACvC;;;;;;;;;;;wJAAuB,KAAG;;;;sGAApB;;;;qCAGJ;;;;;;;;;;;;;;gIAAuB,KAAG;;;0GAApB;;GACd;EAGD,AAAA,kBAGC,4BAHwB,KAAqB,EAAE,OAAkB;;IAEhE;;;;;;;;;;2HAAuB,KAAG;;;2HAAY,OAAK;;;wEAArC;;GACP;EAED,AAAA,4BAMC,4BANkC,OAAkD;;;;4DAGnF,GAEC,EAFD,OAEC;;kCADC,KAAM,GAAiB,OAAK;kCAA5B,KAAM,GAAqC,OAAK;4BAAhD;;;;;;;;;;mJAAA,KAAM;;;mJAAN,KAAM;;;;;kFAAA;mCADR,GAEC;;;yBAFmB,OAAK;;GAG1B;EAED,AAAA,8BAGC,4BAHoC,oBAAsC;;;IAEzE;;;;;;;2HAA0B,oBAAkB;;yEAA9B;;GACf;EAED,AAAA,8BAEC;;;kEAD0B;;;;;;;;;;;uIAAc;;;GACxC;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAnCD;qCAAA;;;;;;;;;;;0GAAiD;KAAA;IACjD;;;;;uCAAA;;;;;;;;;;;;;;;;4GAAyD;;;;;;uCAAzD;;;;;;;;;;;;4GAAyD;;;;;;;;;;;;;;uCAAzD;;;;;;;;;;;;;;;4GAAyD;;;;;;;;;;;;;;uCAAzD;;;;;;;;;;;;;;;;;4GAAyD;;;;;;;;;KAAA;;;;;;;;;;;;;;;;;;;;;;;;"
+}

@@ -1,0 +1,30 @@
+{
+  "version": { "major": 3, "minor": 1 },
+  "do_communications_commitment": true,
+  "inputs": [
+    { "name": "%new_oracle_updater.0", "type": "Scalar<BLS12-381>" },
+    { "name": "%new_oracle_updater.1", "type": "Scalar<BLS12-381>" }
+  ],
+  "outputs": [
+  ],
+  "instructions": [
+    { "op": "constrain_bits", "val": "%new_oracle_updater.0", "bits": 8 },
+    { "op": "constrain_bits", "val": "%new_oracle_updater.1", "bits": 248 },
+    { "op": "private_input", "type": "Scalar<BLS12-381>", "output": "%t.2", "guard": null },
+    { "op": "constrain_bits", "val": "%t.2", "bits": 8 },
+    { "op": "private_input", "type": "Scalar<BLS12-381>", "output": "%t.3", "guard": null },
+    { "op": "constrain_bits", "val": "%t.3", "bits": 248 },
+    { "op": "public_input", "type": "Scalar<BLS12-381>", "output": "%t.4", "guard": null },
+    { "op": "public_input", "type": "Scalar<BLS12-381>", "output": "%t.5", "guard": null },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x30"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x50", "0x01", "0x01", "0x00"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x0c", "0x01", "0x20", "%t.4", "%t.5"] },
+    { "op": "test_eq", "output": "%t.6", "a": "%t.2", "b": "%t.4" },
+    { "op": "test_eq", "output": "%t.7", "a": "%t.3", "b": "%t.5" },
+    { "op": "cond_select", "output": "%t.8", "bit": "%t.6", "a": "%t.7", "b": "0x00" },
+    { "op": "assert", "cond": "%t.8" },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x10", "0x01", "0x01", "0x01", "0x00"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x11", "0x01", "0x01", "0x20", "%new_oracle_updater.0", "%new_oracle_updater.1"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x91"] }
+  ]
+}
