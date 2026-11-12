@@ -4,14 +4,19 @@ import { getGraphqlAssetQuotation } from './api';
 const RESERVE_URL = 'https://app.hermetica.fi/api/v1/usdh/backing';
 const SUPPLY_URL = 'https://app.hermetica.fi/api/v1/usdh/supply';
 
+// Reserve legs DIA prices itself. Every other `<leg>_amount` in the backing response is priced
+// at Hermetica's own `<leg>_usd_price`, which is how STRC has been priced since it was added.
+// Hermetica adds reserve legs without notice (STRC in April 2026, Strive's SATA on 2026-11-12),
+// so legs are discovered from the response rather than listed here: a hard-coded list read the
+// SATA-backed reserve as 0.933 and the CoinGecko guardian then dropped USDh from every update.
+const DIA_PRICED_LEGS = new Set(['liquid_stables', 'btc']);
+
 interface ReserveResult {
   timestamp: number;
   liquid_stables_amount: string;
-  strc_amount?: string;
-  /** Present on the API for reference; reserve USD uses strc_amount * strc_usd_price instead. */
-  strc_in_usd?: string;
-  strc_usd_price?: string;
   btc_amount: string;
+  /** Endpoint-priced legs: `<leg>_amount`, `<leg>_usd_price`, `<leg>_in_usd` (e.g. strc, sata). */
+  [field: string]: string | number;
 }
 
 interface ReserveResponse {
@@ -22,6 +27,34 @@ interface SupplyResponse {
   result: string;
 }
 
+/**
+ * USD value of the reserve legs Hermetica prices itself (every leg except stables and BTC).
+ * Throws on a leg with no usable price: undercounting the reserve would publish a USDh price
+ * below peg, while a throw leaves USDh un-updated, which the staleness monitoring catches.
+ */
+export function endpointPricedReserveUsd(backing: ReserveResult): number {
+  let total = 0;
+  for (const field of Object.keys(backing)) {
+    if (!field.endsWith('_amount')) continue;
+    const leg = field.slice(0, -'_amount'.length);
+    if (DIA_PRICED_LEGS.has(leg)) continue;
+
+    const amount = parseFloat(String(backing[field]));
+    const price = parseFloat(String(backing[`${leg}_usd_price`] ?? 'NaN'));
+    if (!Number.isFinite(amount) || !Number.isFinite(price)) {
+      throw new Error(
+        `Hermetica backing has reserve leg "${leg}" without a usable ${leg}_usd_price ` +
+          `(amount ${backing[field]}, price ${backing[`${leg}_usd_price`]})`,
+      );
+    }
+    const legUsd = amount * price;
+    console.log(
+      `${leg.toUpperCase()} amount: ${amount}, USD price (from backing): ${price}, reserve USD: ${legUsd}`,
+    );
+    total += legUsd;
+  }
+  return total;
+}
 
 export async function getHermeticaUsdhPrice(): Promise<number> {
   console.log('get USDh price from Hermetica API');
@@ -50,17 +83,13 @@ export async function getHermeticaUsdhPrice(): Promise<number> {
   const supply = parseFloat(supplyData.result);
   const liquidStablesAmount = parseFloat(reserveData.result.liquid_stables_amount);
   const btcAmount = parseFloat(reserveData.result.btc_amount);
-  const strcAmount = parseFloat(reserveData.result.strc_amount ?? '0');
-  const strcUsdPrice = parseFloat(reserveData.result.strc_usd_price ?? '0');
-  const strcReserveUsd = strcAmount * strcUsdPrice;
 
   console.log(`Supply: ${supply}`);
   console.log(`Liquid stables amount: ${liquidStablesAmount}`);
   console.log(`BTC amount: ${btcAmount}`);
-  console.log(`STRC amount: ${strcAmount}, STRC USD price (from backing): ${strcUsdPrice}, STRC reserve USD: ${strcReserveUsd}`);
 
   const reserveUsdValue =
-    liquidStablesAmount * usdcPrice + btcAmount * btcPrice + strcReserveUsd;
+    liquidStablesAmount * usdcPrice + btcAmount * btcPrice + endpointPricedReserveUsd(reserveData.result);
   console.log(`Reserve USD value: ${reserveUsdValue}`);
 
   const usdhCalculatedPrice = reserveUsdValue/supply;
