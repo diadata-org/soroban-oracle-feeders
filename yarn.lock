@@ -5654,15 +5654,7 @@ ecpair@^2.1.0:
     typeforce "^1.18.0"
     wif "^2.0.6"
 
-effect@^3.19.19:
-  version "3.22.2"
-  resolved "https://registry.yarnpkg.com/effect/-/effect-3.22.2.tgz#552e6fb8b15fed068129250dc829de2d120061e3"
-  integrity sha512-fm1CQXCs7GTMwpadZxwU5rnAb2bN6mbQpknq/pXBGCzSKkosNYb9k0wsoL0TfB10rSa5xOEZJjo77u/KLXSANg==
-  dependencies:
-    "@standard-schema/spec" "^1.0.0"
-    fast-check "^3.23.1"
-
-effect@^3.21.0, effect@^3.22.1:
+effect@3.22.4, effect@^3.19.19, effect@^3.21.0, effect@^3.22.1:
   version "3.22.4"
   resolved "https://registry.yarnpkg.com/effect/-/effect-3.22.4.tgz#1fbca1a94845e43362f2dab65c6c019a241676c2"
   integrity sha512-RNshu7AXVxxDh6aS4lothhJ+QoZ4xSykbWNaaVdvDN72RMyVwhCGdALkyl1TbEydgAmRIdD1eTyJqBUGwSBGDA==
