@@ -330,6 +330,39 @@ class IndexerAwareWebSocket extends WebSocket {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// The wallet SDK prints the raw error with Effect's Console (the global console) whenever a sync
+// subscription ends: one multi-line stack per wallet part, three per dropped connection, usually with
+// nothing but `[object Object]` as the message. The background resync handles those, so each becomes
+// one line. Sync errors with a real message (e.g. an indexer rejecting the address) keep it.
+let quietSyncErrorsInstalled = false;
+function quietWalletSyncErrors() {
+  if (quietSyncErrorsInstalled) {
+    return;
+  }
+  quietSyncErrorsInstalled = true;
+  const original = console.error.bind(console);
+  console.error = (...args: unknown[]) => {
+    const [first] = args;
+    if (args.length !== 1 || !(first instanceof Error) || (first as any)._tag !== 'Wallet.Sync') {
+      original(...args);
+      return;
+    }
+    const stack = first.stack ?? '';
+    const part = stack.includes('wallet-sdk-dust-wallet')
+      ? 'DUST'
+      : stack.includes('wallet-sdk-shielded')
+        ? 'shielded'
+        : stack.includes('wallet-sdk-unshielded-wallet')
+          ? 'unshielded'
+          : 'wallet';
+    const message =
+      first.message && first.message !== '[object Object]'
+        ? first.message
+        : 'indexer connection lost';
+    original(`Midnight wallet sync stopped (${part}): ${message}`);
+  };
+}
+
 async function serializeWallet(wallet: WalletFacade): Promise<SerializedWalletState> {
   return {
     shielded: await wallet.shielded.serializeState(),
@@ -539,6 +572,7 @@ export async function connectMidnightOracle(
   }
   // api.ts: the indexer client subscribes over websockets through apollo, which expects `ws`.
   (globalThis as any).WebSocket = IndexerAwareWebSocket;
+  quietWalletSyncErrors();
   indexerWsOrigin = new URL(config.indexerWsUrl).origin.replace(/^http/, 'ws');
 
   const sdk = await loadSdk();
