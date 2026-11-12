@@ -8,7 +8,8 @@ import * as bip39 from 'bip39';
 import * as Rx from 'rxjs';
 import { WebSocket } from 'ws';
 import type { WalletFacade, FacadeState } from '@midnight-ntwrk/wallet-sdk-facade';
-import type { DustSecretKey, ZswapSecretKeys } from '@midnight-ntwrk/ledger-v8';
+import type { ZswapSecretKeys } from '@midnightntwrk/ledger-v9';
+import type { WalletSeeds } from '@midnight-ntwrk/wallet-sdk-hd';
 import type { UnshieldedKeystore } from '@midnight-ntwrk/wallet-sdk-unshielded-wallet';
 import type * as OracleContract from './midnight/managed/oracle/contract';
 
@@ -64,10 +65,12 @@ export type MidnightOracleClient = {
   setMultipleValues(batch: [string, MidnightOracleValue][]): Promise<MidnightTxResult>;
 };
 
-// common-types.ts: WalletKeys
+// common-types.ts: WalletKeys. Wallet SDK 2 starts its wallets from seeds, not key objects: each ledger
+// version derives its own keys from the same seed, which lets the wallet read the chain across the fork.
 type WalletKeys = {
+  seeds: WalletSeeds;
+  // Ledger 9 keys of the same seeds, for the public keys the contract providers hand out.
   shieldedSecretKeys: ZswapSecretKeys;
-  dustSecretKey: DustSecretKey;
   unshieldedKeystore: UnshieldedKeystore;
 };
 
@@ -86,19 +89,18 @@ async function loadSdk() {
     proofProvider,
     publicDataProvider,
     privateStateProvider,
-    networkId,
     zkConfigProvider,
+    midnightTypes,
+    midnightUtils,
     facade,
     shielded,
     unshielded,
     dust,
-    dustV1,
     hd,
     abstractions,
-    effect,
     oracle,
   ] = await Promise.all([
-    importEsm<typeof import('@midnight-ntwrk/ledger-v8')>('@midnight-ntwrk/ledger-v8'),
+    importEsm<typeof import('@midnightntwrk/ledger-v9')>('@midnightntwrk/ledger-v9'),
     importEsm<typeof import('@midnight-ntwrk/compact-js')>('@midnight-ntwrk/compact-js'),
     importEsm<typeof import('@midnight-ntwrk/midnight-js-contracts')>(
       '@midnight-ntwrk/midnight-js-contracts',
@@ -112,11 +114,14 @@ async function loadSdk() {
     importEsm<typeof import('@midnight-ntwrk/midnight-js-level-private-state-provider')>(
       '@midnight-ntwrk/midnight-js-level-private-state-provider',
     ),
-    importEsm<typeof import('@midnight-ntwrk/midnight-js-network-id')>(
-      '@midnight-ntwrk/midnight-js-network-id',
-    ),
     importEsm<typeof import('@midnight-ntwrk/midnight-js-node-zk-config-provider')>(
       '@midnight-ntwrk/midnight-js-node-zk-config-provider',
+    ),
+    importEsm<typeof import('@midnight-ntwrk/midnight-js-types')>(
+      '@midnight-ntwrk/midnight-js-types',
+    ),
+    importEsm<typeof import('@midnight-ntwrk/midnight-js-utils')>(
+      '@midnight-ntwrk/midnight-js-utils',
     ),
     importEsm<typeof import('@midnight-ntwrk/wallet-sdk-facade')>(
       '@midnight-ntwrk/wallet-sdk-facade',
@@ -130,19 +135,20 @@ async function loadSdk() {
     importEsm<typeof import('@midnight-ntwrk/wallet-sdk-dust-wallet')>(
       '@midnight-ntwrk/wallet-sdk-dust-wallet',
     ),
-    // Types by file path: the CommonJS `moduleResolution` here ignores the package's `./v1` export.
-    importEsm<typeof import('@midnight-ntwrk/wallet-sdk-dust-wallet/dist/v1/index.js')>(
-      '@midnight-ntwrk/wallet-sdk-dust-wallet/v1',
-    ),
     importEsm<typeof import('@midnight-ntwrk/wallet-sdk-hd')>('@midnight-ntwrk/wallet-sdk-hd'),
     importEsm<typeof import('@midnight-ntwrk/wallet-sdk-abstractions')>(
       '@midnight-ntwrk/wallet-sdk-abstractions',
     ),
-    // The same `effect` instance the wallet SDK uses, for the `Either` the dust wallet expects.
-    importEsm<typeof import('effect')>('effect'),
     importEsm<typeof OracleContract>(
       pathToFileURL(path.join(MIDNIGHT_ORACLE_ARTIFACTS, 'contract', 'index.js')).href,
-    ),
+    ).catch((err: unknown) => {
+      // The generated contract checks the runtime it was compiled for when it is loaded.
+      throw new Error(
+        `Could not load the oracle contract from ${MIDNIGHT_ORACLE_ARTIFACTS}: ${String(err)}. ` +
+          'The feeder runs ledger 9 (compact-runtime 0.21.0): copy in contract/src/managed/oracle of ' +
+          'the deployed contract, compiled with Compact toolchain 0.36.0.',
+      );
+    }),
   ]);
 
   return {
@@ -152,16 +158,15 @@ async function loadSdk() {
     proofProvider,
     publicDataProvider,
     privateStateProvider,
-    networkId,
     zkConfigProvider,
+    midnightTypes,
+    midnightUtils,
     facade,
     shielded,
     unshielded,
     dust,
-    dustV1,
     hd,
     abstractions,
-    effect,
     oracle,
   };
 }
@@ -180,156 +185,18 @@ function toSeedBytes(seed: string): Uint8Array {
   return bip39.mnemonicToSeedSync(trimmed);
 }
 
-// cli.ts: deriveAllKeys
-function deriveKeys(sdk: Sdk, seed: Uint8Array): WalletKeys {
-  const { HDWallet, Roles } = sdk.hd;
-  const generated = HDWallet.fromSeed(seed);
-  if (generated.type !== 'seedOk') {
-    throw new Error('Error generating Midnight HD wallet');
-  }
-  const derivation = generated.hdWallet
-    .selectAccount(0)
-    .selectRoles([Roles.Zswap, Roles.NightExternal, Roles.Dust])
-    .deriveKeysAt(0);
-  generated.hdWallet.clear();
-  if (derivation.type !== 'keysDerived') {
-    throw new Error('Error deriving Midnight wallet keys');
-  }
+// cli.ts: deriveAllKeys. Same tree positions as before (account 0, address index 0; Zswap,
+// NightExternal and Dust roles), so the wallet, its DUST and the contract's updater key are unchanged.
+function deriveKeys(sdk: Sdk, masterSeed: Uint8Array, networkId: string): WalletKeys {
+  const seeds = sdk.hd.WalletSeeds.fromMasterSeed(masterSeed);
   return {
+    seeds,
+    shieldedSecretKeys: sdk.ledger.ZswapSecretKeys.fromSeed(seeds.shielded),
     unshieldedKeystore: sdk.unshielded.createKeystore(
-      derivation.keys[Roles.NightExternal],
-      sdk.networkId.getNetworkId(),
+      { kind: 'schnorr', secret: seeds.unshielded },
+      networkId,
     ),
-    shieldedSecretKeys: sdk.ledger.ZswapSecretKeys.fromSeed(derivation.keys[Roles.Zswap]),
-    dustSecretKey: sdk.ledger.DustSecretKey.fromSeed(derivation.keys[Roles.Dust]),
   };
-}
-
-// The SDK's default DUST coin selection is smallest-first. With several small DUST coins, the
-// first balancing pass picks the smallest ones, the extra inputs push the fee past what they cover,
-// and `computeBalancingRecipe` (wallet-sdk-dust-wallet <= 4.x) then loops forever inside a
-// synchronous `Effect.runSync`, blocking the event loop (midnight-wallet#741, unmerged). Picking
-// the largest coin first covers the fee in one pass, so the loop converges.
-type DustCoin = { type: string; value: bigint };
-const largestDustFirst = <T extends DustCoin>(coins: readonly T[], tokenType: string) =>
-  coins
-    .filter((coin) => coin.type === tokenType)
-    .reduce<
-      T | undefined
-    >((best, coin) => (!best || coin.value > best.value ? coin : best), undefined);
-
-// wallet-sdk-dust-wallet <= 4.x computes the DUST fee in `computeBalancingRecipe` with an
-// unbounded loop run through a synchronous `Effect.runSync` (midnight-wallet#741, unmerged). Every
-// pass after the first is seeded with a positive fee that the balancer reads as a surplus, so it
-// selects no coin and repeats forever, blocking the event loop. It also happens with a single,
-// ample DUST coin when the first pass selects nothing. This replaces that method with a bounded
-// loop: select coins (largest first) until they cover the fee, dry-run the balancing transaction
-// to get the real fee, and repeat with that fee if the selection does not cover it.
-const MAX_FEE_PASSES = 8;
-
-function makeBoundedFeeTransacting(sdk: Sdk) {
-  const { Either } = sdk.effect;
-  const Base: any = sdk.dustV1.Transacting.TransactingCapabilityImplementation;
-
-  class BoundedFeeTransacting extends Base {
-    constructor(...args: any[]) {
-      super(...args);
-    }
-
-    computeBalancingRecipe(
-      secretKey: unknown,
-      state: unknown,
-      transactions: readonly any[],
-      ttl: Date,
-      currentTime: Date,
-      ledgerParams: unknown,
-    ) {
-      try {
-        const self = this as any;
-        const baseFee = transactions.reduce<bigint>(
-          (total, tx) => total + self.calculateFee(tx, ledgerParams),
-          0n,
-        );
-        const imbalance = transactions.reduce<bigint>(
-          (total, tx) => total + Base.feeImbalance(tx, self.calculateFee(tx, ledgerParams)),
-          0n,
-        );
-        const coins: { token: unknown; value: bigint }[] = [
-          ...self.getCoins().getAvailableCoinsWithGeneratedDust(state, currentTime),
-        ].sort((a, b) => (b.value > a.value ? 1 : b.value < a.value ? -1 : 0));
-        console.log(
-          `[tx] DUST fee: base fee ${baseFee}, dust imbalance ${imbalance}, ${coins.length} coin(s)`,
-        );
-
-        // A negative imbalance is the outstanding deficit; otherwise fall back to the full fee.
-        let required = imbalance < 0n ? -imbalance : baseFee;
-        for (let pass = 1; pass <= MAX_FEE_PASSES; pass++) {
-          const inputs: { token: unknown; value: bigint }[] = [];
-          let coverage = 0n;
-          for (const coin of coins) {
-            if (coverage >= required && inputs.length > 0) {
-              break;
-            }
-            inputs.push({ token: coin.token, value: coin.value });
-            coverage += coin.value;
-          }
-          if (coverage < required) {
-            return Either.left(
-              new Error(`Insufficient DUST: fee needs ${required}, wallet has ${coverage}`),
-            );
-          }
-          const fee: bigint = self.dryRunFee(
-            inputs,
-            transactions,
-            secretKey,
-            state,
-            ttl,
-            currentTime,
-            ledgerParams,
-          );
-          console.log(
-            `[tx] DUST fee pass ${pass}: ${inputs.length} input(s) covering ${coverage}, fee ${fee}`,
-          );
-          if (fee <= coverage) {
-            // Take the fee from the inputs in order (distributeFeeAcrossInputs in the SDK).
-            let remaining = fee;
-            const recipeInputs = inputs.map((input) => {
-              const take = remaining >= input.value ? input.value : remaining;
-              remaining -= take;
-              return { ...input, value: take };
-            });
-            return Either.right({ fee, recipeInputs });
-          }
-          required = fee;
-        }
-        return Either.left(new Error(`DUST fee did not converge after ${MAX_FEE_PASSES} passes`));
-      } catch (err: unknown) {
-        return Either.left(err instanceof Error ? err : new Error(String(err)));
-      }
-    }
-  }
-
-  return (config: any, getContext: () => any) =>
-    new BoundedFeeTransacting(
-      config.networkId,
-      config.costParameters,
-      () => getContext().coinSelection,
-      () => getContext().coinsAndBalancesCapability,
-      () => getContext().keysCapability,
-    );
-}
-
-let loggedDustBalancing = false;
-function dustWallet(sdk: Sdk, configuration: any) {
-  if (!loggedDustBalancing) {
-    loggedDustBalancing = true;
-    console.log('DUST fee balancing: bounded (works around midnight-wallet#741)');
-  }
-  const builder = new sdk.dustV1.V1Builder()
-    .withDefaults()
-    .withCoinSelection(() => largestDustFirst as any)
-    .withTransacting(makeBoundedFeeTransacting(sdk) as any);
-  return sdk.dustV1.CustomDustWallet(configuration, builder as any);
 }
 
 // api.ts: walletConfiguration + initWallet
@@ -339,9 +206,12 @@ async function initWallet(
   keys: WalletKeys,
   serialized?: SerializedWalletState,
 ): Promise<WalletFacade> {
+  const { seeds } = keys;
   const wallet = await sdk.facade.WalletFacade.init({
     configuration: {
-      networkId: sdk.networkId.getNetworkId(),
+      networkId: config.networkId,
+      // `forks` is left to the facade's default (ledger 9 from protocol version 2000000). Mainnet and
+      // preprod report 1.x versions on their ledger 8 history and 2.x after the fork.
       costParameters: { feeBlocksMargin: 5 },
       relayURL: new URL(config.nodeUrl),
       provingServerUrl: new URL(config.proofServerUrl),
@@ -356,7 +226,7 @@ async function initWallet(
     },
     shielded: (c) =>
       serialized === undefined
-        ? sdk.shielded.ShieldedWallet(c).startWithSecretKeys(keys.shieldedSecretKeys)
+        ? sdk.shielded.ShieldedWallet(c).startWithSeed(seeds.shielded)
         : sdk.shielded.ShieldedWallet(c).restore(serialized.shielded),
     unshielded: (c) =>
       serialized === undefined
@@ -366,13 +236,10 @@ async function initWallet(
         : sdk.unshielded.UnshieldedWallet(c).restore(serialized.unshielded),
     dust: (c) =>
       serialized === undefined
-        ? dustWallet(sdk, c).startWithSecretKey(
-            keys.dustSecretKey,
-            sdk.ledger.LedgerParameters.initialParameters().dust,
-          )
-        : dustWallet(sdk, c).restore(serialized.dust),
+        ? sdk.dust.DustWallet(c).startWithSeed(seeds.dust)
+        : sdk.dust.DustWallet(c).restore(serialized.dust),
   });
-  await wallet.start(keys.shieldedSecretKeys, keys.dustSecretKey);
+  await wallet.start(seeds);
   return wallet;
 }
 
@@ -409,8 +276,8 @@ function syncSummary(state: FacadeState): string {
     ? 'synced'
     : `applied ${state.unshielded.progress.appliedId}`;
   return (
-    `unshielded=${unshielded}, shielded=${channelProgress(state.shielded.state.progress)}, ` +
-    `dust=${channelProgress(state.dust.state.progress)}, dustBalance=${dustBalance(state)}`
+    `unshielded=${unshielded}, shielded=${channelProgress(state.shielded.progress)}, ` +
+    `dust=${channelProgress(state.dust.progress)}, dustBalance=${dustBalance(state)}`
   );
 }
 
@@ -537,14 +404,23 @@ async function buildWallet(
 export async function connectMidnightOracle(
   config: MidnightOracleConfig,
 ): Promise<MidnightOracleClient> {
+  for (const [name, value] of Object.entries({
+    MIDNIGHT_INDEXER_URL: config.indexerUrl,
+    MIDNIGHT_INDEXER_WS_URL: config.indexerWsUrl,
+    MIDNIGHT_NODE_URL: config.nodeUrl,
+    MIDNIGHT_CONTRACT: config.contractAddress,
+    MIDNIGHT_SEED: config.seed,
+  })) {
+    if (!value) {
+      throw new Error(`${name} is not set`);
+    }
+  }
   // api.ts: the indexer client subscribes over websockets through apollo, which expects `ws`.
   (globalThis as any).WebSocket = IndexerAwareWebSocket;
   indexerWsOrigin = new URL(config.indexerWsUrl).origin.replace(/^http/, 'ws');
 
   const sdk = await loadSdk();
-  sdk.networkId.setNetworkId(config.networkId);
-
-  const keys = deriveKeys(sdk, toSeedBytes(config.seed));
+  const keys = deriveKeys(sdk, toSeedBytes(config.seed), config.networkId);
   const address = String(keys.unshieldedKeystore.getBech32Address());
   console.log(`Midnight wallet address: ${address}`);
 
@@ -614,86 +490,57 @@ export async function connectMidnightOracle(
     }
   };
 
-  // api.ts: createWalletAndMidnightProvider
-  const walletProvider = {
+  // api.ts: createWalletAndMidnightProvider. Midnight.js 5 hands transactions over as era-tagged
+  // handles and the wallet facade keeps handles of its own; the two meet as bytes. Both providers serve
+  // ledger 9 only, the only ledger the networks accept. The facade signs with the seeds it was started
+  // from, so balancing takes no secret keys. Fee balancing is the SDK's own again: wallet SDK 2 fixed
+  // the DUST fee loop (midnight-wallet#741) that this file used to work around.
+  const ttlMs = 60 * 60 * 1000; // ttlOneHour
+  const walletProvider = sdk.midnightTypes.createLedger9WalletProvider({
     getCoinPublicKey: () => keys.shieldedSecretKeys.coinPublicKey,
     getEncryptionPublicKey: () => keys.shieldedSecretKeys.encryptionPublicKey,
-    // Same steps as WalletFacade.balanceUnboundTransaction, run one by one so the log shows which
-    // one stops. A step that blocks the event loop cannot time out, so its "done" line is missing.
-    async balanceTx(tx: Parameters<WalletFacade['balanceUnboundTransaction']>[0], ttl?: Date) {
-      const txTtl = ttl ?? new Date(Date.now() + 60 * 60 * 1000); // ttlOneHour
-
-      const { dust } = await Rx.firstValueFrom(wallet.state());
-      const available = [...dust.availableCoins].sort((a, b) =>
-        b.generatedNow > a.generatedNow ? 1 : b.generatedNow < a.generatedNow ? -1 : 0,
-      );
+    async balanceTx(tx, ttl) {
       console.log(
-        `[tx] DUST coins: ${available.length} available, ${dust.pendingCoins.length} pending; ` +
-          `largest: ${
-            available
-              .slice(0, 5)
-              .map((c) => c.generatedNow)
-              .join(', ') || '-'
-          }`,
+        `[tx] DUST available for fees: ${dustBalance(await Rx.firstValueFrom(wallet.state()))}`,
       );
-
-      const shieldedBalancing = await step('shielded balancing', 5 * 60_000, () =>
-        wallet.shielded.balanceTransaction(keys.shieldedSecretKeys, tx as any),
+      const unbound = wallet.adoptTransaction(tx.serialize(), 'Unbound');
+      const recipe = await step('balancing fees', 5 * 60_000, () =>
+        wallet.balanceUnboundTransaction(unbound, { ttl: ttl ?? new Date(Date.now() + ttlMs) }),
       );
-      const balancedUnshielded = await step('unshielded balancing', 5 * 60_000, () =>
-        wallet.unshielded.balanceUnboundTransaction(tx),
-      );
-      const baseTx: any = balancedUnshielded ?? tx;
-      const feeBalancing = await step('DUST fee balancing', 5 * 60_000, () =>
-        wallet.dust.balanceTransactions(
-          keys.dustSecretKey,
-          shieldedBalancing ? [baseTx, shieldedBalancing as any] : [baseTx],
-          txTtl,
-        ),
-      );
-      const balancingTransaction =
-        shieldedBalancing && feeBalancing
-          ? (shieldedBalancing as any).merge(feeBalancing)
-          : (shieldedBalancing ?? feeBalancing);
-      if (!balancingTransaction && !balancedUnshielded) {
-        throw new Error('No balancing transaction was created. Please check your transaction.');
-      }
-      const recipe = {
-        type: 'UNBOUND_TRANSACTION',
-        baseTransaction: baseTx,
-        balancingTransaction: balancingTransaction ?? undefined,
-      } as Parameters<WalletFacade['finalizeRecipe']>[0];
       return step('proving fee payment', 10 * 60_000, () => wallet.finalizeRecipe(recipe));
     },
-    submitTx: (tx: Parameters<WalletFacade['submitTransaction']>[0]) =>
-      step('submitting and waiting for finalization', 10 * 60_000, () =>
-        wallet.submitTransaction(tx),
-      ),
-  };
+  });
+  const midnightProvider = sdk.midnightTypes.createLedger9MidnightProvider((tx) =>
+    step('submitting and waiting for finalization', 10 * 60_000, () =>
+      wallet.submitTransaction(wallet.adoptTransaction(tx.serialize(), 'Finalized')),
+    ),
+  );
 
-  // api.ts: configureProviders
+  // api.ts: configureProviders. Default ('require') integrity mode: Compact 0.36 writes a manifest
+  // next to the keys, and every key and ZKIR is checked against it before use.
   const zkConfigProvider = new sdk.zkConfigProvider.NodeZkConfigProvider(
     MIDNIGHT_ORACLE_ARTIFACTS,
   );
-  const providers = {
+  const providers = sdk.midnightUtils.createMidnightProviders({
     privateStateProvider: sdk.privateStateProvider.levelPrivateStateProvider({
       midnightDbName: config.privateStateDir,
       privateStateStoreName: 'oracle-private-state',
       privateStoragePasswordProvider: () => config.privateStatePassword,
       accountId: 'oracle-feeder',
     }),
-    publicDataProvider: sdk.publicDataProvider.indexerPublicDataProvider(
-      config.indexerUrl,
-      config.indexerWsUrl,
-    ),
+    publicDataProvider: sdk.publicDataProvider.indexerPublicDataProvider({
+      queryURL: config.indexerUrl,
+      subscriptionURL: config.indexerWsUrl,
+    }),
     zkConfigProvider,
-    proofProvider: sdk.proofProvider.httpClientProofProvider(
-      config.proofServerUrl,
+    proofProvider: sdk.proofProvider.httpClientProofProvider({
+      url: config.proofServerUrl,
       zkConfigProvider,
-    ),
+    }),
     walletProvider,
-    midnightProvider: walletProvider,
-  };
+    midnightProvider,
+    config: { networkId: config.networkId, ttlSeconds: ttlMs / 1000 },
+  });
 
   // api.ts: compiledOracleContract
   const { CompiledContract } = sdk.compactJs;

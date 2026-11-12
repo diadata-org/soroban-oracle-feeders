@@ -159,13 +159,11 @@ export default {
   },
   midnight: {
     networkId: process.env.MIDNIGHT_NETWORK_ID || 'preprod',
-    indexerUrl:
-      process.env.MIDNIGHT_INDEXER_URL ||
-      'https://indexer.preprod.midnight.network/api/v4/graphql',
-    indexerWsUrl:
-      process.env.MIDNIGHT_INDEXER_WS_URL ||
-      'wss://indexer.preprod.midnight.network/api/v4/graphql/ws',
-    nodeUrl: process.env.MIDNIGHT_NODE_URL || 'wss://rpc.preprod.midnight.network',
+    // No defaults: Midnight's own hosted endpoints were retired, and preprod and mainnet are served by
+    // Blockfrost with a per-network project ID in the URL (see the README).
+    indexerUrl: process.env.MIDNIGHT_INDEXER_URL || '',
+    indexerWsUrl: process.env.MIDNIGHT_INDEXER_WS_URL || '',
+    nodeUrl: process.env.MIDNIGHT_NODE_URL || '',
     proofServerUrl: process.env.MIDNIGHT_PROOF_SERVER_URL || 'http://127.0.0.1:6300',
     seed: process.env.MIDNIGHT_SEED || '',
     contractAddress: process.env.MIDNIGHT_CONTRACT || '',

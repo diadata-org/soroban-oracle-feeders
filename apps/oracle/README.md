@@ -43,10 +43,12 @@ OPNET_NETWORK="regtest"
 OPNET_FEE_RATE=""
 OPNET_PRIORITY_FEE=""
 
-MIDNIGHT_NETWORK_ID="preprod"
-MIDNIGHT_INDEXER_URL="https://indexer.preprod.midnight.network/api/v4/graphql"
-MIDNIGHT_INDEXER_WS_URL="wss://indexer.preprod.midnight.network/api/v4/graphql/ws"
-MIDNIGHT_NODE_URL="wss://rpc.preprod.midnight.network"
+# "mainnet" or "preprod"; the endpoints are Blockfrost's, with a project ID for that network
+MIDNIGHT_NETWORK_ID="mainnet"
+MIDNIGHT_INDEXER_URL="https://midnight-mainnet.blockfrost.io/api/v0?project_id=<project id>"
+MIDNIGHT_INDEXER_WS_URL="wss://midnight-mainnet.blockfrost.io/api/v0/ws?project_id=<project id>"
+MIDNIGHT_NODE_URL="wss://rpc.midnight-mainnet.blockfrost.io?project_id=<project id>"
+# proof server 9.0.0 (ledger 9), local only
 MIDNIGHT_PROOF_SERVER_URL="http://127.0.0.1:6300"
 MIDNIGHT_SEED=""
 MIDNIGHT_CONTRACT=""
@@ -88,7 +90,7 @@ CMC_API_URL="https://pro-api.coinmarketcap.com"
 
 ## Midnight
 
-The Midnight feeder writes to the key/value oracle from the [DIA Midnight oracles](../../../midnight) repository. Its compiled contract artifacts (contract JS, prover/verifier keys, ZKIR) are vendored in `packages/common/src/midnight/managed/oracle`; recompile the contract there and copy the `managed/oracle` directory over whenever `oracle.compact` changes.
+The Midnight feeder writes to the key/value oracle from the [DIA Midnight oracles](../../../midnight) repository. Its compiled contract artifacts (contract JS, prover/verifier keys, ZKIR) are vendored in `packages/common/src/midnight/managed/oracle`; recompile the contract there and copy the `managed/oracle` directory over whenever `oracle.compact` changes. The artifacts must be the exact build of the deployed contract: its verifier keys are checked on-chain, and the `compiler/` manifest is checked before each proof. Mainnet and preprod run ledger 9, so the contract is compiled with Compact toolchain 0.36.0.
 
 - `MIDNIGHT_SEED` is the 24-word mnemonic (or 32-byte hex seed) of the wallet that deployed the contract, or the one it was handed to with `change_oracle_updater`. The wallet pays fees in DUST.
 - `MIDNIGHT_CONTRACT` is the deployed contract address (hex). Deploy it with the `oracle-cli` of the Midnight repository.
