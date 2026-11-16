@@ -88,15 +88,26 @@ const conditionalPairs = process.env.CONDITIONAL_ASSETS?.split(';').map((str) =>
   return [asset0, asset1] as const;
 });
 
-function parseLuminaAddress(value: string | undefined): `0x${string}` {
+function parseLuminaAddress(
+  value: string | undefined,
+  envName: string,
+  contract: string,
+): `0x${string}` {
   const address = (value || '').trim();
   if (!/^0x[0-9a-fA-F]{40}$/.test(address) || /^0x0{40}$/.test(address)) {
-    console.error(
-      'LUMINA_ORACLE_V2_ADDRESS must be set to the DIAOracleV2 address on DIA Lasernet',
-    );
+    console.error(`${envName} must be set to the ${contract} address on DIA Lasernet`);
     process.exit(1);
   }
   return address as `0x${string}`;
+}
+
+// OracleIntentRegistry on DIA Lasernet mainnet.
+const DEFAULT_INTENT_REGISTRY = '0x5612599CF48032d7428399d5Fcb99eDcc75c06A7' as const;
+
+const luminaSource = (process.env.LUMINA_SOURCE || 'intents').trim().toLowerCase();
+if (luminaSource !== 'intents' && luminaSource !== 'metacontract') {
+  console.error(`LUMINA_SOURCE must be "intents" or "metacontract", not "${luminaSource}"`);
+  process.exit(1);
 }
 
 export enum ChainName {
@@ -204,13 +215,30 @@ export default {
   lumina: {
     rpcUrl: process.env.LUMINA_RPC_URL || 'https://rpc.diadata.org',
     backupRpcUrl: process.env.LUMINA_BACKUP_RPC_URL || undefined,
-    // Only validated when Lumina is the data source, so other setups need not set it.
-    oracleV2Address: useLumina
-      ? parseLuminaAddress(process.env.LUMINA_ORACLE_V2_ADDRESS)
-      : ('0x0000000000000000000000000000000000000000' as const),
+    // Where Lumina prices are read: the OracleIntentRegistry (default) or the DIAOracleV2 metacontract.
+    source: luminaSource as 'intents' | 'metacontract',
+    // OracleIntentRegistry on DIA Lasernet, and the intent type the attestors publish prices under.
+    intentRegistryAddress:
+      useLumina && luminaSource === 'intents'
+        ? parseLuminaAddress(
+            process.env.LUMINA_INTENT_REGISTRY_ADDRESS || DEFAULT_INTENT_REGISTRY,
+            'LUMINA_INTENT_REGISTRY_ADDRESS',
+            'OracleIntentRegistry',
+          )
+        : DEFAULT_INTENT_REGISTRY,
+    intentType: process.env.LUMINA_INTENT_TYPE || 'OracleUpdate',
+    // Only validated when the metacontract is the data source, so other setups need not set it.
+    oracleV2Address:
+      useLumina && luminaSource === 'metacontract'
+        ? parseLuminaAddress(
+            process.env.LUMINA_ORACLE_V2_ADDRESS,
+            'LUMINA_ORACLE_V2_ADDRESS',
+            'DIAOracleV2',
+          )
+        : ('0x0000000000000000000000000000000000000000' as const),
     // Values older than this are skipped; 0 disables the check.
     dataAgeTimeout: BigInt(process.env.DATA_AGE_TIMEOUT_SECONDS || '0'),
-    // Decimals of the values stored in the Lumina DIAOracleV2 contract.
+    // Decimals of the Lumina prices. Intents carry the metacontract's value unchanged, so both use 18.
     decimals: parseInt(process.env.LUMINA_DECIMALS || '18', 10),
   },
 

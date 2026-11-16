@@ -79,6 +79,12 @@ GQL_ASSETS="Ethereum-0x6B175474E89094C44Da98b954EedeAC495271d0F-DAI"
 LUMINA_ASSETS=""
 LUMINA_RPC_URL="https://rpc.diadata.org"
 LUMINA_BACKUP_RPC_URL=""
+# "intents" (default): latest signed intent from the OracleIntentRegistry, getLatestIntentByType;
+# "metacontract": DIAOracleV2 getValue (then LUMINA_ORACLE_V2_ADDRESS is required)
+LUMINA_SOURCE="intents"
+# defaults to the OracleIntentRegistry on DIA Lasernet (0x5612599CF48032d7428399d5Fcb99eDcc75c06A7)
+LUMINA_INTENT_REGISTRY_ADDRESS=""
+LUMINA_INTENT_TYPE="OracleUpdate"
 LUMINA_ORACLE_V2_ADDRESS=""
 # skip values older than this; 0 disables the check
 DATA_AGE_TIMEOUT_SECONDS="0"
