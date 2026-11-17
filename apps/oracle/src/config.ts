@@ -110,6 +110,16 @@ if (luminaSource !== 'intents' && luminaSource !== 'metacontract') {
   process.exit(1);
 }
 
+// Decimals of the values written on chain (all DIA oracle contracts here use 8). Lumina's 18-decimal
+// values and the DIA API's float prices are both truncated to this many places.
+const oracleDecimals = Number(process.env.ORACLE_DECIMALS || '8');
+if (!Number.isInteger(oracleDecimals) || oracleDecimals < 0 || oracleDecimals > 18) {
+  console.error(
+    `ORACLE_DECIMALS must be a whole number from 0 to 18, not "${process.env.ORACLE_DECIMALS}"`,
+  );
+  process.exit(1);
+}
+
 export enum ChainName {
   Kadena = 'kadena',
   Soroban = 'soroban',
@@ -242,6 +252,7 @@ export default {
     decimals: parseInt(process.env.LUMINA_DECIMALS || '18', 10),
   },
 
+  oracleDecimals,
   deviationPermille: parseInt(process.env.DEVIATION_PERMILLE || '10', 10),
   conditionalPairs: conditionalPairs || [],
 

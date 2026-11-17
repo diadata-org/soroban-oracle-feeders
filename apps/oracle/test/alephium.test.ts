@@ -78,6 +78,26 @@ describe('Alephium Oracle - updateOracle', () => {
     );
   });
 
+  it('writes ORACLE_DECIMALS decimals', async () => {
+    (splitIntoFixedBatches as jest.Mock).mockImplementation((items) => [items]);
+    (fillArray as jest.Mock).mockImplementation((items) => items);
+    (mockOracleInstance.transact.setMultipleValues as jest.Mock).mockResolvedValue({});
+
+    const decimals = config.oracleDecimals;
+    (config as { oracleDecimals: number }).oracleDecimals = 6;
+    try {
+      await updateOracle(['BTC/USD'], [104_523.12345678]);
+    } finally {
+      (config as { oracleDecimals: number }).oracleDecimals = decimals;
+    }
+
+    expect(mockOracleInstance.transact.setMultipleValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: expect.objectContaining({ values: [104_523_123456n] }),
+      }),
+    );
+  });
+
   it('should retry transaction on failure and eventually succeed', async () => {
     const keys = ['key1', 'key2'];
     const prices = [100, 200];

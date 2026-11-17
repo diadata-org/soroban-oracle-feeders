@@ -56,7 +56,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
 
     const entries = keyBatch.map((key, index) => ({
       key: stringAsciiCV(key),
-      value: uintCV(toFixedPoint(priceBatch[index])),
+      value: uintCV(toFixedPoint(priceBatch[index], config.oracleDecimals)),
       timestamp: uintCV(date),
     }));
 

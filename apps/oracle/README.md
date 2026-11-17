@@ -66,6 +66,8 @@ FREQUENCY_SECONDS="120"
 MANDATORY_FREQUENCY_SECONDS="0"
 
 DEVIATION_PERMILLE="10"
+# decimals of the values written on chain (Soroban, Stacks, Alephium, OP_NET, Midnight; not Kadena)
+ORACLE_DECIMALS="8"
 
 GQL_WINDOW_SIZE="120"
 CONDITIONAL_ASSETS=""
@@ -75,8 +77,8 @@ GQL_ASSETS="Ethereum-0x6B175474E89094C44Da98b954EedeAC495271d0F-DAI"
 
 # Lumina data source (instead of ASSETS / GQL_ASSETS; set exactly one of the three)
 # Format: <lumina key>§<symbol>[§<coingecko name>§<cmc name>§<allowed deviation>], separated by ";"
-# Prices are read from DIA Lasernet (see LUMINA_SOURCE) and published as <symbol>/USD with 8
-# decimals on every chain. A key ending in usdh-token-v1 keeps the Hermetica USDh calculation
+# Prices are read from DIA Lasernet (see LUMINA_SOURCE) and published as <symbol>/USD with
+# ORACLE_DECIMALS decimals. A key ending in usdh-token-v1 keeps the Hermetica USDh calculation
 LUMINA_ASSETS=""
 LUMINA_RPC_URL="https://rpc.diadata.org"
 LUMINA_BACKUP_RPC_URL=""
@@ -104,9 +106,9 @@ CMC_API_URL="https://pro-api.coinmarketcap.com"
 Every chain reads Lumina the same way as Midnight: set `LUMINA_ASSETS` instead of `ASSETS` (or `GQL_ASSETS`) and leave `LUMINA_SOURCE` at `intents`. Nothing else in the chain settings changes, and the oracle keeps the values the DIA API feeders wrote before:
 
 - **Keys.** The second field of each entry is the symbol, and the feeder writes `<symbol>/USD`, as with `ASSETS`. Use the exact symbol of the old entry (case included), or the chain gets a new key and the old one stops updating.
-- **Decimals.** Lumina values have 18 decimals. They are cut to 8 decimals before writing, the scale every DIA API feeder used, and truncated as before (`Math.floor`). The conversion works on the decimal value, so a price like 0.29 is written as `29000000` (the old float maths wrote `28999999`).
+- **Decimals.** Lumina values have 18 decimals. They are cut to `ORACLE_DECIMALS` decimals before writing (default 8, the scale every DIA API feeder used; keep it at 8 for existing contracts) and truncated as before (`Math.floor`). Prices pass through the feeder as JS numbers, so only their first 15-17 significant digits are exact; with more decimals the rest are written as zeros. The conversion works on the decimal value, so a price like 0.29 is written as `29000000` (the old float maths wrote `28999999`).
 - **Timestamps.** Unchanged: the time of the update, in seconds on Soroban and in milliseconds on Stacks and Alephium.
-- **Guardians.** CoinGecko/CMC names and the allowed deviation go in the same trailing fields as before.
+- **Guardians.** CoinGecko/CMC names and the allowed deviation go in the same trailing fields as before, on every chain. Give all three fields (`§<coingecko>§<cmc>§<deviation>`, leaving one name empty if needed): with only one field the check is ignored, and without a deviation it is 0, so every update is rejected.
 - **USDh (Stacks).** Lumina has no USDh feed. An entry whose key is the USDh token address from the old `ASSETS` entry still prices USDh from the Hermetica reserves.
 
 Converting an `ASSETS` entry means replacing `<network>§<address>` with the Lumina key, which is the pair the attestors publish (`<SYMBOL>/USD`):
@@ -136,4 +138,4 @@ The Midnight feeder writes to the key/value oracle from the [DIA Midnight oracle
 - On startup the wallet syncs against the chain before the first update is sent. On a fresh wallet this can take a long time; set `MIDNIGHT_SYNC_CACHE_DIR` to a persistent, writable directory so restarts resume from the saved state. The feeder exits if the sync does not finish within `MIDNIGHT_SYNC_TIMEOUT_SECONDS`.
 - After that, a watchdog keeps the wallet in sync in the background. The SDK never reconnects a dropped indexer subscription, so the feeder resumes the wallet from its saved state when an indexer connection drops, when the process was suspended (e.g. a laptop sleeping), or when the wallet has had no update for `MIDNIGHT_STALE_RESYNC_SECONDS`. It also saves the sync cache every 10 minutes. Transactions wait for any resync and for the wallet to catch up first.
 - The contract only accepts batches of exactly 10 entries. Updates are split into batches of 10 and short batches are padded by repeating their last entry.
-- Prices are stored with 8 decimals and timestamps in Unix milliseconds, as on Stacks, Alephium and OP_NET.
+- Prices are stored with `ORACLE_DECIMALS` decimals (default 8) and timestamps in Unix milliseconds, as on Stacks, Alephium and OP_NET.

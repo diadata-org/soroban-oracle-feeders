@@ -49,7 +49,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
               stringToHex(''),
             ),
             values: fillArray(
-              priceBatch.map((price) => toFixedPoint(price)),
+              priceBatch.map((price) => toFixedPoint(price, config.oracleDecimals)),
               config.alephium.maxBatchSize,
               0n,
             ),

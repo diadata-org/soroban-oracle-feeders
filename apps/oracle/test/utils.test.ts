@@ -104,10 +104,19 @@ describe('toFixedPoint', () => {
     expect(toFixedPoint(1e-9)).toBe(0n);
   });
 
+  it('writes the configured number of decimals', () => {
+    expect(toFixedPoint(0.29, 6)).toBe(290_000n);
+    expect(toFixedPoint(1.123456789, 0)).toBe(1n);
+    expect(toFixedPoint(104_523.12345678, 18)).toBe(104_523_123456780000000000n);
+    expect(toFixedPoint(1e-7, 18)).toBe(100_000_000_000n);
+  });
+
   it('rejects values no oracle contract can hold', () => {
     expect(() => toFixedPoint(-1)).toThrow();
     expect(() => toFixedPoint(NaN)).toThrow();
     expect(() => toFixedPoint(1e21)).toThrow();
+    expect(() => toFixedPoint(1, -1)).toThrow();
+    expect(() => toFixedPoint(1, 1.5)).toThrow();
   });
 
   it('turns 18-decimal Lumina values into the 8-decimal values the DIA API feeds wrote', () => {

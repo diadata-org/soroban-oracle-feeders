@@ -105,7 +105,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
         writer.writeU8(keyBatch.length);
         keyBatch.forEach((key, index) => {
           writer.writeStringWithLength(key);
-          writeU128(writer, toFixedPoint(priceBatch[index]));
+          writeU128(writer, toFixedPoint(priceBatch[index], config.oracleDecimals));
           writeU128(writer, BigInt(Date.now()));
         });
 

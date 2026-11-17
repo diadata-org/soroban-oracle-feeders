@@ -37,7 +37,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const account = await server.getAccount(keypair.publicKey());
 
   const timestamp = Math.floor(Date.now() / 1000);
-  const values = prices.map((p) => [timestamp, toFixedPoint(p)] as const);
+  const values = prices.map((p) => [timestamp, toFixedPoint(p, config.oracleDecimals)] as const);
 
   const operation = contract.call(
     'set_multiple_values',

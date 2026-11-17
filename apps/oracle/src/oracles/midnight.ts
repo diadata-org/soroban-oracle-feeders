@@ -102,7 +102,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const round = keys.map(
     (key, index): Entry => [
       key,
-      { value: toFixedPoint(prices[index]), timestamp },
+      { value: toFixedPoint(prices[index], config.oracleDecimals), timestamp },
     ],
   );
   const batches: Entry[][] = [];
