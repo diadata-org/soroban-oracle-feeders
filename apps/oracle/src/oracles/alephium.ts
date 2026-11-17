@@ -2,7 +2,7 @@ import { MAP_ENTRY_DEPOSIT, NodeProvider, stringToHex, web3 } from '@alephium/we
 import { PrivateKeyWallet } from '@alephium/web3-wallet';
 import { DIAOracle, DIAOracleInstance } from '@repo/common';
 import config, { ChainName } from '../config';
-import { splitIntoFixedBatches, fillArray } from '../utils';
+import { splitIntoFixedBatches, fillArray, toFixedPoint } from '../utils';
 
 let nodeProvider: NodeProvider;
 let wallet: PrivateKeyWallet;
@@ -49,7 +49,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
               stringToHex(''),
             ),
             values: fillArray(
-              priceBatch.map((price) => BigInt(Math.floor(price * 100_000_000))),
+              priceBatch.map((price) => toFixedPoint(price)),
               config.alephium.maxBatchSize,
               0n,
             ),

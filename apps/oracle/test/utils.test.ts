@@ -1,4 +1,5 @@
-import { splitIntoFixedBatches, fillArray } from '../src/utils'; // Adjust the import path as necessary
+import { formatUnits } from 'viem';
+import { splitIntoFixedBatches, fillArray, toFixedPoint } from '../src/utils';
 
 describe('splitIntoFixedBatches', () => {
   it('should split an array into batches of specified size', () => {
@@ -85,5 +86,42 @@ describe('fillArray', () => {
     const result = fillArray(inputArray, desiredSize, fillItem);
 
     expect(result).toEqual(expectedArray);
+  });
+});
+
+describe('toFixedPoint', () => {
+  it('writes 8 decimals without float rounding errors', () => {
+    expect(toFixedPoint(0.29)).toBe(29_000_000n);
+    expect(toFixedPoint(4.35)).toBe(435_000_000n);
+    expect(toFixedPoint(1.005)).toBe(100_500_000n);
+    expect(toFixedPoint(100)).toBe(10_000_000_000n);
+    expect(toFixedPoint(0)).toBe(0n);
+  });
+
+  it('truncates like Math.floor did, including exponent-form values', () => {
+    expect(toFixedPoint(1.123456789)).toBe(112_345_678n);
+    expect(toFixedPoint(1e-7)).toBe(10n);
+    expect(toFixedPoint(1e-9)).toBe(0n);
+  });
+
+  it('rejects values no oracle contract can hold', () => {
+    expect(() => toFixedPoint(-1)).toThrow();
+    expect(() => toFixedPoint(NaN)).toThrow();
+    expect(() => toFixedPoint(1e21)).toThrow();
+  });
+
+  it('turns 18-decimal Lumina values into the 8-decimal values the DIA API feeds wrote', () => {
+    const lumina = [
+      104_523_123456789012345678n,
+      3_456_780000000000000000n,
+      290000000000000000n,
+      999900000000000000n,
+      1_000_000000000000000000n,
+      123_456789000000000000n,
+    ];
+    for (const raw of lumina) {
+      const price = Number(formatUnits(raw, 18));
+      expect(toFixedPoint(price)).toBe(raw / 10n ** 10n);
+    }
   });
 });

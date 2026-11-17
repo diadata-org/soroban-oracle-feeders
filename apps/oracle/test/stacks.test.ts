@@ -28,6 +28,7 @@ jest.mock('@stacks/network', () => ({
 }));
 
 jest.mock('../src/utils', () => ({
+  toFixedPoint: jest.requireActual('../src/utils').toFixedPoint,
   splitIntoFixedBatches: jest.fn(),
 }));
 

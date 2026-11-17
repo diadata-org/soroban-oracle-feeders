@@ -75,7 +75,8 @@ GQL_ASSETS="Ethereum-0x6B175474E89094C44Da98b954EedeAC495271d0F-DAI"
 
 # Lumina data source (instead of ASSETS / GQL_ASSETS; set exactly one of the three)
 # Format: <lumina key>§<symbol>[§<coingecko name>§<cmc name>§<allowed deviation>], separated by ";"
-# Prices are read from DIAOracleV2 on DIA Lasernet and published as <symbol>/USD
+# Prices are read from DIA Lasernet (see LUMINA_SOURCE) and published as <symbol>/USD with 8
+# decimals on every chain. A key ending in usdh-token-v1 keeps the Hermetica USDh calculation
 LUMINA_ASSETS=""
 LUMINA_RPC_URL="https://rpc.diadata.org"
 LUMINA_BACKUP_RPC_URL=""
@@ -96,6 +97,33 @@ COINGECKO_API_URL="https://pro-api.coingecko.com"
 
 CMC_API_KEY=""
 CMC_API_URL="https://pro-api.coinmarketcap.com"
+```
+
+## Lumina on Stacks, Alephium and Soroban
+
+Every chain reads Lumina the same way as Midnight: set `LUMINA_ASSETS` instead of `ASSETS` (or `GQL_ASSETS`) and leave `LUMINA_SOURCE` at `intents`. Nothing else in the chain settings changes, and the oracle keeps the values the DIA API feeders wrote before:
+
+- **Keys.** The second field of each entry is the symbol, and the feeder writes `<symbol>/USD`, as with `ASSETS`. Use the exact symbol of the old entry (case included), or the chain gets a new key and the old one stops updating.
+- **Decimals.** Lumina values have 18 decimals. They are cut to 8 decimals before writing, the scale every DIA API feeder used, and truncated as before (`Math.floor`). The conversion works on the decimal value, so a price like 0.29 is written as `29000000` (the old float maths wrote `28999999`).
+- **Timestamps.** Unchanged: the time of the update, in seconds on Soroban and in milliseconds on Stacks and Alephium.
+- **Guardians.** CoinGecko/CMC names and the allowed deviation go in the same trailing fields as before.
+- **USDh (Stacks).** Lumina has no USDh feed. An entry whose key is the USDh token address from the old `ASSETS` entry still prices USDh from the Hermetica reserves.
+
+Converting an `ASSETS` entry means replacing `<network>§<address>` with the Lumina key, which is the pair the attestors publish (`<SYMBOL>/USD`):
+
+```sh
+# before
+ASSETS="Bitcoin§0x0000000000000000000000000000000000000000§BTC§bitcoin§bitcoin§0.03;Stacks§0x0000000000000000000000000000000000000000§STX;Stacks§<deployer>.usdh-token-v1§USDh"
+# after
+LUMINA_ASSETS="BTC/USD§BTC§bitcoin§bitcoin§0.03;STX/USD§STX;<deployer>.usdh-token-v1§USDh"
+```
+
+Before switching, check that the registry has a recent intent for every key (an entry without one is skipped and logged on each round):
+
+```sh
+cast call 0x5612599CF48032d7428399d5Fcb99eDcc75c06A7 \
+  'getLatestIntentByType(string,string)((string,string,uint256,uint256,uint256,string,uint256,uint256,string,bytes,address))' \
+  OracleUpdate STX/USD --rpc-url https://rpc.diadata.org
 ```
 
 ## Midnight

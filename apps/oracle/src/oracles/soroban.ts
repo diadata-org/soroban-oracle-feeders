@@ -7,6 +7,7 @@ import {
   submitSorobanTx,
 } from '@repo/common';
 import config, { ChainName } from '../config';
+import { toFixedPoint } from '../utils';
 
 let server: rpc.Server;
 let keypair: Keypair;
@@ -36,7 +37,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const account = await server.getAccount(keypair.publicKey());
 
   const timestamp = Math.floor(Date.now() / 1000);
-  const values = prices.map((p) => [timestamp, Math.floor(p * 100_000_000)] as const);
+  const values = prices.map((p) => [timestamp, toFixedPoint(p)] as const);
 
   const operation = contract.call(
     'set_multiple_values',

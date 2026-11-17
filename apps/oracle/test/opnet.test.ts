@@ -57,6 +57,7 @@ jest.mock('@btc-vision/bsi-binary', () => ({
 }));
 
 jest.mock('../src/utils', () => ({
+  toFixedPoint: jest.requireActual('../src/utils').toFixedPoint,
   splitIntoFixedBatches: jest.fn(),
 }));
 

@@ -10,7 +10,7 @@ import {
 import { Network, networks } from 'bitcoinjs-lib';
 import crypto from 'crypto';
 import config, { ChainName } from '../config';
-import { splitIntoFixedBatches } from '../utils';
+import { splitIntoFixedBatches, toFixedPoint } from '../utils';
 
 let provider: JSONRpcProvider;
 let backupProvider: JSONRpcProvider | undefined;
@@ -105,7 +105,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
         writer.writeU8(keyBatch.length);
         keyBatch.forEach((key, index) => {
           writer.writeStringWithLength(key);
-          writeU128(writer, BigInt(Math.floor(priceBatch[index] * 100_000_000)));
+          writeU128(writer, toFixedPoint(priceBatch[index]));
           writeU128(writer, BigInt(Date.now()));
         });
 

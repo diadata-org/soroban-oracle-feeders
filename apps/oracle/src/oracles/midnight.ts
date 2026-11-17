@@ -5,6 +5,7 @@ import {
   connectMidnightOracle,
 } from '@repo/common';
 import config, { ChainName } from '../config';
+import { toFixedPoint } from '../utils';
 
 let client: Promise<MidnightOracleClient>;
 
@@ -101,7 +102,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
   const round = keys.map(
     (key, index): Entry => [
       key,
-      { value: BigInt(Math.floor(prices[index] * 100_000_000)), timestamp },
+      { value: toFixedPoint(prices[index]), timestamp },
     ],
   );
   const batches: Entry[][] = [];

@@ -14,7 +14,7 @@ import {
 import { StacksDevnet, StacksMainnet, StacksTestnet } from '@stacks/network';
 import type { TransactionResults } from '@stacks/stacks-blockchain-api-types';
 import config, { ChainName } from '../config';
-import { splitIntoFixedBatches } from '../utils';
+import { splitIntoFixedBatches, toFixedPoint } from '../utils';
 
 let network: StacksMainnet;
 let backupNetwork: StacksMainnet | undefined;
@@ -56,7 +56,7 @@ export async function updateOracle(keys: string[], prices: number[]) {
 
     const entries = keyBatch.map((key, index) => ({
       key: stringAsciiCV(key),
-      value: uintCV(Math.floor(priceBatch[index] * 100_000_000)),
+      value: uintCV(toFixedPoint(priceBatch[index])),
       timestamp: uintCV(date),
     }));
 

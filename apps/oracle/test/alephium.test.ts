@@ -23,6 +23,7 @@ jest.mock('@alephium/web3', () => {
 jest.mock('@alephium/web3-wallet');
 jest.mock('@repo/common');
 jest.mock('../src/utils', () => ({
+  toFixedPoint: jest.requireActual('../src/utils').toFixedPoint,
   splitIntoFixedBatches: jest.fn(),
   fillArray: jest.fn(),
 }));
@@ -53,7 +54,7 @@ describe('Alephium Oracle - updateOracle', () => {
     const keys = ['key1', 'key2'];
     const prices = [100, 200];
     const hexKeys = keys.map(stringToHex);
-    const bigIntPrices = prices.map((price) => BigInt(Math.floor(price * 100_000_000)));
+    const bigIntPrices = prices.map((price) => BigInt(price) * 100_000_000n);
 
     (splitIntoFixedBatches as jest.Mock).mockImplementation((items) => [items]);
     (fillArray as jest.Mock).mockImplementation((items, size, fillValue) => items);

@@ -21,3 +21,22 @@ export const fillArray = <T>(
   }
   return outputArray as FixedLengthArray<T, 10>; // limitation on array size due to fixed length of Contract method
 };
+
+// On-chain fixed-point value of a USD price, truncated to `decimals` places (8 for every oracle
+// contract this feeder writes). Works on the price's shortest decimal form, so 0.29 becomes
+// 29000000 and not the 28999999 that Math.floor(0.29 * 1e8) gives. Lumina prices arrive with 18
+// decimals and are cut to the same 8 the DIA API feeds were always written with.
+export function toFixedPoint(price: number, decimals = 8): bigint {
+  if (!Number.isFinite(price) || price < 0) {
+    throw new Error(`Cannot write price ${price} on chain`);
+  }
+  let text = String(price);
+  if (text.includes('e')) {
+    text = price.toFixed(20); // only tiny values use exponent form below 1e21
+  }
+  if (text.includes('e')) {
+    throw new Error(`Price ${price} is too large to write on chain`);
+  }
+  const [whole, fraction = ''] = text.split('.');
+  return BigInt(whole + fraction.padEnd(decimals, '0').slice(0, decimals));
+}

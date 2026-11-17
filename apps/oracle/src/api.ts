@@ -15,9 +15,7 @@ export type Asset = {
 
 export async function getAssetPrices(assets: Asset[]) {
   if (config.api.useLumina) {
-    return getLuminaPrices(
-      assets.map((a) => ({ symbol: a.symbol, luminaKey: a.luminaKey ?? '' })),
-    );
+    return getLuminaAndHermeticaPrices(assets);
   }
 
   const defaultFetch = config.api.useGql
@@ -46,6 +44,32 @@ export async function getAssetPrices(assets: Asset[]) {
 
     const { key, value } = result.value;
     prices.set(key, value);
+  }
+  return prices;
+}
+
+// Lumina has no USDh feed, so a LUMINA_ASSETS entry whose key is the USDh token (as in ASSETS,
+// e.g. SP...usdh-token-v1) keeps the Hermetica reserve calculation the Stacks feeder used before.
+async function getLuminaAndHermeticaPrices(assets: Asset[]) {
+  const usdh = assets.filter((a) => isHermeticaUsdh(a.luminaKey ?? ''));
+  const lumina = assets.filter((a) => !isHermeticaUsdh(a.luminaKey ?? ''));
+
+  const [prices, usdhPrices] = await Promise.all([
+    getLuminaPrices(lumina.map((a) => ({ symbol: a.symbol, luminaKey: a.luminaKey ?? '' }))),
+    Promise.allSettled(
+      usdh.map(async (asset) => {
+        console.log(`using Hermetica as data source for ${asset.symbol}`);
+        return { key: asset.symbol, value: await getHermeticaUsdhPrice() };
+      }),
+    ),
+  ]);
+
+  for (const result of usdhPrices) {
+    if (result.status === 'rejected') {
+      console.error(`Failed to retrieve quotation data from Hermetica: ${result.reason}`);
+      continue;
+    }
+    prices.set(result.value.key, result.value.value);
   }
   return prices;
 }
