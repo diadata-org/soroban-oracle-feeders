@@ -383,7 +383,12 @@ async function restartWallet(
   return initWallet(sdk, config, keys, serialized);
 }
 
-// waitForSync, but rebuilds the wallet whenever an indexer socket drops before it is synced.
+// How often a long sync writes its progress to the sync cache.
+const SYNC_PROGRESS_SAVE_MS = 5 * 60_000;
+
+// waitForSync, but rebuilds the wallet whenever an indexer socket drops before it is synced. With
+// `save`, the progress is also written to the sync cache every few minutes and when the sync fails
+// or times out, so a restart resumes from there instead of replaying the chain again.
 async function syncWallet(
   sdk: Sdk,
   config: MidnightOracleConfig,
@@ -391,27 +396,60 @@ async function syncWallet(
   wallet: WalletFacade,
   onWallet?: (wallet: WalletFacade) => void,
   timeoutMs: number = config.syncTimeoutMs,
+  save?: (wallet: WalletFacade) => Promise<void>,
 ): Promise<WalletFacade> {
   const deadline = Date.now() + timeoutMs;
   let restarts = 0;
-  for (;;) {
-    const remaining = deadline - Date.now();
-    if (remaining <= 0) {
-      throw new Error(`Midnight wallet did not sync within ${timeoutMs / 1000}s`);
+  let saving: Promise<void> | undefined;
+  const saveProgress = (why: string) => {
+    if (!save || saving) {
+      return saving;
     }
-    const outcome = await Promise.race([
-      waitForSync(wallet, remaining).then(() => 'synced' as const),
-      Rx.firstValueFrom(indexerSocketDrops).then(() => 'dropped' as const),
-    ]);
-    if (outcome === 'synced') {
-      return wallet;
+    const current = wallet;
+    saving = save(current)
+      .then(() => console.log(`Saved Midnight wallet sync progress (${why})`))
+      .catch((err: unknown) =>
+        console.error(
+          'Failed to save Midnight wallet sync progress:',
+          err instanceof Error ? err.message : String(err),
+        ),
+      )
+      .finally(() => {
+        saving = undefined;
+      });
+    return saving;
+  };
+  const timer = save
+    ? setInterval(() => void saveProgress('periodic'), SYNC_PROGRESS_SAVE_MS)
+    : undefined;
+
+  try {
+    for (;;) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        throw new Error(`Midnight wallet did not sync within ${timeoutMs / 1000}s`);
+      }
+      const outcome = await Promise.race([
+        waitForSync(wallet, remaining).then(() => 'synced' as const),
+        Rx.firstValueFrom(indexerSocketDrops).then(() => 'dropped' as const),
+      ]);
+      if (outcome === 'synced') {
+        return wallet;
+      }
+      restarts++;
+      const backoff = Math.min(60_000, 2_000 * 2 ** Math.min(restarts, 5));
+      console.warn(`Indexer connection dropped, resuming wallet sync in ${backoff / 1000}s`);
+      await sleep(backoff);
+      await saving;
+      wallet = await restartWallet(sdk, config, keys, wallet);
+      onWallet?.(wallet);
     }
-    restarts++;
-    const backoff = Math.min(60_000, 2_000 * 2 ** Math.min(restarts, 5));
-    console.warn(`Indexer connection dropped, resuming wallet sync in ${backoff / 1000}s`);
-    await sleep(backoff);
-    wallet = await restartWallet(sdk, config, keys, wallet);
-    onWallet?.(wallet);
+  } catch (err: unknown) {
+    await saving;
+    await saveProgress('sync stopped');
+    throw err;
+  } finally {
+    clearInterval(timer);
   }
 }
 
@@ -533,27 +571,29 @@ export function createSyncSupervisor(options: {
 }
 
 // api.ts: buildWalletAndWaitForFunds (restore from the sync cache, else build from scratch)
+// Only an unreadable cache falls back to a sync from scratch. A restored wallet that then fails to
+// sync (e.g. times out) keeps its saved progress, so the next start resumes from it.
 async function buildWallet(
   sdk: Sdk,
   config: MidnightOracleConfig,
   keys: WalletKeys,
   cacheFile?: string,
+  save?: (wallet: WalletFacade) => Promise<void>,
 ): Promise<WalletFacade> {
+  let wallet: WalletFacade | undefined;
   if (cacheFile && fs.existsSync(cacheFile)) {
-    let wallet: WalletFacade | undefined;
     try {
       console.log(`Restoring Midnight wallet state from ${cacheFile}`);
       const serialized = JSON.parse(fs.readFileSync(cacheFile, 'utf-8')) as SerializedWalletState;
       wallet = await initWallet(sdk, config, keys, serialized);
-      return await syncWallet(sdk, config, keys, wallet);
     } catch (err: unknown) {
       console.error('Could not restore Midnight wallet state, syncing from scratch:', err);
-      await wallet?.stop().catch(() => undefined);
+      wallet = undefined;
     }
   }
 
-  const wallet = await initWallet(sdk, config, keys);
-  return syncWallet(sdk, config, keys, wallet);
+  wallet ??= await initWallet(sdk, config, keys);
+  return syncWallet(sdk, config, keys, wallet, undefined, config.syncTimeoutMs, save);
 }
 
 export async function connectMidnightOracle(
@@ -597,7 +637,7 @@ export async function connectMidnightOracle(
   };
 
   // `let`: the providers below always use the current wallet, which is replaced after a drop.
-  let wallet = await buildWallet(sdk, config, keys, cacheFile);
+  let wallet = await buildWallet(sdk, config, keys, cacheFile, saveState);
   await saveState(wallet).catch((err) =>
     console.error('Failed to save Midnight wallet state:', err),
   );
